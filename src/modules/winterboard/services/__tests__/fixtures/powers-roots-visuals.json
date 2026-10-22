@@ -1,0 +1,4642 @@
+[
+  {
+    "id": "powers-roots-six-pf_integer-01-e0c4251c",
+    "family": "pf_integer",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((-((4))))))^(3)))))+((2)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 2.0
+      },
+      {
+        "x": -1.0,
+        "y": 56.0
+      },
+      {
+        "x": 0.0,
+        "y": 130.0
+      },
+      {
+        "x": 0.25,
+        "y": 155.53125
+      },
+      {
+        "x": 1.0,
+        "y": 252.0
+      },
+      {
+        "x": 2.0,
+        "y": 434.0
+      },
+      {
+        "x": 4.0,
+        "y": 1026.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_fractional-01-4a73c56e",
+    "family": "pf_fractional",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((-((4))))))^(1/3)))))+((2)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 2.0
+      },
+      {
+        "x": -1.0,
+        "y": 4.884499140614817
+      },
+      {
+        "x": 0.0,
+        "y": 5.174802103936399
+      },
+      {
+        "x": 0.25,
+        "y": 5.2396118012774835
+      },
+      {
+        "x": 1.0,
+        "y": 5.419951893353394
+      },
+      {
+        "x": 2.0,
+        "y": 5.63424118566428
+      },
+      {
+        "x": 4.0,
+        "y": 6.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_integer-02-265fce60",
+    "family": "pf_integer",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((-((3))))))^(2)))))+((1)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 4.0
+      },
+      {
+        "x": -1.0,
+        "y": 13.0
+      },
+      {
+        "x": 0.0,
+        "y": 28.0
+      },
+      {
+        "x": 0.25,
+        "y": 32.6875
+      },
+      {
+        "x": 1.0,
+        "y": 49.0
+      },
+      {
+        "x": 2.0,
+        "y": 76.0
+      },
+      {
+        "x": 4.0,
+        "y": 148.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_fractional-02-6b407d55",
+    "family": "pf_fractional",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((-((3))))))^(1/4)))))+((1)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": 4.567621345008163
+      },
+      {
+        "x": 0.0,
+        "y": 4.948222038857478
+      },
+      {
+        "x": 0.25,
+        "y": 5.028024421423975
+      },
+      {
+        "x": 1.0,
+        "y": 5.242640687119285
+      },
+      {
+        "x": 2.0,
+        "y": 5.486046343663662
+      },
+      {
+        "x": 4.0,
+        "y": 5.879729685093357
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_integer-03-a5ec57aa",
+    "family": "pf_integer",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((-((2))))))^(3)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -8.0
+      },
+      {
+        "x": -1.0,
+        "y": 1.0
+      },
+      {
+        "x": 0.0,
+        "y": 8.0
+      },
+      {
+        "x": 0.25,
+        "y": 11.390625
+      },
+      {
+        "x": 1.0,
+        "y": 27.0
+      },
+      {
+        "x": 2.0,
+        "y": 64.0
+      },
+      {
+        "x": 4.0,
+        "y": 216.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_fractional-03-e44bb8af",
+    "family": "pf_fractional",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((-((2))))))^(1/2)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": 1.0
+      },
+      {
+        "x": 0.0,
+        "y": 1.4142135623730951
+      },
+      {
+        "x": 0.25,
+        "y": 1.5
+      },
+      {
+        "x": 1.0,
+        "y": 1.7320508075688772
+      },
+      {
+        "x": 2.0,
+        "y": 2.0
+      },
+      {
+        "x": 4.0,
+        "y": 2.449489742783178
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_integer-04-7b81bc1a",
+    "family": "pf_integer",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((-((1))))))^(2)))))+((-((1)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 17.0
+      },
+      {
+        "x": -1.0,
+        "y": -1.0
+      },
+      {
+        "x": 0.0,
+        "y": 1.0
+      },
+      {
+        "x": 0.25,
+        "y": 2.125
+      },
+      {
+        "x": 1.0,
+        "y": 7.0
+      },
+      {
+        "x": 2.0,
+        "y": 17.0
+      },
+      {
+        "x": 4.0,
+        "y": 49.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_fractional-04-71b6c446",
+    "family": "pf_fractional",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((-((1))))))^(1/3)))))+((-((1)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": -1.0
+      },
+      {
+        "x": 0.0,
+        "y": 1.0
+      },
+      {
+        "x": 0.25,
+        "y": 1.1544346900318838
+      },
+      {
+        "x": 1.0,
+        "y": 1.5198420997897464
+      },
+      {
+        "x": 2.0,
+        "y": 1.8844991406148168
+      },
+      {
+        "x": 4.0,
+        "y": 2.419951893353394
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_integer-05-7a768f2f",
+    "family": "pf_integer",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((0))))^(3)))))+((-((2)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -194.0
+      },
+      {
+        "x": -1.0,
+        "y": -5.0
+      },
+      {
+        "x": 0.0,
+        "y": -2.0
+      },
+      {
+        "x": 0.25,
+        "y": -1.953125
+      },
+      {
+        "x": 1.0,
+        "y": 1.0
+      },
+      {
+        "x": 2.0,
+        "y": 22.0
+      },
+      {
+        "x": 4.0,
+        "y": 190.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_fractional-05-8ad5632f",
+    "family": "pf_fractional",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((0))))^(1/4)))))+((-((2)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": null
+      },
+      {
+        "x": 0.0,
+        "y": -2.0
+      },
+      {
+        "x": 0.25,
+        "y": 0.12132034355964258
+      },
+      {
+        "x": 1.0,
+        "y": 1.0
+      },
+      {
+        "x": 2.0,
+        "y": 1.5676213450081633
+      },
+      {
+        "x": 4.0,
+        "y": 2.242640687119285
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_integer-06-2ffd9503",
+    "family": "pf_integer",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((1))))^(2)))))+((-((3)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 22.0
+      },
+      {
+        "x": -1.0,
+        "y": 1.0
+      },
+      {
+        "x": 0.0,
+        "y": -2.0
+      },
+      {
+        "x": 0.25,
+        "y": -2.4375
+      },
+      {
+        "x": 1.0,
+        "y": -3.0
+      },
+      {
+        "x": 2.0,
+        "y": -2.0
+      },
+      {
+        "x": 4.0,
+        "y": 6.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_fractional-06-9826c1e1",
+    "family": "pf_fractional",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((1))))^(1/2)))))+((-((3)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": null
+      },
+      {
+        "x": 0.0,
+        "y": null
+      },
+      {
+        "x": 0.25,
+        "y": null
+      },
+      {
+        "x": 1.0,
+        "y": -3.0
+      },
+      {
+        "x": 2.0,
+        "y": -2.0
+      },
+      {
+        "x": 4.0,
+        "y": -1.2679491924311228
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_integer-07-babb7861",
+    "family": "pf_integer",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((2))))^(3)))))+((-((4)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -436.0
+      },
+      {
+        "x": -1.0,
+        "y": -58.0
+      },
+      {
+        "x": 0.0,
+        "y": -20.0
+      },
+      {
+        "x": 0.25,
+        "y": -14.71875
+      },
+      {
+        "x": 1.0,
+        "y": -6.0
+      },
+      {
+        "x": 2.0,
+        "y": -4.0
+      },
+      {
+        "x": 4.0,
+        "y": 12.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_fractional-07-791d60f4",
+    "family": "pf_fractional",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((2))))^(1/3)))))+((-((4)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": null
+      },
+      {
+        "x": 0.0,
+        "y": null
+      },
+      {
+        "x": 0.25,
+        "y": null
+      },
+      {
+        "x": 1.0,
+        "y": null
+      },
+      {
+        "x": 2.0,
+        "y": -4.0
+      },
+      {
+        "x": 4.0,
+        "y": -1.4801579002102536
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_integer-08-b300b1f0",
+    "family": "pf_integer",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((3))))^(2)))))+((-((5)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 142.0
+      },
+      {
+        "x": -1.0,
+        "y": 43.0
+      },
+      {
+        "x": 0.0,
+        "y": 22.0
+      },
+      {
+        "x": 0.25,
+        "y": 17.6875
+      },
+      {
+        "x": 1.0,
+        "y": 7.0
+      },
+      {
+        "x": 2.0,
+        "y": -2.0
+      },
+      {
+        "x": 4.0,
+        "y": -2.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_fractional-08-752e8e37",
+    "family": "pf_fractional",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((3))))^(1/4)))))+((-((5)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": null
+      },
+      {
+        "x": 0.0,
+        "y": null
+      },
+      {
+        "x": 0.25,
+        "y": null
+      },
+      {
+        "x": 1.0,
+        "y": null
+      },
+      {
+        "x": 2.0,
+        "y": null
+      },
+      {
+        "x": 4.0,
+        "y": -2.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_integer-09-cd86406a",
+    "family": "pf_integer",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((4))))^(3)))))+((-((6)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -518.0
+      },
+      {
+        "x": -1.0,
+        "y": -131.0
+      },
+      {
+        "x": 0.0,
+        "y": -70.0
+      },
+      {
+        "x": 0.25,
+        "y": -58.734375
+      },
+      {
+        "x": 1.0,
+        "y": -33.0
+      },
+      {
+        "x": 2.0,
+        "y": -14.0
+      },
+      {
+        "x": 4.0,
+        "y": -6.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_fractional-09-f18fbcab",
+    "family": "pf_fractional",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((4))))^(1/2)))))+((-((6)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": null
+      },
+      {
+        "x": 0.0,
+        "y": null
+      },
+      {
+        "x": 0.25,
+        "y": null
+      },
+      {
+        "x": 1.0,
+        "y": null
+      },
+      {
+        "x": 2.0,
+        "y": null
+      },
+      {
+        "x": 4.0,
+        "y": -6.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_integer-10-eb17d74d",
+    "family": "pf_integer",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((5))))^(2)))))+((-((7)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 155.0
+      },
+      {
+        "x": -1.0,
+        "y": 65.0
+      },
+      {
+        "x": 0.0,
+        "y": 43.0
+      },
+      {
+        "x": 0.25,
+        "y": 38.125
+      },
+      {
+        "x": 1.0,
+        "y": 25.0
+      },
+      {
+        "x": 2.0,
+        "y": 11.0
+      },
+      {
+        "x": 4.0,
+        "y": -5.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_fractional-10-25376ea3",
+    "family": "pf_fractional",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((5))))^(1/3)))))+((-((7)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": null
+      },
+      {
+        "x": 0.0,
+        "y": null
+      },
+      {
+        "x": 0.25,
+        "y": null
+      },
+      {
+        "x": 1.0,
+        "y": null
+      },
+      {
+        "x": 2.0,
+        "y": null
+      },
+      {
+        "x": 4.0,
+        "y": null
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_negative-01-4bb36798",
+    "family": "pf_domain_negative",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((-((4))))))^(-3)))))+((2)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": 2.074074074074074
+      },
+      {
+        "x": 0.0,
+        "y": 2.03125
+      },
+      {
+        "x": 0.25,
+        "y": 2.0260533279055566
+      },
+      {
+        "x": 1.0,
+        "y": 2.016
+      },
+      {
+        "x": 2.0,
+        "y": 2.009259259259259
+      },
+      {
+        "x": 4.0,
+        "y": 2.00390625
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_root-01-32d0e58d",
+    "family": "pf_domain_root",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "((((x)-((-((4))))))^(1/4))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 0.0
+      },
+      {
+        "x": -1.0,
+        "y": 1.3160740129524924
+      },
+      {
+        "x": 0.0,
+        "y": 1.4142135623730951
+      },
+      {
+        "x": 0.25,
+        "y": 1.4358108555129503
+      },
+      {
+        "x": 1.0,
+        "y": 1.4953487812212205
+      },
+      {
+        "x": 2.0,
+        "y": 1.5650845800732873
+      },
+      {
+        "x": 4.0,
+        "y": 1.681792830507429
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_negative-02-074d194a",
+    "family": "pf_domain_negative",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((-((3))))))^(-2)))))+((1)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 4.0
+      },
+      {
+        "x": -1.0,
+        "y": 1.75
+      },
+      {
+        "x": 0.0,
+        "y": 1.3333333333333333
+      },
+      {
+        "x": 0.25,
+        "y": 1.2840236686390532
+      },
+      {
+        "x": 1.0,
+        "y": 1.1875
+      },
+      {
+        "x": 2.0,
+        "y": 1.12
+      },
+      {
+        "x": 4.0,
+        "y": 1.0612244897959184
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_root-02-30460447",
+    "family": "pf_domain_root",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "((((x)-((-((3))))))^(1/2))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": 1.4142135623730951
+      },
+      {
+        "x": 0.0,
+        "y": 1.7320508075688772
+      },
+      {
+        "x": 0.25,
+        "y": 1.8027756377319946
+      },
+      {
+        "x": 1.0,
+        "y": 2.0
+      },
+      {
+        "x": 2.0,
+        "y": 2.23606797749979
+      },
+      {
+        "x": 4.0,
+        "y": 2.6457513110645907
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_negative-03-a495b3d4",
+    "family": "pf_domain_negative",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((-((2))))))^(-3)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -0.125
+      },
+      {
+        "x": -1.0,
+        "y": 1.0
+      },
+      {
+        "x": 0.0,
+        "y": 0.125
+      },
+      {
+        "x": 0.25,
+        "y": 0.0877914951989026
+      },
+      {
+        "x": 1.0,
+        "y": 0.037037037037037035
+      },
+      {
+        "x": 2.0,
+        "y": 0.015625
+      },
+      {
+        "x": 4.0,
+        "y": 0.004629629629629629
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_root-03-72406f63",
+    "family": "pf_domain_root",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "((((x)-((-((2))))))^(1/4))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": 1.0
+      },
+      {
+        "x": 0.0,
+        "y": 1.189207115002721
+      },
+      {
+        "x": 0.25,
+        "y": 1.224744871391589
+      },
+      {
+        "x": 1.0,
+        "y": 1.3160740129524924
+      },
+      {
+        "x": 2.0,
+        "y": 1.4142135623730951
+      },
+      {
+        "x": 4.0,
+        "y": 1.5650845800732873
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_negative-04-158494eb",
+    "family": "pf_domain_negative",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((-((1))))))^(-2)))))+((-((1)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -0.7777777777777778
+      },
+      {
+        "x": -1.0,
+        "y": null
+      },
+      {
+        "x": 0.0,
+        "y": 1.0
+      },
+      {
+        "x": 0.25,
+        "y": 0.28
+      },
+      {
+        "x": 1.0,
+        "y": -0.5
+      },
+      {
+        "x": 2.0,
+        "y": -0.7777777777777778
+      },
+      {
+        "x": 4.0,
+        "y": -0.92
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_root-04-63ab65ce",
+    "family": "pf_domain_root",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "((((x)-((-((1))))))^(1/2))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": 0.0
+      },
+      {
+        "x": 0.0,
+        "y": 1.0
+      },
+      {
+        "x": 0.25,
+        "y": 1.118033988749895
+      },
+      {
+        "x": 1.0,
+        "y": 1.4142135623730951
+      },
+      {
+        "x": 2.0,
+        "y": 1.7320508075688772
+      },
+      {
+        "x": 4.0,
+        "y": 2.23606797749979
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_negative-05-eeed63b8",
+    "family": "pf_domain_negative",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((0))))^(-3)))))+((-((2)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -2.046875
+      },
+      {
+        "x": -1.0,
+        "y": -5.0
+      },
+      {
+        "x": 0.0,
+        "y": null
+      },
+      {
+        "x": 0.25,
+        "y": 190.0
+      },
+      {
+        "x": 1.0,
+        "y": 1.0
+      },
+      {
+        "x": 2.0,
+        "y": -1.625
+      },
+      {
+        "x": 4.0,
+        "y": -1.953125
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_root-05-982fb325",
+    "family": "pf_domain_root",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "((((x)-((0))))^(1/4))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": null
+      },
+      {
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "x": 0.25,
+        "y": 0.7071067811865476
+      },
+      {
+        "x": 1.0,
+        "y": 1.0
+      },
+      {
+        "x": 2.0,
+        "y": 1.189207115002721
+      },
+      {
+        "x": 4.0,
+        "y": 1.4142135623730951
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_negative-06-1f4c46f7",
+    "family": "pf_domain_negative",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((1))))^(-2)))))+((-((3)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -2.96
+      },
+      {
+        "x": -1.0,
+        "y": -2.75
+      },
+      {
+        "x": 0.0,
+        "y": -2.0
+      },
+      {
+        "x": 0.25,
+        "y": -1.2222222222222223
+      },
+      {
+        "x": 1.0,
+        "y": null
+      },
+      {
+        "x": 2.0,
+        "y": -2.0
+      },
+      {
+        "x": 4.0,
+        "y": -2.888888888888889
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_root-06-f28cad41",
+    "family": "pf_domain_root",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "((((x)-((1))))^(1/2))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": null
+      },
+      {
+        "x": 0.0,
+        "y": null
+      },
+      {
+        "x": 0.25,
+        "y": null
+      },
+      {
+        "x": 1.0,
+        "y": 0.0
+      },
+      {
+        "x": 2.0,
+        "y": 1.0
+      },
+      {
+        "x": 4.0,
+        "y": 1.7320508075688772
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_negative-07-033521a8",
+    "family": "pf_domain_negative",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((2))))^(-3)))))+((-((4)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -4.0092592592592595
+      },
+      {
+        "x": -1.0,
+        "y": -4.074074074074074
+      },
+      {
+        "x": 0.0,
+        "y": -4.25
+      },
+      {
+        "x": 0.25,
+        "y": -4.373177842565598
+      },
+      {
+        "x": 1.0,
+        "y": -6.0
+      },
+      {
+        "x": 2.0,
+        "y": null
+      },
+      {
+        "x": 4.0,
+        "y": -3.75
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_root-07-8afece44",
+    "family": "pf_domain_root",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "((((x)-((2))))^(1/4))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": null
+      },
+      {
+        "x": 0.0,
+        "y": null
+      },
+      {
+        "x": 0.25,
+        "y": null
+      },
+      {
+        "x": 1.0,
+        "y": null
+      },
+      {
+        "x": 2.0,
+        "y": 0.0
+      },
+      {
+        "x": 4.0,
+        "y": 1.189207115002721
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_negative-08-0d5f3987",
+    "family": "pf_domain_negative",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((3))))^(-2)))))+((-((5)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -4.938775510204081
+      },
+      {
+        "x": -1.0,
+        "y": -4.8125
+      },
+      {
+        "x": 0.0,
+        "y": -4.666666666666667
+      },
+      {
+        "x": 0.25,
+        "y": -4.603305785123967
+      },
+      {
+        "x": 1.0,
+        "y": -4.25
+      },
+      {
+        "x": 2.0,
+        "y": -2.0
+      },
+      {
+        "x": 4.0,
+        "y": -2.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_root-08-f8844224",
+    "family": "pf_domain_root",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "((((x)-((3))))^(1/2))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": null
+      },
+      {
+        "x": 0.0,
+        "y": null
+      },
+      {
+        "x": 0.25,
+        "y": null
+      },
+      {
+        "x": 1.0,
+        "y": null
+      },
+      {
+        "x": 2.0,
+        "y": null
+      },
+      {
+        "x": 4.0,
+        "y": 1.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_negative-09-901cdd39",
+    "family": "pf_domain_negative",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((4))))^(-3)))))+((-((6)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -6.001953125
+      },
+      {
+        "x": -1.0,
+        "y": -6.008
+      },
+      {
+        "x": 0.0,
+        "y": -6.015625
+      },
+      {
+        "x": 0.25,
+        "y": -6.018962962962963
+      },
+      {
+        "x": 1.0,
+        "y": -6.037037037037037
+      },
+      {
+        "x": 2.0,
+        "y": -6.125
+      },
+      {
+        "x": 4.0,
+        "y": null
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_root-09-4be68a02",
+    "family": "pf_domain_root",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "((((x)-((4))))^(1/4))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": null
+      },
+      {
+        "x": 0.0,
+        "y": null
+      },
+      {
+        "x": 0.25,
+        "y": null
+      },
+      {
+        "x": 1.0,
+        "y": null
+      },
+      {
+        "x": 2.0,
+        "y": null
+      },
+      {
+        "x": 4.0,
+        "y": 0.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_negative-10-7c40eba9",
+    "family": "pf_domain_negative",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((5))))^(-2)))))+((-((7)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -6.9753086419753085
+      },
+      {
+        "x": -1.0,
+        "y": -6.944444444444445
+      },
+      {
+        "x": 0.0,
+        "y": -6.92
+      },
+      {
+        "x": 0.25,
+        "y": -6.911357340720222
+      },
+      {
+        "x": 1.0,
+        "y": -6.875
+      },
+      {
+        "x": 2.0,
+        "y": -6.777777777777778
+      },
+      {
+        "x": 4.0,
+        "y": -5.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_domain_root-10-e07d7206",
+    "family": "pf_domain_root",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "((((x)-((5))))^(1/2))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": null
+      },
+      {
+        "x": -1.0,
+        "y": null
+      },
+      {
+        "x": 0.0,
+        "y": null
+      },
+      {
+        "x": 0.25,
+        "y": null
+      },
+      {
+        "x": 1.0,
+        "y": null
+      },
+      {
+        "x": 2.0,
+        "y": null
+      },
+      {
+        "x": 4.0,
+        "y": null
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_even-01-ffe6fd0e",
+    "family": "pf_range_even",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((-((2))))*(((((x)-((-((4))))))^(4)))))+((2)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 2.0
+      },
+      {
+        "x": -1.0,
+        "y": -160.0
+      },
+      {
+        "x": 0.0,
+        "y": -510.0
+      },
+      {
+        "x": 0.25,
+        "y": -650.5078125
+      },
+      {
+        "x": 1.0,
+        "y": -1248.0
+      },
+      {
+        "x": 2.0,
+        "y": -2590.0
+      },
+      {
+        "x": 4.0,
+        "y": -8190.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_odd-01-d5dd67e9",
+    "family": "pf_range_odd",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((-((2))))*(((((x)-((-((4))))))^(3)))))+((2)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 2.0
+      },
+      {
+        "x": -1.0,
+        "y": -52.0
+      },
+      {
+        "x": 0.0,
+        "y": -126.0
+      },
+      {
+        "x": 0.25,
+        "y": -151.53125
+      },
+      {
+        "x": 1.0,
+        "y": -248.0
+      },
+      {
+        "x": 2.0,
+        "y": -430.0
+      },
+      {
+        "x": 4.0,
+        "y": -1022.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_even-02-b71c29d8",
+    "family": "pf_range_even",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((-((3))))))^(4)))))+((1)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 4.0
+      },
+      {
+        "x": -1.0,
+        "y": 49.0
+      },
+      {
+        "x": 0.0,
+        "y": 244.0
+      },
+      {
+        "x": 0.25,
+        "y": 335.69921875
+      },
+      {
+        "x": 1.0,
+        "y": 769.0
+      },
+      {
+        "x": 2.0,
+        "y": 1876.0
+      },
+      {
+        "x": 4.0,
+        "y": 7204.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_odd-02-435e0ccf",
+    "family": "pf_range_odd",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((-((3))))))^(3)))))+((1)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -2.0
+      },
+      {
+        "x": -1.0,
+        "y": 25.0
+      },
+      {
+        "x": 0.0,
+        "y": 82.0
+      },
+      {
+        "x": 0.25,
+        "y": 103.984375
+      },
+      {
+        "x": 1.0,
+        "y": 193.0
+      },
+      {
+        "x": 2.0,
+        "y": 376.0
+      },
+      {
+        "x": 4.0,
+        "y": 1030.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_even-03-81e2a12a",
+    "family": "pf_range_even",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((-((1))))*(((((x)-((-((2))))))^(4)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -16.0
+      },
+      {
+        "x": -1.0,
+        "y": -1.0
+      },
+      {
+        "x": 0.0,
+        "y": -16.0
+      },
+      {
+        "x": 0.25,
+        "y": -25.62890625
+      },
+      {
+        "x": 1.0,
+        "y": -81.0
+      },
+      {
+        "x": 2.0,
+        "y": -256.0
+      },
+      {
+        "x": 4.0,
+        "y": -1296.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_odd-03-7d1b81d4",
+    "family": "pf_range_odd",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((-((1))))*(((((x)-((-((2))))))^(3)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 8.0
+      },
+      {
+        "x": -1.0,
+        "y": -1.0
+      },
+      {
+        "x": 0.0,
+        "y": -8.0
+      },
+      {
+        "x": 0.25,
+        "y": -11.390625
+      },
+      {
+        "x": 1.0,
+        "y": -27.0
+      },
+      {
+        "x": 2.0,
+        "y": -64.0
+      },
+      {
+        "x": 4.0,
+        "y": -216.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_even-04-71ea1b31",
+    "family": "pf_range_even",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((-((1))))))^(4)))))+((-((1)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 161.0
+      },
+      {
+        "x": -1.0,
+        "y": -1.0
+      },
+      {
+        "x": 0.0,
+        "y": 1.0
+      },
+      {
+        "x": 0.25,
+        "y": 3.8828125
+      },
+      {
+        "x": 1.0,
+        "y": 31.0
+      },
+      {
+        "x": 2.0,
+        "y": 161.0
+      },
+      {
+        "x": 4.0,
+        "y": 1249.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_odd-04-4eb86a95",
+    "family": "pf_range_odd",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((-((1))))))^(3)))))+((-((1)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -55.0
+      },
+      {
+        "x": -1.0,
+        "y": -1.0
+      },
+      {
+        "x": 0.0,
+        "y": 1.0
+      },
+      {
+        "x": 0.25,
+        "y": 2.90625
+      },
+      {
+        "x": 1.0,
+        "y": 15.0
+      },
+      {
+        "x": 2.0,
+        "y": 53.0
+      },
+      {
+        "x": 4.0,
+        "y": 249.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_even-05-b556c113",
+    "family": "pf_range_even",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((-((3))))*(((((x)-((0))))^(4)))))+((-((2)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -770.0
+      },
+      {
+        "x": -1.0,
+        "y": -5.0
+      },
+      {
+        "x": 0.0,
+        "y": -2.0
+      },
+      {
+        "x": 0.25,
+        "y": -2.01171875
+      },
+      {
+        "x": 1.0,
+        "y": -5.0
+      },
+      {
+        "x": 2.0,
+        "y": -50.0
+      },
+      {
+        "x": 4.0,
+        "y": -770.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_odd-05-80f73bc4",
+    "family": "pf_range_odd",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((-((3))))*(((((x)-((0))))^(3)))))+((-((2)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 190.0
+      },
+      {
+        "x": -1.0,
+        "y": 1.0
+      },
+      {
+        "x": 0.0,
+        "y": -2.0
+      },
+      {
+        "x": 0.25,
+        "y": -2.046875
+      },
+      {
+        "x": 1.0,
+        "y": -5.0
+      },
+      {
+        "x": 2.0,
+        "y": -26.0
+      },
+      {
+        "x": 4.0,
+        "y": -194.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_even-06-eca9e216",
+    "family": "pf_range_even",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((1))))^(4)))))+((-((3)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 622.0
+      },
+      {
+        "x": -1.0,
+        "y": 13.0
+      },
+      {
+        "x": 0.0,
+        "y": -2.0
+      },
+      {
+        "x": 0.25,
+        "y": -2.68359375
+      },
+      {
+        "x": 1.0,
+        "y": -3.0
+      },
+      {
+        "x": 2.0,
+        "y": -2.0
+      },
+      {
+        "x": 4.0,
+        "y": 78.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_odd-06-15aae0af",
+    "family": "pf_range_odd",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((1))))^(3)))))+((-((3)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -128.0
+      },
+      {
+        "x": -1.0,
+        "y": -11.0
+      },
+      {
+        "x": 0.0,
+        "y": -4.0
+      },
+      {
+        "x": 0.25,
+        "y": -3.421875
+      },
+      {
+        "x": 1.0,
+        "y": -3.0
+      },
+      {
+        "x": 2.0,
+        "y": -2.0
+      },
+      {
+        "x": 4.0,
+        "y": 24.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_even-07-c63bf6dd",
+    "family": "pf_range_even",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((-((2))))*(((((x)-((2))))^(4)))))+((-((4)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -2596.0
+      },
+      {
+        "x": -1.0,
+        "y": -166.0
+      },
+      {
+        "x": 0.0,
+        "y": -36.0
+      },
+      {
+        "x": 0.25,
+        "y": -22.7578125
+      },
+      {
+        "x": 1.0,
+        "y": -6.0
+      },
+      {
+        "x": 2.0,
+        "y": -4.0
+      },
+      {
+        "x": 4.0,
+        "y": -36.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_odd-07-7ca93816",
+    "family": "pf_range_odd",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((-((2))))*(((((x)-((2))))^(3)))))+((-((4)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 428.0
+      },
+      {
+        "x": -1.0,
+        "y": 50.0
+      },
+      {
+        "x": 0.0,
+        "y": 12.0
+      },
+      {
+        "x": 0.25,
+        "y": 6.71875
+      },
+      {
+        "x": 1.0,
+        "y": -2.0
+      },
+      {
+        "x": 2.0,
+        "y": -4.0
+      },
+      {
+        "x": 4.0,
+        "y": -20.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_even-08-207fe54f",
+    "family": "pf_range_even",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((3))))^(4)))))+((-((5)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 7198.0
+      },
+      {
+        "x": -1.0,
+        "y": 763.0
+      },
+      {
+        "x": 0.0,
+        "y": 238.0
+      },
+      {
+        "x": 0.25,
+        "y": 166.57421875
+      },
+      {
+        "x": 1.0,
+        "y": 43.0
+      },
+      {
+        "x": 2.0,
+        "y": -2.0
+      },
+      {
+        "x": 4.0,
+        "y": -2.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_odd-08-9a920cf4",
+    "family": "pf_range_odd",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((3))))^(3)))))+((-((5)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -1034.0
+      },
+      {
+        "x": -1.0,
+        "y": -197.0
+      },
+      {
+        "x": 0.0,
+        "y": -86.0
+      },
+      {
+        "x": 0.25,
+        "y": -67.390625
+      },
+      {
+        "x": 1.0,
+        "y": -29.0
+      },
+      {
+        "x": 2.0,
+        "y": -8.0
+      },
+      {
+        "x": 4.0,
+        "y": -2.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_even-09-8db6739f",
+    "family": "pf_range_even",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((-((1))))*(((((x)-((4))))^(4)))))+((-((6)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -4102.0
+      },
+      {
+        "x": -1.0,
+        "y": -631.0
+      },
+      {
+        "x": 0.0,
+        "y": -262.0
+      },
+      {
+        "x": 0.25,
+        "y": -203.75390625
+      },
+      {
+        "x": 1.0,
+        "y": -87.0
+      },
+      {
+        "x": 2.0,
+        "y": -22.0
+      },
+      {
+        "x": 4.0,
+        "y": -6.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_odd-09-11231c51",
+    "family": "pf_range_odd",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((-((1))))*(((((x)-((4))))^(3)))))+((-((6)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 506.0
+      },
+      {
+        "x": -1.0,
+        "y": 119.0
+      },
+      {
+        "x": 0.0,
+        "y": 58.0
+      },
+      {
+        "x": 0.25,
+        "y": 46.734375
+      },
+      {
+        "x": 1.0,
+        "y": 21.0
+      },
+      {
+        "x": 2.0,
+        "y": 2.0
+      },
+      {
+        "x": 4.0,
+        "y": -6.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_even-10-3147eda5",
+    "family": "pf_range_even",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((5))))^(4)))))+((-((7)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 13115.0
+      },
+      {
+        "x": -1.0,
+        "y": 2585.0
+      },
+      {
+        "x": 0.0,
+        "y": 1243.0
+      },
+      {
+        "x": 0.25,
+        "y": 1011.1328125
+      },
+      {
+        "x": 1.0,
+        "y": 505.0
+      },
+      {
+        "x": 2.0,
+        "y": 155.0
+      },
+      {
+        "x": 4.0,
+        "y": -5.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_range_odd-10-862f8f0b",
+    "family": "pf_range_odd",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((5))))^(3)))))+((-((7)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -1465.0
+      },
+      {
+        "x": -1.0,
+        "y": -439.0
+      },
+      {
+        "x": 0.0,
+        "y": -257.0
+      },
+      {
+        "x": 0.25,
+        "y": -221.34375
+      },
+      {
+        "x": 1.0,
+        "y": -135.0
+      },
+      {
+        "x": 2.0,
+        "y": -61.0
+      },
+      {
+        "x": 4.0,
+        "y": -9.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_parity-01-94aa374b",
+    "family": "pf_parity",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((0))))^(3)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -128.0
+      },
+      {
+        "x": -1.0,
+        "y": -2.0
+      },
+      {
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "x": 0.25,
+        "y": 0.03125
+      },
+      {
+        "x": 1.0,
+        "y": 2.0
+      },
+      {
+        "x": 2.0,
+        "y": 16.0
+      },
+      {
+        "x": 4.0,
+        "y": 128.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_shifted-01-e38f889d",
+    "family": "pf_shifted",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((2))))^(3)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -432.0
+      },
+      {
+        "x": -1.0,
+        "y": -54.0
+      },
+      {
+        "x": 0.0,
+        "y": -16.0
+      },
+      {
+        "x": 0.25,
+        "y": -10.71875
+      },
+      {
+        "x": 1.0,
+        "y": -2.0
+      },
+      {
+        "x": 2.0,
+        "y": 0.0
+      },
+      {
+        "x": 4.0,
+        "y": 16.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_parity-02-bb8da295",
+    "family": "pf_parity",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((0))))^(2)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 48.0
+      },
+      {
+        "x": -1.0,
+        "y": 3.0
+      },
+      {
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "x": 0.25,
+        "y": 0.1875
+      },
+      {
+        "x": 1.0,
+        "y": 3.0
+      },
+      {
+        "x": 2.0,
+        "y": 12.0
+      },
+      {
+        "x": 4.0,
+        "y": 48.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_shifted-02-39e6510c",
+    "family": "pf_shifted",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((3))))^(2)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 147.0
+      },
+      {
+        "x": -1.0,
+        "y": 48.0
+      },
+      {
+        "x": 0.0,
+        "y": 27.0
+      },
+      {
+        "x": 0.25,
+        "y": 22.6875
+      },
+      {
+        "x": 1.0,
+        "y": 12.0
+      },
+      {
+        "x": 2.0,
+        "y": 3.0
+      },
+      {
+        "x": 4.0,
+        "y": 3.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_parity-03-52726720",
+    "family": "pf_parity",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((4))*(((((x)-((0))))^(3)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -256.0
+      },
+      {
+        "x": -1.0,
+        "y": -4.0
+      },
+      {
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "x": 0.25,
+        "y": 0.0625
+      },
+      {
+        "x": 1.0,
+        "y": 4.0
+      },
+      {
+        "x": 2.0,
+        "y": 32.0
+      },
+      {
+        "x": 4.0,
+        "y": 256.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_shifted-03-a78ccc8d",
+    "family": "pf_shifted",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((4))))^(3)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -512.0
+      },
+      {
+        "x": -1.0,
+        "y": -125.0
+      },
+      {
+        "x": 0.0,
+        "y": -64.0
+      },
+      {
+        "x": 0.25,
+        "y": -52.734375
+      },
+      {
+        "x": 1.0,
+        "y": -27.0
+      },
+      {
+        "x": 2.0,
+        "y": -8.0
+      },
+      {
+        "x": 4.0,
+        "y": 0.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_parity-04-c63a5f12",
+    "family": "pf_parity",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((5))*(((((x)-((0))))^(2)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 80.0
+      },
+      {
+        "x": -1.0,
+        "y": 5.0
+      },
+      {
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "x": 0.25,
+        "y": 0.3125
+      },
+      {
+        "x": 1.0,
+        "y": 5.0
+      },
+      {
+        "x": 2.0,
+        "y": 20.0
+      },
+      {
+        "x": 4.0,
+        "y": 80.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_shifted-04-4cfa1de7",
+    "family": "pf_shifted",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((5))))^(2)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 162.0
+      },
+      {
+        "x": -1.0,
+        "y": 72.0
+      },
+      {
+        "x": 0.0,
+        "y": 50.0
+      },
+      {
+        "x": 0.25,
+        "y": 45.125
+      },
+      {
+        "x": 1.0,
+        "y": 32.0
+      },
+      {
+        "x": 2.0,
+        "y": 18.0
+      },
+      {
+        "x": 4.0,
+        "y": 2.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_parity-05-4fd2de5b",
+    "family": "pf_parity",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((6))*(((((x)-((0))))^(3)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -384.0
+      },
+      {
+        "x": -1.0,
+        "y": -6.0
+      },
+      {
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "x": 0.25,
+        "y": 0.09375
+      },
+      {
+        "x": 1.0,
+        "y": 6.0
+      },
+      {
+        "x": 2.0,
+        "y": 48.0
+      },
+      {
+        "x": 4.0,
+        "y": 384.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_shifted-05-6ace8bc1",
+    "family": "pf_shifted",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((6))))^(3)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -3000.0
+      },
+      {
+        "x": -1.0,
+        "y": -1029.0
+      },
+      {
+        "x": 0.0,
+        "y": -648.0
+      },
+      {
+        "x": 0.25,
+        "y": -570.328125
+      },
+      {
+        "x": 1.0,
+        "y": -375.0
+      },
+      {
+        "x": 2.0,
+        "y": -192.0
+      },
+      {
+        "x": 4.0,
+        "y": -24.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_parity-06-f04adfb0",
+    "family": "pf_parity",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((7))*(((((x)-((0))))^(2)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 112.0
+      },
+      {
+        "x": -1.0,
+        "y": 7.0
+      },
+      {
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "x": 0.25,
+        "y": 0.4375
+      },
+      {
+        "x": 1.0,
+        "y": 7.0
+      },
+      {
+        "x": 2.0,
+        "y": 28.0
+      },
+      {
+        "x": 4.0,
+        "y": 112.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_shifted-06-d03ddd7d",
+    "family": "pf_shifted",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((7))))^(2)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 121.0
+      },
+      {
+        "x": -1.0,
+        "y": 64.0
+      },
+      {
+        "x": 0.0,
+        "y": 49.0
+      },
+      {
+        "x": 0.25,
+        "y": 45.5625
+      },
+      {
+        "x": 1.0,
+        "y": 36.0
+      },
+      {
+        "x": 2.0,
+        "y": 25.0
+      },
+      {
+        "x": 4.0,
+        "y": 9.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_parity-07-f73c7244",
+    "family": "pf_parity",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((8))*(((((x)-((0))))^(3)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -512.0
+      },
+      {
+        "x": -1.0,
+        "y": -8.0
+      },
+      {
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "x": 0.25,
+        "y": 0.125
+      },
+      {
+        "x": 1.0,
+        "y": 8.0
+      },
+      {
+        "x": 2.0,
+        "y": 64.0
+      },
+      {
+        "x": 4.0,
+        "y": 512.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_shifted-07-1e2e4f99",
+    "family": "pf_shifted",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((8))))^(3)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -3456.0
+      },
+      {
+        "x": -1.0,
+        "y": -1458.0
+      },
+      {
+        "x": 0.0,
+        "y": -1024.0
+      },
+      {
+        "x": 0.25,
+        "y": -930.96875
+      },
+      {
+        "x": 1.0,
+        "y": -686.0
+      },
+      {
+        "x": 2.0,
+        "y": -432.0
+      },
+      {
+        "x": 4.0,
+        "y": -128.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_parity-08-fc9af016",
+    "family": "pf_parity",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((9))*(((((x)-((0))))^(2)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 144.0
+      },
+      {
+        "x": -1.0,
+        "y": 9.0
+      },
+      {
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "x": 0.25,
+        "y": 0.5625
+      },
+      {
+        "x": 1.0,
+        "y": 9.0
+      },
+      {
+        "x": 2.0,
+        "y": 36.0
+      },
+      {
+        "x": 4.0,
+        "y": 144.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_shifted-08-77a165ee",
+    "family": "pf_shifted",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((9))))^(2)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 507.0
+      },
+      {
+        "x": -1.0,
+        "y": 300.0
+      },
+      {
+        "x": 0.0,
+        "y": 243.0
+      },
+      {
+        "x": 0.25,
+        "y": 229.6875
+      },
+      {
+        "x": 1.0,
+        "y": 192.0
+      },
+      {
+        "x": 2.0,
+        "y": 147.0
+      },
+      {
+        "x": 4.0,
+        "y": 75.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_parity-09-a4d192f3",
+    "family": "pf_parity",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((10))*(((((x)-((0))))^(3)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -640.0
+      },
+      {
+        "x": -1.0,
+        "y": -10.0
+      },
+      {
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "x": 0.25,
+        "y": 0.15625
+      },
+      {
+        "x": 1.0,
+        "y": 10.0
+      },
+      {
+        "x": 2.0,
+        "y": 80.0
+      },
+      {
+        "x": 4.0,
+        "y": 640.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_shifted-09-5d8ff80a",
+    "family": "pf_shifted",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((10))))^(3)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": -2744.0
+      },
+      {
+        "x": -1.0,
+        "y": -1331.0
+      },
+      {
+        "x": 0.0,
+        "y": -1000.0
+      },
+      {
+        "x": 0.25,
+        "y": -926.859375
+      },
+      {
+        "x": 1.0,
+        "y": -729.0
+      },
+      {
+        "x": 2.0,
+        "y": -512.0
+      },
+      {
+        "x": 4.0,
+        "y": -216.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_parity-10-c034678f",
+    "family": "pf_parity",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((11))*(((((x)-((0))))^(2)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 176.0
+      },
+      {
+        "x": -1.0,
+        "y": 11.0
+      },
+      {
+        "x": 0.0,
+        "y": 0.0
+      },
+      {
+        "x": 0.25,
+        "y": 0.6875
+      },
+      {
+        "x": 1.0,
+        "y": 11.0
+      },
+      {
+        "x": 2.0,
+        "y": 44.0
+      },
+      {
+        "x": 4.0,
+        "y": 176.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_shifted-10-dd679128",
+    "family": "pf_shifted",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((11))))^(2)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 450.0
+      },
+      {
+        "x": -1.0,
+        "y": 288.0
+      },
+      {
+        "x": 0.0,
+        "y": 242.0
+      },
+      {
+        "x": 0.25,
+        "y": 231.125
+      },
+      {
+        "x": 1.0,
+        "y": 200.0
+      },
+      {
+        "x": 2.0,
+        "y": 162.0
+      },
+      {
+        "x": 4.0,
+        "y": 98.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_growth-01-74e10d95",
+    "family": "pf_growth",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((-((4))))))^(4)))))+((2)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 2.0
+      },
+      {
+        "x": -1.0,
+        "y": 164.0
+      },
+      {
+        "x": 0.0,
+        "y": 514.0
+      },
+      {
+        "x": 0.25,
+        "y": 654.5078125
+      },
+      {
+        "x": 1.0,
+        "y": 1252.0
+      },
+      {
+        "x": 2.0,
+        "y": 2594.0
+      },
+      {
+        "x": 4.0,
+        "y": 8194.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_coefficient-01-2928ae50",
+    "family": "pf_coefficient",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "graph_points": [
+          {
+            "x": 2.0,
+            "y": -16.0
+          }
+        ]
+      }
+    },
+    "checks": []
+  },
+  {
+    "id": "powers-roots-six-pf_growth-02-751d2aaf",
+    "family": "pf_growth",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((-((3))))))^(2)))))+((1)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 4.0
+      },
+      {
+        "x": -1.0,
+        "y": 13.0
+      },
+      {
+        "x": 0.0,
+        "y": 28.0
+      },
+      {
+        "x": 0.25,
+        "y": 32.6875
+      },
+      {
+        "x": 1.0,
+        "y": 49.0
+      },
+      {
+        "x": 2.0,
+        "y": 76.0
+      },
+      {
+        "x": 4.0,
+        "y": 148.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_coefficient-02-8a8ec5ca",
+    "family": "pf_coefficient",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "graph_points": [
+          {
+            "x": 3.0,
+            "y": 27.0
+          }
+        ]
+      }
+    },
+    "checks": []
+  },
+  {
+    "id": "powers-roots-six-pf_growth-03-75e6fcc6",
+    "family": "pf_growth",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((-((2))))))^(4)))))+((0)))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 16.0
+      },
+      {
+        "x": -1.0,
+        "y": 1.0
+      },
+      {
+        "x": 0.0,
+        "y": 16.0
+      },
+      {
+        "x": 0.25,
+        "y": 25.62890625
+      },
+      {
+        "x": 1.0,
+        "y": 81.0
+      },
+      {
+        "x": 2.0,
+        "y": 256.0
+      },
+      {
+        "x": 4.0,
+        "y": 1296.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_coefficient-03-b86f94d6",
+    "family": "pf_coefficient",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "graph_points": [
+          {
+            "x": 4.0,
+            "y": -64.0
+          }
+        ]
+      }
+    },
+    "checks": []
+  },
+  {
+    "id": "powers-roots-six-pf_growth-04-df86ae53",
+    "family": "pf_growth",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((-((1))))))^(2)))))+((-((1)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 17.0
+      },
+      {
+        "x": -1.0,
+        "y": -1.0
+      },
+      {
+        "x": 0.0,
+        "y": 1.0
+      },
+      {
+        "x": 0.25,
+        "y": 2.125
+      },
+      {
+        "x": 1.0,
+        "y": 7.0
+      },
+      {
+        "x": 2.0,
+        "y": 17.0
+      },
+      {
+        "x": 4.0,
+        "y": 49.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_coefficient-04-dbe82f3a",
+    "family": "pf_coefficient",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "graph_points": [
+          {
+            "x": 5.0,
+            "y": 50.0
+          }
+        ]
+      }
+    },
+    "checks": []
+  },
+  {
+    "id": "powers-roots-six-pf_growth-05-b2e15443",
+    "family": "pf_growth",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((0))))^(4)))))+((-((2)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 766.0
+      },
+      {
+        "x": -1.0,
+        "y": 1.0
+      },
+      {
+        "x": 0.0,
+        "y": -2.0
+      },
+      {
+        "x": 0.25,
+        "y": -1.98828125
+      },
+      {
+        "x": 1.0,
+        "y": 1.0
+      },
+      {
+        "x": 2.0,
+        "y": 46.0
+      },
+      {
+        "x": 4.0,
+        "y": 766.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_coefficient-05-4629754e",
+    "family": "pf_coefficient",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "graph_points": [
+          {
+            "x": 6.0,
+            "y": -648.0
+          }
+        ]
+      }
+    },
+    "checks": []
+  },
+  {
+    "id": "powers-roots-six-pf_growth-06-88918f11",
+    "family": "pf_growth",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((1))))^(2)))))+((-((3)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 22.0
+      },
+      {
+        "x": -1.0,
+        "y": 1.0
+      },
+      {
+        "x": 0.0,
+        "y": -2.0
+      },
+      {
+        "x": 0.25,
+        "y": -2.4375
+      },
+      {
+        "x": 1.0,
+        "y": -3.0
+      },
+      {
+        "x": 2.0,
+        "y": -2.0
+      },
+      {
+        "x": 4.0,
+        "y": 6.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_coefficient-06-2bb751f5",
+    "family": "pf_coefficient",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "graph_points": [
+          {
+            "x": 7.0,
+            "y": 49.0
+          }
+        ]
+      }
+    },
+    "checks": []
+  },
+  {
+    "id": "powers-roots-six-pf_growth-07-821a05c4",
+    "family": "pf_growth",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((2))))^(4)))))+((-((4)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 2588.0
+      },
+      {
+        "x": -1.0,
+        "y": 158.0
+      },
+      {
+        "x": 0.0,
+        "y": 28.0
+      },
+      {
+        "x": 0.25,
+        "y": 14.7578125
+      },
+      {
+        "x": 1.0,
+        "y": -2.0
+      },
+      {
+        "x": 2.0,
+        "y": -4.0
+      },
+      {
+        "x": 4.0,
+        "y": 28.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_coefficient-07-f64c4b8e",
+    "family": "pf_coefficient",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "graph_points": [
+          {
+            "x": 8.0,
+            "y": -1024.0
+          }
+        ]
+      }
+    },
+    "checks": []
+  },
+  {
+    "id": "powers-roots-six-pf_growth-08-07fea7dc",
+    "family": "pf_growth",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((3))*(((((x)-((3))))^(2)))))+((-((5)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 142.0
+      },
+      {
+        "x": -1.0,
+        "y": 43.0
+      },
+      {
+        "x": 0.0,
+        "y": 22.0
+      },
+      {
+        "x": 0.25,
+        "y": 17.6875
+      },
+      {
+        "x": 1.0,
+        "y": 7.0
+      },
+      {
+        "x": 2.0,
+        "y": -2.0
+      },
+      {
+        "x": 4.0,
+        "y": -2.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_coefficient-08-4910bab2",
+    "family": "pf_coefficient",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "graph_points": [
+          {
+            "x": 9.0,
+            "y": 243.0
+          }
+        ]
+      }
+    },
+    "checks": []
+  },
+  {
+    "id": "powers-roots-six-pf_growth-09-22bd1fad",
+    "family": "pf_growth",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((1))*(((((x)-((4))))^(4)))))+((-((6)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 4090.0
+      },
+      {
+        "x": -1.0,
+        "y": 619.0
+      },
+      {
+        "x": 0.0,
+        "y": 250.0
+      },
+      {
+        "x": 0.25,
+        "y": 191.75390625
+      },
+      {
+        "x": 1.0,
+        "y": 75.0
+      },
+      {
+        "x": 2.0,
+        "y": 10.0
+      },
+      {
+        "x": 4.0,
+        "y": -6.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_coefficient-09-0c1da93c",
+    "family": "pf_coefficient",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "graph_points": [
+          {
+            "x": 10.0,
+            "y": -1000.0
+          }
+        ]
+      }
+    },
+    "checks": []
+  },
+  {
+    "id": "powers-roots-six-pf_growth-10-43f294b9",
+    "family": "pf_growth",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "equations": [
+          "(((((2))*(((((x)-((5))))^(2)))))+((-((7)))))"
+        ]
+      }
+    },
+    "checks": [
+      {
+        "x": -4.0,
+        "y": 155.0
+      },
+      {
+        "x": -1.0,
+        "y": 65.0
+      },
+      {
+        "x": 0.0,
+        "y": 43.0
+      },
+      {
+        "x": 0.25,
+        "y": 38.125
+      },
+      {
+        "x": 1.0,
+        "y": 25.0
+      },
+      {
+        "x": 2.0,
+        "y": 11.0
+      },
+      {
+        "x": 4.0,
+        "y": -5.0
+      }
+    ]
+  },
+  {
+    "id": "powers-roots-six-pf_coefficient-10-a0912a85",
+    "family": "pf_coefficient",
+    "fingerprint": {
+      "version": 1,
+      "domains": [
+        "functions"
+      ],
+      "entities": [],
+      "intents": [
+        "show_graph"
+      ],
+      "extracted_data": {
+        "graph_points": [
+          {
+            "x": 11.0,
+            "y": 242.0
+          }
+        ]
+      }
+    },
+    "checks": []
+  }
+]
