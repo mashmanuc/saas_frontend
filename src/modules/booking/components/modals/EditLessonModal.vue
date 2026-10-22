@@ -145,6 +145,19 @@
                 :dictionaries="eventDetails.dictionaries"
               />
 
+              <!-- Серія (2026-10-22): «Лише цей урок» або «Цей і всі наступні» — лише коли після цього уроку є ще -->
+              <fieldset v-if="canDelete && hasFollowing" class="delete-scope" data-testid="event-delete-scope">
+                <legend class="field-label">{{ $t('calendar.editLesson.deleteScopeTitle') }}</legend>
+                <label class="delete-scope-option">
+                  <input v-model="deleteScope" type="radio" value="one" data-testid="event-delete-scope-one" />
+                  <span>{{ $t('calendar.editLesson.deleteScopeOne') }}</span>
+                </label>
+                <label class="delete-scope-option">
+                  <input v-model="deleteScope" type="radio" value="following" data-testid="event-delete-scope-following" />
+                  <span>{{ $t('calendar.editLesson.deleteScopeFollowing', { count: followingCount }) }}</span>
+                </label>
+              </fieldset>
+
               <div v-if="!canDelete" class="error-message">
                 <AlertCircleIcon class="w-5 h-5" />
                 <p>{{ $t('calendar.editLesson.cannotDelete') }}</p>
@@ -281,7 +294,7 @@
           :open="showConfirmDelete"
           stacked
           :title="$t('calendar.editLesson.confirmDelete')"
-          :message="$t('calendar.editLesson.confirmDeleteMessage', { student: eventDetails?.event?.clientName || '' })"
+          :message="confirmDeleteMessage"
           :confirm-text="$t('calendar.editLesson.delete')"
           :cancel-text="$t('common.cancel')"
           variant="danger"
@@ -349,6 +362,8 @@ const isCheckingConflicts = ref(false)
 const isRescheduling = ref(false)
 const error = ref<string | null>(null)
 const showConfirmDelete = ref(false)
+// «Цей і всі наступні уроки серії» (2026-10-22): скільки уроків піде — рахує сервер (оплачені й проведені не входять)
+const deleteScope = ref<'one' | 'following'>('one')
 const previewResult = ref<ReschedulePreviewResponse | null>(null)
 
 const editForm = ref({
@@ -389,6 +404,21 @@ const canEdit = computed(() => {
   return eventStart > new Date()
 })
 
+const followingCount = computed<number>(() => eventDetails.value?.event?.seriesFollowingCount || 0)
+const hasFollowing = computed(() => Boolean(eventDetails.value?.event?.seriesId) && followingCount.value > 1)
+
+const confirmDeleteMessage = computed(() => {
+  const student = eventDetails.value?.event?.clientName || ''
+  if (deleteScope.value === 'following' && hasFollowing.value) {
+    return t('calendar.editLesson.confirmDeleteFollowingMessage', {
+      student,
+      date: formatDateTime(eventDetails.value.event.start),
+      count: followingCount.value,
+    })
+  }
+  return t('calendar.editLesson.confirmDeleteMessage', { student })
+})
+
 const canDelete = computed(() => {
   if (!eventDetails.value) return false
   const event = eventDetails.value.event
@@ -424,6 +454,7 @@ watch(
     if (visible) {
       await loadEventDetails()
       activeTab.value = 'update'
+      deleteScope.value = 'one'
       isEditing.value = false
       previewResult.value = null
     } else {
@@ -522,8 +553,13 @@ async function confirmDelete() {
   error.value = null
   
   try {
-    await store.deleteEvent(props.eventId)
-    toast.success(t('calendar.success.deleted'))
+    if (deleteScope.value === 'following' && hasFollowing.value) {
+      const result = await store.deleteFollowingEvents(props.eventId)
+      toast.success(t('calendar.editLesson.deletedFollowing', { count: result?.cancelled ?? followingCount.value }))
+    } else {
+      await store.deleteEvent(props.eventId)
+      toast.success(t('calendar.success.deleted'))
+    }
     emit('deleted')
     emit('close')
   } catch (err: any) {
@@ -899,6 +935,22 @@ function handleClose() {
 .suggestion-item:hover {
   border-color: var(--accent);
   background: var(--color-accent-soft, #eff6ff);
+}
+
+.delete-scope {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.delete-scope-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
 }
 
 .error-message {

@@ -251,6 +251,15 @@ export const calendarV055Api = {
   },
 
   /**
+   * «Цей і всі наступні уроки серії» (2026-10-22): скасувати урок і всі наступні уроки його серії
+   */
+  async deleteFollowingEvents(payload: { id: number }): Promise<{ cancelled: number }> {
+    const response = await api.post('/v1/calendar/event/delete-following/', payload)
+
+    return response.data || response
+  },
+
+  /**
    * Get event details (v0.55)
    */
   async getEventDetails(id: number): Promise<{
