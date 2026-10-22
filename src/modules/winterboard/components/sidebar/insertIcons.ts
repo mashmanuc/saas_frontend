@@ -397,6 +397,33 @@ function rulerIcon(): VNode {
   ])
 }
 
+/** Косинець — прямокутний трикутник із віконцем; транспортир — півколо з поділками; циркуль — дві ніжки й ручка. */
+function setSquareIcon(): VNode {
+  return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: CUR, 'stroke-width': '1.5',
+    'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+    h('path', { d: 'M4 3v18h18z' }),
+    h('path', { d: 'M8 11v6h6z' }),
+  ])
+}
+
+function protractorIcon(): VNode {
+  return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: CUR, 'stroke-width': '1.5',
+    'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+    h('path', { d: 'M2 18a10 10 0 0 1 20 0z' }),
+    h('path', { d: 'M12 18v-2M12 8v1.5M5 11.5l1 1M19 11.5l-1 1' }),
+  ])
+}
+
+function compassIcon(): VNode {
+  return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: CUR, 'stroke-width': '1.5',
+    'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+    h('path', { d: 'M12 2v3' }),
+    h('circle', { cx: 12, cy: 6.5, r: 1.5 }),
+    h('path', { d: 'M11 8l-5 13M13 8l4.5 11.5' }),
+    h('path', { d: 'M17.5 19.5l.5 1.5' }),
+  ])
+}
+
 export const InsertIcon: FunctionalComponent<{ family: string; iconKey: string }> = (props) => {
   switch (props.family) {
     case 'stereo': return stereoIcon(props.iconKey)
@@ -409,7 +436,14 @@ export const InsertIcon: FunctionalComponent<{ family: string; iconKey: string }
     case 'evidence': return evidenceIcon(props.iconKey)
     case 'inequalities': return numberLineIcon()
     case 'scenes': return scenesIcon()
-    case 'instruments': return rulerIcon()
+    case 'instruments': {
+      // Функційний компонент без оголошених props: `:icon-key` у шаблоні приходить саме так, через дефіс.
+      const key = props.iconKey ?? (props as Record<string, unknown>)['icon-key']
+      if (key === 'set_square') return setSquareIcon()
+      if (key === 'protractor') return protractorIcon()
+      if (key === 'compass') return compassIcon()
+      return rulerIcon()
+    }
     default:
       return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: CUR, 'stroke-width': '1.5' },
         [h('rect', { x: 4, y: 4, width: 16, height: 16, rx: 2 })])

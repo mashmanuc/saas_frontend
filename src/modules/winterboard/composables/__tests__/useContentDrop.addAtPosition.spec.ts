@@ -65,6 +65,7 @@ import {
 import { MATH_SCENE_DRAG_MIME } from '../../types/mathScene'
 import { DEFAULT_MATH_SCENE_W, DEFAULT_MATH_SCENE_H } from '../../constants/mathSceneDefaults'
 import { RULER_DRAG_MIME } from '../../constants/rulerDefaults'
+import { COMPASS_DRAG_MIME, PROTRACTOR_DRAG_MIME, SET_SQUARE_DRAG_MIME } from '../../constants/draftingDefaults'
 import { createPinia, setActivePinia } from 'pinia'
 import { useWBStore } from '../../board/state/boardStore'
 
@@ -294,6 +295,46 @@ describe('useContentDrop.addAtPosition', () => {
     it('does NOT call onAssetAdd for an unrecognised MIME', () => {
       const { addAtPosition, onAssetAdd } = makeComposable()
       addAtPosition('application/x-unknown', '{}', DROP_POS)
+      expect(onAssetAdd).not.toHaveBeenCalled()
+    })
+  })
+
+  // ── транспортир, косинець, циркуль (2026-10-22) ────────────────────────────
+  describe('протрактор, косинець, циркуль', () => {
+    it('транспортир: радіус 6 см (480 × 272 при 40 px/см), центр — у точці вставки', () => {
+      const { onAssetAdd, addAtPosition } = makeComposable()
+      addAtPosition(PROTRACTOR_DRAG_MIME, '{}', DROP_POS)
+      const asset = onAssetAdd.mock.calls[0][0]
+      expect(asset).toMatchObject({ type: 'protractor', src: '', rotation: 0, locked: false, w: 480, h: 272 })
+      expect(asset.data).toBeUndefined()
+      expect([asset.x, asset.y]).toEqual([DROP_POS.x - 240, DROP_POS.y - 136])
+    })
+
+    it('косинець: катет 10 см (400 × 400)', () => {
+      const { onAssetAdd, addAtPosition } = makeComposable()
+      addAtPosition(SET_SQUARE_DRAG_MIME, '{}', DROP_POS)
+      expect(onAssetAdd.mock.calls[0][0]).toMatchObject({ type: 'set_square', w: 400, h: 400, x: DROP_POS.x - 200, y: DROP_POS.y - 200 })
+    })
+
+    it('циркуль: радіус 4 см (w = 160), висота — від ніжок 12 см', () => {
+      const { onAssetAdd, addAtPosition } = makeComposable()
+      addAtPosition(COMPASS_DRAG_MIME, '{}', DROP_POS)
+      expect(onAssetAdd.mock.calls[0][0]).toMatchObject({ type: 'compass', w: 160, h: 555, rotation: 0 })
+    })
+
+    it('розмір — від клітинки поточної дошки (gridSize 30 → 60 px/см)', () => {
+      setActivePinia(createPinia())
+      useWBStore().gridSize = 30
+      const { onAssetAdd, addAtPosition } = makeComposable()
+      addAtPosition(SET_SQUARE_DRAG_MIME, '{}', DROP_POS)
+      expect(onAssetAdd.mock.calls[0][0]).toMatchObject({ type: 'set_square', w: 600, h: 600 })
+      // клітинку повертаємо: сховище спільне для наступних тестів файлу
+      useWBStore().gridSize = 20
+    })
+
+    it('canDraw=false — нічого не вставляється', () => {
+      const { onAssetAdd, addAtPosition } = makeComposable(false)
+      for (const mime of [PROTRACTOR_DRAG_MIME, SET_SQUARE_DRAG_MIME, COMPASS_DRAG_MIME]) addAtPosition(mime, '{}', DROP_POS)
       expect(onAssetAdd).not.toHaveBeenCalled()
     })
   })

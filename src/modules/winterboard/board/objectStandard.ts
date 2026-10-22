@@ -193,6 +193,10 @@ export const BOARD_ASSET_STANDARD: Readonly<Record<string, BoardObjectStandardEn
   // дублюється, видаляється, блокується, міняє шар. Згортати в трей, розгортати ⛶ і ставити верхню панель
   // картки («— ⛶ ×») нічого — `minimizable`, `fullscreen` і `windowChrome` вимкнено.
   ruler: card('konva', { minimizable: false, windowChrome: false }),
+  // Транспортир, косинець і циркуль (2026-10-22, «інші подібно до лінійки») — той самий креслярський набір.
+  protractor: card('konva', { minimizable: false, windowChrome: false }),
+  set_square: card('konva', { minimizable: false, windowChrome: false }),
+  compass: card('konva', { minimizable: false, windowChrome: false }),
 
   // ── Медіа-оверлеї з власним drag ──────────────────────────────────────────
   // Аудіо не має ручок розміру (`WBCanvas.isResizableMedia` — лише video/youtube).

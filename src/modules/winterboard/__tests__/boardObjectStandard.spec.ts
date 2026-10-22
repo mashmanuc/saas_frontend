@@ -156,10 +156,12 @@ describe('INV-STD-4 · похідні списки не змінили пове�
   // TZ_REMOTE_SCENARIO §4.1). До того 05B виключав медіа: сховане відео грало б звук.
   // Цю умову тепер закриває правило «згорнутий програвач мовчить» (mediaMinimize.spec.ts).
   // Лінійка (2026-10-22) — свідомий виняток: креслярський інструмент, не вікно; згортати її нічого.
-  it('TLV2-05B + «Сценарій»: згортаються всі картки, медіа теж; лінійка — ні', () => {
+  it('TLV2-05B + «Сценарій»: згортаються всі картки, медіа теж; креслярські інструменти — ні', () => {
+    // 2026-10-22: лінійка, потім транспортир, косинець і циркуль — річ у руці вчителя, не вікно.
+    const instruments = ['ruler', 'protractor', 'set_square', 'compass']
     const minimizable = STANDARD_ASSET_TYPES.filter(t => assetCapabilities(t).minimizable).sort()
-    expect(minimizable).toEqual(STANDARD_ASSET_TYPES.filter(t => t !== 'ruler').sort())
-    expect(assetCapabilities('ruler').minimizable).toBe(false)
+    expect(minimizable).toEqual(STANDARD_ASSET_TYPES.filter(t => !instruments.includes(t)).sort())
+    for (const t of instruments) expect(assetCapabilities(t).minimizable, t).toBe(false)
     for (const media of ['audio_player', 'video_player', 'youtube_player']) {
       expect(assetCapabilities(media).minimizable, media).toBe(true)
     }

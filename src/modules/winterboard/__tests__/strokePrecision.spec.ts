@@ -69,7 +69,11 @@ describe('WBCanvas — округлює лише новий штрих, пере
   it('у handleMouseUp точки округлено одразу перед emit(\'stroke-add\')', () => {
     expect(src).toMatch(/stroke\.points = roundStrokePoints\(stroke\.points\)\s*\n\s*\n\s*emit\('stroke-add', stroke\)/)
   })
-  it('точку з сервера чи чужого штриха не чіпає: округлення лише в одному місці', () => {
-    expect(src.match(/roundStrokePoints\(/g)).toHaveLength(1)
+  it('точку з сервера чи чужого штриха не чіпає: округлення лише там, де народжується новий штрих', () => {
+    // Два місця, обидва — свіжий штрих перед emit('stroke-add'): перо (handleMouseUp) і дуга циркуля
+    // (endCompassGesture, 2026-10-22). Третє місце — сигнал, що округлюють чужі чи серверні точки.
+    expect(src.match(/roundStrokePoints\(/g)).toHaveLength(2)
+    const compass = src.slice(src.indexOf('function endCompassGesture'), src.indexOf('// ─── Background layer cache'))
+    expect(compass).toMatch(/emit\('stroke-add', \{[\s\S]*?points: roundStrokePoints\(g\.arc\.map/)
   })
 })

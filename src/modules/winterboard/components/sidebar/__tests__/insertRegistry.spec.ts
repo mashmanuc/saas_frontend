@@ -26,6 +26,7 @@ import { QUAD_DRAG_MIME } from '../../../constants/quadDefaults'
 import { NUMBER_LINE_DRAG_MIME } from '../../../constants/numberLineDefaults'
 import { MATH_SCENE_DRAG_MIME } from '../../../types/mathScene'
 import { RULER_DRAG_MIME } from '../../../constants/rulerDefaults'
+import { COMPASS_DRAG_MIME, PROTRACTOR_DRAG_MIME, SET_SQUARE_DRAG_MIME } from '../../../constants/draftingDefaults'
 import { TRIG_CIRCLE_DRAG_MIME } from '../../../constants/trigCircleDefaults'
 import { HELIX_DRAG_MIME } from '../../../constants/helixDefaults'
 import { TRIG_SOLVER_DRAG_MIME } from '../../../constants/trigSolverDefaults'
@@ -57,6 +58,9 @@ const RESOLVER_MIMES = new Set<string>([
   NUMBER_LINE_DRAG_MIME,   // number_line (Б-184)
   MATH_SCENE_DRAG_MIME,    // math_scene («Наочна сцена», 2026-10-20)
   RULER_DRAG_MIME,         // ruler (екранна лінійка, 2026-10-22)
+  SET_SQUARE_DRAG_MIME,    // set_square (косинець, 2026-10-22)
+  PROTRACTOR_DRAG_MIME,    // protractor (транспортир, 2026-10-22)
+  COMPASS_DRAG_MIME,       // compass (циркуль, 2026-10-22)
 ])
 
 function ids(entries: readonly InsertEntry[]): string[] {

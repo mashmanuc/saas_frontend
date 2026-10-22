@@ -11016,6 +11016,12 @@
       "ruler": "Ruler",
       "rulerSub": "Place it along a line and turn it by the little circle",
       "rulerUnit": "cm",
+      "setSquare": "Set square",
+      "setSquareSub": "Right angle and 45°; resize by a corner handle",
+      "protractor": "Protractor",
+      "protractorSub": "Centre on the vertex, zero on one side",
+      "compass": "Compass",
+      "compassSub": "Pencil tip — radius, handle — draw",
       "instruments": "Drawing tools"
     },
     "graphmash3d": {

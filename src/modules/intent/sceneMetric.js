@@ -37,6 +37,9 @@ export const NON_SCENE_INSERT_IDS = [
   ...MATH_SCENE_IDS.map((id) => `scenes.${id}`),
   // 2026-10-22: екранна лінійка — креслярський інструмент учителя, не сцена; Інтегралик її не вставляє.
   'instruments.ruler',
+  'instruments.set_square',
+  'instruments.protractor',
+  'instruments.compass',
 ]
 
 export function sceneMetricFromAction(action) {

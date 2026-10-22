@@ -267,6 +267,12 @@ export interface WBAsset {
      *  Нативний Konva-вузол; даних понад геометрію немає (x, y, w, h, rotation, locked). Масштаб — 1 клітинка
      *  сітки = 5 мм (`constants/rulerDefaults.ts`), кількість сантиметрів — з довжини `w`. */
     | 'ruler'
+    /** Транспортир, косинець 45° і циркуль (2026-10-22, власник: «Роби всі… інші подібно до лінійки… циркуль —
+     *  похожий на реальний»). Нативні Konva-вузли; даних понад геометрію немає (`constants/draftingDefaults.ts`).
+     *  Циркуль: `w` — радіус, `rotation` — напрям від голки до грифеля; креслить штатним штрихом пера. */
+    | 'protractor'
+    | 'set_square'
+    | 'compass'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer

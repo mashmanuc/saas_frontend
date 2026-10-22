@@ -30,6 +30,11 @@ import { NUMBER_LINE_DRAG_MIME, buildNumberLineAsset } from '../constants/number
 import { MATH_SCENE_DRAG_MIME, buildMathSceneAsset } from '../constants/mathSceneDefaults'
 import { isMathSceneId } from '../types/mathScene'
 import { RULER_DRAG_MIME, buildRulerAsset } from '../constants/rulerDefaults'
+import {
+  COMPASS_DRAG_MIME, PROTRACTOR_DRAG_MIME, SET_SQUARE_DRAG_MIME,
+  buildCompassAsset, buildProtractorAsset, buildSetSquareAsset, placeInsidePage,
+} from '../constants/draftingDefaults'
+import { PAGE_HEIGHT, PAGE_WIDTH } from './useCanvasResize'
 import { getActivePinia } from 'pinia'
 import { useWBStore } from '../board/state/boardStore'
 import { notifyError } from '@/utils/notify'
@@ -354,6 +359,14 @@ export function useContentDrop(options: UseContentDropOptions) {
     if (rulerRaw) {
       addAtPosition(RULER_DRAG_MIME, rulerRaw, screenToCanvas(event.clientX, event.clientY))
       return
+    }
+    // Транспортир, косинець, циркуль (2026-10-22) — так само, як лінійка.
+    for (const mime of [SET_SQUARE_DRAG_MIME, PROTRACTOR_DRAG_MIME, COMPASS_DRAG_MIME]) {
+      const raw = event.dataTransfer?.getData(mime)
+      if (raw) {
+        addAtPosition(mime, raw, screenToCanvas(event.clientX, event.clientY))
+        return
+      }
     }
 
 
@@ -1132,6 +1145,16 @@ export function useContentDrop(options: UseContentDropOptions) {
     if (mime === RULER_DRAG_MIME) {
       const gridSize = getActivePinia() ? useWBStore().gridSize : undefined
       onAssetAdd(buildRulerAsset(pos, gridSize))
+      return
+    }
+
+    // Транспортир, косинець, циркуль (2026-10-22) — розмір від клітинки дошки, як у лінійки. Payload порожній.
+    if (mime === SET_SQUARE_DRAG_MIME || mime === PROTRACTOR_DRAG_MIME || mime === COMPASS_DRAG_MIME) {
+      const store = getActivePinia() ? useWBStore() : null
+      const build = mime === SET_SQUARE_DRAG_MIME ? buildSetSquareAsset
+        : mime === PROTRACTOR_DRAG_MIME ? buildProtractorAsset : buildCompassAsset
+      const page = store?.currentPage
+      onAssetAdd(placeInsidePage(build(pos, store?.gridSize), page?.width ?? PAGE_WIDTH, page?.height ?? PAGE_HEIGHT))
       return
     }
 

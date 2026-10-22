@@ -34,6 +34,7 @@ import { MAP_CARD_DRAG_MIME, TIMELINE_CARD_DRAG_MIME } from '../../constants/evi
 import { NUMBER_LINE_DRAG_MIME } from '../../constants/numberLineDefaults'
 import { MATH_SCENE_DRAG_MIME } from '../../types/mathScene'
 import { RULER_DRAG_MIME } from '../../constants/rulerDefaults'
+import { COMPASS_DRAG_MIME, PROTRACTOR_DRAG_MIME, SET_SQUARE_DRAG_MIME } from '../../constants/draftingDefaults'
 import type { GeoPresetMeta } from '../../vendor/geo2d'
 
 /** Родина інструмента (секція каталогу). '2d'/'3d'/'geomash' зарезервовані під
@@ -311,6 +312,31 @@ const INSTRUMENT_INSERTS: InsertEntry[] = [
     iconKey: 'ruler', sublabelKey: 'winterboard.insertTiles.rulerSub',
     sublabel: 'Прикладіть до лінії й поверніть за кружечок',
     keywords: kw('лінійка', 'ruler', 'сантиметри', 'см', 'міліметри', 'виміряти', 'довжина', 'креслення'),
+  },
+  // Власник 22.10: «Роби всі… А всі інші подібно до лінійки. А циркуля… щоб був похожий на реальний».
+  {
+    id: 'instruments.set_square', family: 'instruments', category: 'instruments',
+    dragMime: SET_SQUARE_DRAG_MIME, payload: '{}',
+    labelKey: 'winterboard.insertTiles.setSquare', labelFallback: 'Косинець',
+    iconKey: 'set_square', sublabelKey: 'winterboard.insertTiles.setSquareSub',
+    sublabel: 'Прямий кут і 45°; розмір — за кутову ручку',
+    keywords: kw('косинець', 'кутник', 'трикутник', 'set square', 'прямий кут', '45', 'перпендикуляр', 'креслення'),
+  },
+  {
+    id: 'instruments.protractor', family: 'instruments', category: 'instruments',
+    dragMime: PROTRACTOR_DRAG_MIME, payload: '{}',
+    labelKey: 'winterboard.insertTiles.protractor', labelFallback: 'Транспортир',
+    iconKey: 'protractor', sublabelKey: 'winterboard.insertTiles.protractorSub',
+    sublabel: 'Центр — на вершину кута, нуль — на сторону',
+    keywords: kw('транспортир', 'protractor', 'кут', 'градуси', 'виміряти кут', 'побудувати кут', 'креслення'),
+  },
+  {
+    id: 'instruments.compass', family: 'instruments', category: 'instruments',
+    dragMime: COMPASS_DRAG_MIME, payload: '{}',
+    labelKey: 'winterboard.insertTiles.compass', labelFallback: 'Циркуль',
+    iconKey: 'compass', sublabelKey: 'winterboard.insertTiles.compassSub',
+    sublabel: 'За грифель — радіус, за ручку — креслити',
+    keywords: kw('циркуль', 'compass', 'коло', 'дуга', 'радіус', 'креслення'),
   },
 ]
 

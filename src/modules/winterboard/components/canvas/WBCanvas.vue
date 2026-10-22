@@ -107,6 +107,21 @@
             @transformstart="rememberRulerAnchor"
             @transformend="handleAssetTransformEnd(asset, $event)"
           />
+          <!-- Транспортир і косинець (2026-10-22, власник: «інші подібно до лінійки») — той самий шлях: клік і dragend
+               через шар, transformend — тут; розмір — кутовими ручками без перекосу. -->
+          <v-shape
+            v-else-if="asset.type === 'protractor' || asset.type === 'set_square'"
+            :config="getDraftingConfig(asset)"
+            @transformend="handleAssetTransformEnd(asset, $event)"
+          />
+          <!-- Циркуль (2026-10-22, власник: «щоб був похожий на реальний»). Konva його не тягне — власний жест
+               (startCompassGesture): за ручку — крутити навколо голки й креслити, за грифель — радіус, за решту —
+               перенести. Як і інші креслярські, натиски ловить лише з «Вибором». -->
+          <v-shape
+            v-else-if="asset.type === 'compass'"
+            :config="getCompassConfig(asset)"
+            @pointerdown="startCompassGesture(asset, $event)"
+          />
           <!-- ASSET_LIFECYCLE_SSOT Phase 2B: провалена картинка (INV-ASSET-3/8).
                Автор бачить ⚠ placeholder; учень/replay — нічого (наступна гілка). -->
           <v-group
@@ -170,6 +185,8 @@
 
       <!-- A4.2: Dedicated preview layer for shape previews during drawing -->
       <v-layer ref="previewLayerRef" :config="{ listening: false, clearBeforeDraw: true }">
+        <!-- Дуга, яку циркуль креслить просто зараз (після відпускання — штатний штрих пера) -->
+        <v-line v-if="compassArcPreview" :config="compassArcPreview" />
         <!-- Rectangle preview -->
         <v-rect
           v-if="konvaShapePreview.type === 'rectangle'"
@@ -1034,6 +1051,16 @@ import { nativeAssetsAboveOverlays } from '../../board/nativeAssetLayerOrder'
 // Екранна лінійка (2026-10-22): масштаб від клітинки дошки, малювання й утримання на аркуші.
 import { clampRulerWidth, rulerHeightPx, rulerMaxWidthPx, rulerMinWidthPx, rulerPxPerCm } from '../../constants/rulerDefaults'
 import { clampRulerBox, clampRulerCenter, drawRuler, type RulerBox } from '../../board/rulerShape'
+// Транспортир, косинець і циркуль (2026-10-22): розміри, малювання й жест циркуля.
+import {
+  PROTRACTOR_MAX_R_CM, PROTRACTOR_MIN_R_CM, SET_SQUARE_MAX_CM, SET_SQUARE_MIN_CM,
+  clampCompassRadius, clampProtractorRadius, clampSetSquareLeg, protractorSize,
+} from '../../constants/draftingDefaults'
+import { drawProtractor, drawSetSquare, type DraftingCanvas } from '../../board/draftingShapes'
+import {
+  angleDelta, angleFromNeedle, compassArcPoints, compassGeometry, compassHitPath, compassNeedle, compassPartAt,
+  compassRadiusLabel, drawCompass, type CompassPart,
+} from '../../board/compassShape'
 import { attachImageContextMenuProxy, topImageAssetAt } from '../../board/imageContextMenuProxy'
 import { installKonvaStaleDragGuard } from '../../board/konvaStaleDragGuard'
 import { nextPresentationScale, presentationScaleOf, withPresentationScale } from '../../board/cardPresentation'
@@ -2870,6 +2897,22 @@ function rulerBoundBox<B extends RulerBox>(oldBox: B, newBox: B): B {
   return clampRulerBox(oldBox, newBox, rulerMinWidthPx(g) * zoom, rulerMaxWidthPx(g) * zoom, active === 'middle-left')
 }
 
+/** Тип виділеного креслярського інструмента (транспортир, косинець, циркуль) або null. */
+const selectedInstrumentType = computed<string | null>(() => {
+  const id = selectedNode.value?.id?.()
+  const type = id ? assets.value.find((a) => a.id === id)?.type : undefined
+  return type === 'protractor' || type === 'set_square' || type === 'compass' ? type : null
+})
+
+/** Транспортир і косинець змінюють розмір лише цілком (кутові ручки) — у межах мін/макс, інакше рамка стоїть. */
+function uniformInstrumentBoundBox<B extends RulerBox>(oldBox: B, newBox: B): B {
+  const pxPerCm = rulerPxPerCm(wbStore.gridSize) * (props.zoom || 1)
+  const [min, max] = selectedInstrumentType.value === 'protractor'
+    ? [2 * PROTRACTOR_MIN_R_CM * pxPerCm, 2 * PROTRACTOR_MAX_R_CM * pxPerCm]
+    : [SET_SQUARE_MIN_CM * pxPerCm, SET_SQUARE_MAX_CM * pxPerCm]
+  return newBox.width >= min && newBox.width <= max ? newBox : oldBox
+}
+
 /** Ручка повороту лінійки — кружечок (підказка плитки: «поверніть за кружечок»). */
 function rulerAnchorStyle(anchor: Konva.Rect): void {
   if (anchor.hasName('rotater')) anchor.cornerRadius(anchor.width() / 2)
@@ -2906,6 +2949,18 @@ const transformerConfig = computed(() => ({
         anchorStyleFunc: rulerAnchorStyle,
       }
     : {}),
+  // Транспортир і косинець: лише кутові ручки, без перекосу й дзеркала; поворот — кружечком, як у лінійки.
+  ...(selectedInstrumentType.value === 'protractor' || selectedInstrumentType.value === 'set_square'
+    ? {
+        keepRatio: true,
+        enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
+        flipEnabled: false,
+        boundBoxFunc: uniformInstrumentBoundBox,
+        anchorStyleFunc: rulerAnchorStyle,
+      }
+    : {}),
+  // Циркуль: ні ручок, ні повороту рамкою — його крутять за ручку й розводять за грифель (startCompassGesture).
+  ...(selectedInstrumentType.value === 'compass' ? { enabledAnchors: [], rotateEnabled: false, resizeEnabled: false } : {}),
 }))
 
 // Selection rect (rubber band) — soft indigo
@@ -4990,6 +5045,10 @@ function handleAssetDragEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event>): v
     commitRulerGeometry(asset, node)
     return
   }
+  if (asset.type === 'protractor' || asset.type === 'set_square') {
+    commitDraftingGeometry(asset, node)
+    return
+  }
   // center-rotation: node.x()/y() = ЦЕНТР. Drag НЕ змінює розмір → беремо БАЗОВУ
   // ширину без scaleX: верх-лівий кут = центр − w/2. (scaleX під час реального drag = 1;
   // під час drop-анімації може бути ≠1 — свідомо ігноруємо, бо розмір не міняється.)
@@ -5141,11 +5200,43 @@ function commitRulerGeometry(asset: WBAsset, node: Konva.Node): void {
   emit('asset-update', { ...asset, x: center.x - w / 2, y: center.y - h / 2, w, h, rotation })
 }
 
+/**
+ * Транспортир і косинець (2026-10-22): одна штатна `asset_update` після перетягування, повороту чи зміни розміру.
+ * Розмір — у межах мін/макс (транспортир: радіус 3…15 см, висота від радіуса; косинець: катет 5…30 см), рамка —
+ * на аркуші за повернутими краями, як у лінійки.
+ */
+function commitDraftingGeometry(asset: WBAsset, node: Konva.Node): void {
+  const g = wbStore.gridSize
+  const scaled = node.width() * Math.abs(node.scaleX())
+  let w: number
+  let h: number
+  if (asset.type === 'protractor') {
+    ;({ w, h } = protractorSize(clampProtractorRadius(scaled / 2, g), g))
+  } else {
+    w = h = clampSetSquareLeg(scaled, g)
+  }
+  node.scaleX(1)
+  node.scaleY(1)
+  const rotation = node.rotation()
+  const page = wbStore.currentPage
+  const center = clampRulerCenter(
+    { x: node.x(), y: node.y() }, w, h, rotation,
+    { w: page?.width ?? PAGE_WIDTH, h: page?.height ?? PAGE_HEIGHT }, ASSET_REACH_PX,
+  )
+  node.x(center.x)
+  node.y(center.y)
+  emit('asset-update', { ...asset, x: center.x - w / 2, y: center.y - h / 2, w, h, rotation })
+}
+
 function handleAssetTransformEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event>): void {
   liveTransform.value = null   // clear live state — overlay now reads from store
   const node = e.target
   if (asset.type === 'ruler') {
     commitRulerGeometry(asset, node)
+    return
+  }
+  if (asset.type === 'protractor' || asset.type === 'set_square') {
+    commitDraftingGeometry(asset, node)
     return
   }
   // center-rotation: рахуємо верх-лівий кут + новий розмір ДО скидання scale
@@ -5774,6 +5865,272 @@ function getRulerConfig(asset: WBAsset): Record<string, unknown> {
   return config
 }
 
+// ─── Транспортир і косинець (2026-10-22) ────────────────────────────────────
+// Так само, як лінійка: один Konva.Shape з власним sceneFunc (board/draftingShapes.ts), конфіг кешується за
+// підписом. Під час зміни розміру scale однаковий — sceneFunc ділить на нього й малює в справжньому масштабі.
+const draftingConfigCache = new Map<string, { sig: string; config: Record<string, unknown> }>()
+const draftingSceneFuncs = new Map<string, (ctx: Konva.Context, shape: Konva.Shape) => void>()
+
+function draftingSceneFunc(type: string, pxPerCm: number): (ctx: Konva.Context, shape: Konva.Shape) => void {
+  const key = `${type}|${pxPerCm}`
+  const known = draftingSceneFuncs.get(key)
+  if (known) return known
+  const fn = (ctx: Konva.Context, shape: Konva.Shape): void => {
+    const sx = Math.abs(shape.scaleX()) || 1
+    const sy = Math.abs(shape.scaleY()) || 1
+    const shadowUnit = Math.abs(shape.getAbsoluteScale().y) * ctx.getCanvas().getPixelRatio()
+    ctx.save()
+    ctx.scale(1 / sx, 1 / sy)
+    const c = ctx as unknown as DraftingCanvas
+    if (type === 'protractor') drawProtractor(c, { w: shape.width() * sx, h: shape.height() * sy, pxPerCm, shadowUnit })
+    else drawSetSquare(c, { leg: shape.width() * sx, pxPerCm, shadowUnit })
+    ctx.restore()
+  }
+  draftingSceneFuncs.set(key, fn)
+  return fn
+}
+
+/** Влучання — контур самого інструмента (півколо з основою чи трикутник), не вся рамка. */
+function draftingHitFunc(ctx: Konva.Context, shape: Konva.Shape): void {
+  const w = shape.width()
+  const h = shape.height()
+  ctx.beginPath()
+  if (shape.getAttr('instrument') === 'protractor') {
+    ctx.moveTo(0, h)
+    ctx.lineTo(0, w / 2)
+    ctx.arc(w / 2, w / 2, w / 2, Math.PI, 2 * Math.PI, false)
+    ctx.lineTo(w, h)
+  } else {
+    ctx.moveTo(0, 0)
+    ctx.lineTo(w, h)
+    ctx.lineTo(0, h)
+  }
+  ctx.closePath()
+  ctx.fillStrokeShape(shape)
+}
+
+function getDraftingConfig(asset: WBAsset): Record<string, unknown> {
+  const selectable = currentTool.value === 'select'
+  const isLockedItem = !!asset.locked
+  const isMultiSel = isInMultiSelection(asset.id)
+  const pxPerCm = rulerPxPerCm(wbStore.gridSize)
+  const sig = `${asset.type}|${asset.x}|${asset.y}|${asset.w}|${asset.h}|${asset.rotation}|${isLockedItem ? 1 : 0}|${selectable ? 1 : 0}|ms${isMultiSel ? 1 : 0}|${pxPerCm}`
+  const cached = draftingConfigCache.get(asset.id)
+  if (cached && cached.sig === sig) return cached.config
+  const config: Record<string, unknown> = {
+    id: asset.id,
+    name: 'asset',
+    instrument: asset.type,
+    ...centerXf(asset),
+    width: asset.w,
+    height: asset.h,
+    draggable: selectable && !isLockedItem && !isMultiSel,
+    dragBoundFunc: keepInsideTopLeft,
+    // З пером інструмент натисків не ловить — перо малює крізь нього (шар штрихів над шаром асетів).
+    listening: selectable,
+    perfectDrawEnabled: false,
+    sceneFunc: draftingSceneFunc(asset.type, pxPerCm),
+    hitFunc: draftingHitFunc,
+  }
+  draftingConfigCache.set(asset.id, { sig, config })
+  return config
+}
+
+// ─── Циркуль (2026-10-22) ───────────────────────────────────────────────────
+// Малюнок — board/compassShape.ts (голка — (0, h), грифель — (w, h); w = радіус, rotation — напрям). Грифель —
+// кольору поточного пера: видно, чим креслитиме. Підпис «r = … см» — коли циркуль виділений або його саме тримають.
+const compassConfigCache = new Map<string, { sig: string; config: Record<string, unknown> }>()
+const compassSceneFuncs = new Map<string, (ctx: Konva.Context, shape: Konva.Shape) => void>()
+/** Циркуль, який саме тримають (жест іде) — його підпис радіуса видно й без виділення. */
+const compassActiveId = ref<string | null>(null)
+/** Дуга, яку циркуль креслить просто зараз (шар попереднього перегляду). */
+const compassArcPreview = shallowRef<Record<string, unknown> | null>(null)
+
+function compassSceneFunc(pxPerCm: number, ink: string): (ctx: Konva.Context, shape: Konva.Shape) => void {
+  const key = `${pxPerCm}|${ink}`
+  const known = compassSceneFuncs.get(key)
+  if (known) return known
+  const fn = (ctx: Konva.Context, shape: Konva.Shape): void => {
+    drawCompass(ctx as unknown as DraftingCanvas, {
+      w: shape.width(),
+      h: shape.height(),
+      pxPerCm,
+      ink,
+      radiusLabel: (shape.getAttr('radiusLabel') as string | null) ?? null,
+      uprightDeg: shape.getAbsoluteRotation(),
+      shadowUnit: Math.abs(shape.getAbsoluteScale().y) * ctx.getCanvas().getPixelRatio(),
+    })
+  }
+  compassSceneFuncs.set(key, fn)
+  return fn
+}
+
+function compassHitFunc(ctx: Konva.Context, shape: Konva.Shape): void {
+  compassHitPath(ctx as unknown as DraftingCanvas, shape.width(), shape.height(), rulerPxPerCm(wbStore.gridSize),
+    () => ctx.fillStrokeShape(shape))
+}
+
+function compassLabelFor(r: number): string {
+  return compassRadiusLabel(r, rulerPxPerCm(wbStore.gridSize), t('winterboard.insertTiles.rulerUnit'))
+}
+
+function getCompassConfig(asset: WBAsset): Record<string, unknown> {
+  const selectable = currentTool.value === 'select'
+  const pxPerCm = rulerPxPerCm(wbStore.gridSize)
+  const ink = props.color || '#1e293b'
+  const showLabel = selectable && (compassActiveId.value === asset.id || selectedNode.value?.id?.() === asset.id)
+  const label = showLabel ? compassLabelFor(asset.w) : null
+  const sig = `${asset.x}|${asset.y}|${asset.w}|${asset.h}|${asset.rotation}|${asset.locked ? 1 : 0}|${selectable ? 1 : 0}|${pxPerCm}|${ink}|${label}`
+  const cached = compassConfigCache.get(asset.id)
+  if (cached && cached.sig === sig) return cached.config
+  const config: Record<string, unknown> = {
+    id: asset.id,
+    name: 'asset',
+    ...centerXf(asset),
+    width: asset.w,
+    height: asset.h,
+    // Konva циркуль не тягне: перенесення, радіус і креслення — один жест startCompassGesture.
+    draggable: false,
+    listening: selectable,
+    perfectDrawEnabled: false,
+    radiusLabel: label,
+    sceneFunc: compassSceneFunc(pxPerCm, ink),
+    hitFunc: compassHitFunc,
+  }
+  compassConfigCache.set(asset.id, { sig, config })
+  return config
+}
+
+interface CompassGesture {
+  asset: WBAsset
+  part: CompassPart
+  node: Konva.Shape
+  needle: { x: number; y: number }
+  start: { x: number; y: number }
+  /** Напрям від голки до грифеля (градуси) на початку й зараз; під час креслення накопичується понад оберт. */
+  startAngle: number
+  angle: number
+  /** Кут курсора навколо голки на попередньому кроці (для креслення). */
+  lastPointer: number
+  r: number
+  arc: { x: number; y: number }[]
+  moved: boolean
+}
+let compassGesture: CompassGesture | null = null
+
+/** Точка аркуша під курсором для подій вікна (курсор може вийти за полотно — жест не обривається). */
+function compassPointer(ev: PointerEvent): WBPoint | null {
+  const stage = stageRef.value?.getStage()
+  if (!stage) return null
+  stage.setPointersPositions(ev)
+  return getPointerPosition()
+}
+
+function placeCompassNode(node: Konva.Shape, g: { x: number; y: number; w: number; h: number; rotation: number }, label: string): void {
+  node.setAttrs({
+    x: g.x + g.w / 2, y: g.y + g.h / 2, width: g.w, height: g.h,
+    offsetX: g.w / 2, offsetY: g.h / 2, rotation: g.rotation, radiusLabel: label,
+  })
+  node.getLayer()?.batchDraw()
+}
+
+/**
+ * Натиск на циркуль з «Вибором»: за що взяли — те й робимо, поки кнопку не відпущено. Курсор ведемо подіями
+ * вікна. Нічого не пишемо до відпускання: тоді — один штатний штрих пера (якщо креслили) і одна `asset_update`.
+ */
+function startCompassGesture(asset: WBAsset, e: Konva.KonvaEventObject<PointerEvent>): void {
+  if (currentTool.value !== 'select' || wbStore.mode !== 'edit' || asset.locked || compassGesture) return
+  if (isInMultiSelection(asset.id)) return
+  const node = e.target as Konva.Shape
+  const local = node.getRelativePointerPosition()
+  const start = getPointerPosition()
+  if (!local || !start) return
+  const part = compassPartAt(local, asset.w, asset.h, rulerPxPerCm(wbStore.gridSize))
+  const needle = compassNeedle(asset)
+  const rotation = asset.rotation ?? 0
+  compassGesture = {
+    asset, part, node, needle, start: { x: start.x, y: start.y },
+    startAngle: rotation, angle: rotation, lastPointer: angleFromNeedle(needle, start),
+    r: asset.w, arc: [], moved: false,
+  }
+  compassActiveId.value = asset.id
+  window.addEventListener('pointermove', onCompassPointerMove)
+  window.addEventListener('pointerup', endCompassGesture)
+  window.addEventListener('pointercancel', endCompassGesture)
+}
+
+function onCompassPointerMove(ev: PointerEvent): void {
+  const g = compassGesture
+  if (!g) return
+  const p = compassPointer(ev)
+  if (!p) return
+  if (!g.moved && Math.hypot(p.x - g.start.x, p.y - g.start.y) < 2) return
+  g.moved = true
+  const grid = wbStore.gridSize
+  if (g.part === 'body') {
+    const dx = p.x - g.start.x
+    const dy = p.y - g.start.y
+    placeCompassNode(g.node, { x: g.asset.x + dx, y: g.asset.y + dy, w: g.asset.w, h: g.asset.h, rotation: g.angle }, compassLabelFor(g.r))
+    return
+  }
+  if (g.part === 'pencil') {
+    g.r = clampCompassRadius(Math.hypot(p.x - g.needle.x, p.y - g.needle.y), grid)
+    g.angle = angleFromNeedle(g.needle, p)
+    placeCompassNode(g.node, compassGeometry(g.needle, g.r, g.angle, grid), compassLabelFor(g.r))
+    return
+  }
+  // За ручку: циркуль обертається навколо голки рівно на стільки, на скільки курсор обійшов голку, і грифель креслить
+  const pointer = angleFromNeedle(g.needle, p)
+  const next = g.angle + angleDelta(g.lastPointer, pointer)
+  g.lastPointer = pointer
+  const seg = compassArcPoints(g.needle, g.r, g.angle, next)
+  g.arc.push(...(g.arc.length ? seg.slice(1) : seg))
+  g.angle = next
+  placeCompassNode(g.node, compassGeometry(g.needle, g.r, g.angle, grid), compassLabelFor(g.r))
+  compassArcPreview.value = {
+    points: g.arc.flatMap((q) => [q.x, q.y]),
+    stroke: props.color,
+    strokeWidth: props.size,
+    lineCap: 'round',
+    lineJoin: 'round',
+    listening: false,
+  }
+}
+
+function endCompassGesture(): void {
+  window.removeEventListener('pointermove', onCompassPointerMove)
+  window.removeEventListener('pointerup', endCompassGesture)
+  window.removeEventListener('pointercancel', endCompassGesture)
+  const g = compassGesture
+  compassGesture = null
+  compassActiveId.value = null
+  compassArcPreview.value = null
+  if (!g || !g.moved) return
+  const grid = wbStore.gridSize
+  const rotation = ((((g.angle + 180) % 360) + 360) % 360) - 180
+  let geom = compassGeometry(g.needle, g.r, rotation, grid)
+  if (g.part === 'body') {
+    const page = wbStore.currentPage
+    const center = clampRulerCenter(
+      { x: g.node.x(), y: g.node.y() }, g.asset.w, g.asset.h, rotation,
+      { w: page?.width ?? PAGE_WIDTH, h: page?.height ?? PAGE_HEIGHT }, ASSET_REACH_PX,
+    )
+    geom = { x: center.x - g.asset.w / 2, y: center.y - g.asset.h / 2, w: g.asset.w, h: g.asset.h, rotation }
+  }
+  if (g.part === 'knob' && g.arc.length >= 2 && Math.abs(g.angle - g.startAngle) >= 1) {
+    const now = Date.now()
+    emit('stroke-add', {
+      id: generateId(),
+      tool: 'pen',
+      color: props.color,
+      size: props.size,
+      opacity: props.opacity,
+      points: roundStrokePoints(g.arc.map((q) => ({ x: q.x, y: q.y, t: now, pressure: 0.5 }))),
+    })
+  }
+  emit('asset-update', { ...g.asset, ...geom })
+}
+
 // ─── Background layer cache ─────────────────────────────────────────────────
 
 function hasRenderableArea(layer: Konva.Layer): boolean {
@@ -6298,6 +6655,8 @@ watch(
     // Clear asset config memoization cache
     assetConfigCache.clear()
     rulerConfigCache.clear()
+    draftingConfigCache.clear()
+    compassConfigCache.clear()
     // Clear smoothing cache
     clearSmoothedCache()
     // Memory cleanup: image caches grow unbounded across pages. Trade-off — re-decode

@@ -55,12 +55,14 @@ describe('INV-PRES-1 · можливості подання всіх 28 типі
     // 26 → 27: числова пряма (Б-184). Не текстова — фіксований розмір, як quadratic_card.
     // 27 → 28: «Наочна сцена» (2026-10-20). Не текстова — вікно фіксованого розміру зі сценою.
     // 28 → 29: екранна лінійка (2026-10-22). Креслярський інструмент, не вікно — без верхньої панелі.
-    expect(STANDARD_ASSET_TYPES).toHaveLength(29)
+    // 29 → 32: транспортир, косинець і циркуль (2026-10-22, «інші подібно до лінійки») — так само без панелі.
+    expect(STANDARD_ASSET_TYPES).toHaveLength(32)
+    const instruments = ['ruler', 'protractor', 'set_square', 'compass']
     for (const type of STANDARD_ASSET_TYPES) {
       const c = assetCapabilities(type)
       const text = TEXT.includes(type)
       expect([type, c.windowChrome, c.contentFit, c.textScale])
-        .toEqual([type, type !== 'ruler', text ? 'height' : 'none', text ? 'teacher-shared' : 'none'])
+        .toEqual([type, !instruments.includes(type), text ? 'height' : 'none', text ? 'teacher-shared' : 'none'])
     }
   })
 
