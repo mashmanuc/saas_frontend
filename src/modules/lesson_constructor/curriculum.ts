@@ -37,7 +37,7 @@ export const CURRICULUM = [
   { grade: 9, track: "algebra", title: "Квадратична функція", topics: ["linear-quadratic-functions", "function-basics", "linear-quadratic-functions.quadratic.graph-transformations", "linear-quadratic-functions.quadratic.properties"] },
   { grade: 9, track: "algebra", title: "Квадратична нерівність. Системи двох рівнянь з двома змінними", topics: ["inequalities-systems", "linear-quadratic-rational-equations", "inequalities-systems.quadratic", "inequalities-systems.systems.quadratic", "linear-quadratic-rational-equations.systems.nonlinear.substitution", "linear-quadratic-rational-equations.systems.nonlinear.graphical", "linear-quadratic-rational-equations.systems.nonlinear.word-problems"] },
   { grade: 9, track: "algebra", title: "Числові послідовності", topics: ["sequences", "sequences.general", "sequences.arithmetic.term", "sequences.arithmetic.sum", "sequences.geometric.term", "sequences.geometric.sum", "sequences.applications"] },
-  { grade: 9, track: "algebra", title: "Основи комбінаторики, теорії ймовірностей та статистики", topics: ["combinatorics", "probability-statistics", "charts-dependencies"] },
+  { grade: 9, track: "algebra", title: "Основи комбінаторики, теорії ймовірностей та статистики", topics: ["combinatorics.counting", "probability-statistics.probability.basic", "probability-statistics.statistics"] },
   { grade: 9, track: "geometry", title: "Координати на площині", topics: ["plane-vectors-coordinates"] },
   { grade: 9, track: "geometry", title: "Вектори на площині", topics: ["plane-vectors-coordinates"] },
   { grade: 9, track: "geometry", title: "Розв'язування трикутників", topics: ["triangles", "triangles.solving", "areas", "areas.triangle"] },
@@ -53,7 +53,7 @@ export const CURRICULUM = [
   { grade: 11, track: "algebra", title: "Показникова функція", topics: ["exp-log-trig-functions", "exponential-log-expressions", "exponential-log-equations"] },
   { grade: 11, track: "algebra", title: "Логарифмічна функція", topics: ["exp-log-trig-functions", "exponential-log-expressions", "exponential-log-equations"] },
   { grade: 11, track: "algebra", title: "Інтеграл та його застосування", topics: ["integral"] },
-  { grade: 11, track: "algebra", title: "Елементи комбінаторики, теорії ймовірностей і математичної статистики", topics: ["combinatorics", "probability-statistics"] },
+  { grade: 11, track: "algebra", title: "Елементи комбінаторики, теорії ймовірностей і математичної статистики", topics: ["combinatorics.counting", "combinatorics.permutations", "combinatorics.arrangements", "combinatorics.combinations", "probability-statistics.probability", "probability-statistics.statistics"] },
   { grade: 11, track: "geometry", title: "Призма. Паралелепіпед", topics: ["prism"] },
   { grade: 11, track: "geometry", title: "Піраміда. Перерізи многогранників", topics: ["pyramid"] },
   { grade: 11, track: "geometry", title: "Циліндр. Конус", topics: ["rotation-bodies"] },
@@ -68,6 +68,10 @@ export const GRADES = [5, 6, 7, 8, 9, 10, 11] as const
 
 // Теми з перевіреною добіркою: розділ, де вони є, у «За класом» показує лише їх.
 export const VERIFIED_TOPICS = [
+  "combinatorics.arrangements",
+  "combinatorics.combinations",
+  "combinatorics.counting",
+  "combinatorics.permutations",
   "function-basics.introduction",
   "inequalities-systems.estimates",
   "inequalities-systems.linear",
@@ -104,6 +108,9 @@ export const VERIFIED_TOPICS = [
   "polynomials.monomials.standard-form",
   "polynomials.operations.progression",
   "powers.natural-exponent",
+  "probability-statistics.probability",
+  "probability-statistics.probability.basic",
+  "probability-statistics.statistics",
   "rational-irrational-expressions.algebraic-fractions.combined",
   "rational-irrational-expressions.algebraic-fractions.domain",
   "rational-irrational-expressions.algebraic-fractions.multiply-divide",
