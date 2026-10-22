@@ -55,7 +55,7 @@
 import { ref, onMounted, onBeforeUnmount, h } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { GRID_OPTIONS, type GridType } from '../../composables/useGridOverlay'
-import { NOTEBOOK_INK } from '../../composables/usePageGrid'
+import { NOTEBOOK_INK, NOTEBOOK_MARGIN_INK } from '../../composables/usePageGrid'
 
 const props = defineProps<{
   modelValue: GridType
@@ -140,18 +140,21 @@ function renderPreview(type: GridType) {
       return h('g', [
         h('rect', { x: 0, y: 0, width: 28, height: 28, fill: bg, rx: 3 }),
         ...[7, 14, 21].map(y =>
-          h('line', { x1: 1, y1: y, x2: 27, y2: y, stroke: ink, 'stroke-width': 0.8 }),
+          h('line', { x1: 1, y1: y, x2: 27, y2: y, stroke: ink, 'stroke-width': 0.9 }),
         ),
+        h('line', { x1: 6, y1: 1, x2: 6, y2: 27, stroke: NOTEBOOK_MARGIN_INK, 'stroke-width': 0.9 }),
       ])
+    // Як у зразку власника: три лінії на рядок (вузький робочий рядок), рідкі похилі, червоне поле.
     case 'slanted':
       return h('g', [
         h('rect', { x: 0, y: 0, width: 28, height: 28, fill: bg, rx: 3 }),
-        ...[3, 11, 19].map(x =>
-          h('line', { x1: x, y1: 26, x2: x + 9, y2: 2, stroke: ink, 'stroke-width': 0.5, 'stroke-opacity': 0.6 }),
+        ...[2, 15].map(x =>
+          h('line', { x1: x, y1: 27, x2: x + 12, y2: 1, stroke: ink, 'stroke-width': 0.7 }),
         ),
-        ...[7, 11, 18, 22].map(y =>
-          h('line', { x1: 1, y1: y, x2: 27, y2: y, stroke: ink, 'stroke-width': 0.8 }),
+        ...[3, 8, 13, 16, 21, 26].map(y =>
+          h('line', { x1: 1, y1: y, x2: 27, y2: y, stroke: ink, 'stroke-width': 0.9 }),
         ),
+        h('line', { x1: 6, y1: 1, x2: 6, y2: 27, stroke: NOTEBOOK_MARGIN_INK, 'stroke-width': 0.9 }),
       ])
     case 'coordinate':
       return h('g', [

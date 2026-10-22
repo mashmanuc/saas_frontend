@@ -42,6 +42,11 @@
           v-if="pageGridPatternConfig"
           :config="pageGridPatternConfig"
         />
+        <!-- Поле зошита (власник 2026-10-22, зразок «у косу лінійку»): червона вертикаль для «в лінійку» й «в косу» -->
+        <v-line
+          v-if="pageMarginConfig"
+          :config="pageMarginConfig"
+        />
       </v-layer>
 
       <!-- Assets layer (images + sticky notes) — BELOW strokes -->
@@ -1036,7 +1041,7 @@ import { provideHostWindowControls, provideHostControlsSlot } from '../../compos
 import { cardZoomStyle, fitMeasureZoom, isKonspektCard, isZoomScaledCard, provideCardZoom } from '../../composables/cardZoom'
 import { isDockedFor, useCardControlsDock } from '../../composables/cardControlsDock'
 import { isAssetSelectable } from '../../board/selectableObjects'
-import { usePageGrid } from '../../composables/usePageGrid'
+import { usePageGrid, hasNotebookMargin, NOTEBOOK_MARGIN_INK, NOTEBOOK_MARGIN_PX } from '../../composables/usePageGrid'
 import { detectCardPreset } from '../../utils/detectCardPreset'
 import { PAGE_WIDTH, PAGE_HEIGHT } from '../../composables/useCanvasResize'
 import { documentPageAspect, fitDocumentToSheetHeight } from '../../board/documentFit'
@@ -2736,6 +2741,19 @@ const pdfBgError = computed<boolean>(() => {
   if (!bg || typeof bg === 'string') return false
   if (bg.type !== 'pdf' && bg.type !== 'image') return false
   return bgImageCache.isBroken(bg.url)
+})
+
+// Поле зошита — разом із лінуванням (та сама умова завантаженої плитки), лише для письмових видів.
+const pageMarginConfig = computed<Record<string, unknown> | null>(() => {
+  if (!gridPatternImageEl.value || !hasNotebookMargin(currentPageGrid.value)) return null
+  const x = NOTEBOOK_MARGIN_PX + 0.5
+  return {
+    points: [x, 0, x, props.height],
+    stroke: NOTEBOOK_MARGIN_INK,
+    strokeWidth: 1,
+    listening: false,
+    name: 'page-notebook-margin',
+  }
 })
 
 // A9: Per-page grid pattern config — fillPatternImage tiles across the full page

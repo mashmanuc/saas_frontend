@@ -12,7 +12,8 @@ import { ADD_TOOL_TO_BOARD_KEY } from '../composables/useAddToolToBoard'
 import { RULER_DRAG_MIME } from '../constants/rulerDefaults'
 import { GRID_OPTIONS, useGridOverlay } from '../composables/useGridOverlay'
 import {
-  NOTEBOOK_INK, SLANTED_GAP_PX, SLANTED_ROW_PX, SLANTED_TILE_H, SLANTED_TILE_W, _applyGridToCanvas,
+  NOTEBOOK_INK, SLANTED_HALF_PX, SLANTED_PER_TILE, SLANTED_ROW_PX, SLANTED_STEP_PX, SLANTED_TILE_H, SLANTED_TILE_W,
+  _applyGridToCanvas, hasNotebookMargin,
 } from '../composables/usePageGrid'
 import { useWBStore } from '../board/state/boardStore'
 import type { WBPageGridSettings } from '../types/winterboard'
@@ -127,27 +128,39 @@ describe('фон сторінки — зошитові види', () => {
     expect(store.currentPage?.grid).toMatchObject({ enabled: true, style: 'slanted' })
   })
 
-  it('коса лінія: плитка 37×80, рядки 4 мм через 6 мм, похилі ~65° без розривів на межі', () => {
+  it('коса лінія як у зразку: три лінії на рядок (25, 25, рядок 16 px), рідкі похилі ~65° без розривів', () => {
     const rec = recordCanvas()
     _applyGridToCanvas(useWBStore(), grid('slanted', 40))
     expect([rec.width, rec.height]).toEqual([SLANTED_TILE_W, SLANTED_TILE_H])
     expect(rec.strokes.every(s => s.ink === NOTEBOOK_INK)).toBe(true)
 
-    const rows = rec.strokes.flatMap(s => s.moves).filter(m => m[1] === m[3]).map(m => m[1])
-    expect(rows).toEqual([12.5, 28.5, 52.5, 68.5])
-    expect(rows[1] - rows[0]).toBe(SLANTED_ROW_PX)
-    expect(rows[2] - rows[1]).toBe(SLANTED_GAP_PX)
-    // наступна плитка: від останнього рядка до першого — той самий проміжок
-    expect(rows[0] + SLANTED_TILE_H - rows[3]).toBe(SLANTED_GAP_PX)
+    const rows = rec.strokes.flatMap(s => s.moves).filter(m => m[1] === m[3]).map(m => m[1]).sort((a, b) => a - b)
+    // проміжки по колу — разом із переходом через межу плитки до першої лінії наступної
+    const gaps = [...rows.slice(1).map((y, i) => y - rows[i]), rows[0] + SLANTED_TILE_H - rows[rows.length - 1]]
+    expect(gaps).toEqual(Array.from({ length: rows.length }, (_, i) => [SLANTED_HALF_PX, SLANTED_HALF_PX, SLANTED_ROW_PX][i % 3]))
+    expect(rows.length % 3).toBe(0)
+    // перша лінія не по самому краю аркуша
+    expect(rows[0]).toBeGreaterThan(5)
 
     const slants = rec.strokes.flatMap(s => s.moves).filter(m => m[1] !== m[3])
     for (const [x0, y0, x1, y1] of slants) {
       // за висоту плитки — рівно ширина плитки: похила продовжується в сусідній плитці
       expect([x1 - x0, y0 - y1]).toEqual([SLANTED_TILE_W, SLANTED_TILE_H])
     }
+    // рідкі, як у зразку: між похилими більше ніж півтора кроки рядка
+    const starts = [...new Set(slants.map(m => Math.round((((m[0] % SLANTED_TILE_W) + SLANTED_TILE_W) % SLANTED_TILE_W) * 100) / 100))]
+    expect(starts).toHaveLength(SLANTED_PER_TILE)
+    expect(SLANTED_TILE_W / SLANTED_PER_TILE).toBeGreaterThan(1.5 * SLANTED_STEP_PX)
     const deg = Math.atan2(SLANTED_TILE_H, SLANTED_TILE_W) * 180 / Math.PI
     expect(deg).toBeGreaterThan(64.5)
     expect(deg).toBeLessThan(65.5)
+  })
+
+  it('червоне поле — лише в письмових видах («в лінійку», «в косу») і лише з увімкненим фоном', () => {
+    expect(hasNotebookMargin(grid('slanted', 40))).toBe(true)
+    expect(hasNotebookMargin(grid('ruled', 32))).toBe(true)
+    expect(hasNotebookMargin(grid('small-grid', 20))).toBe(false)
+    expect(hasNotebookMargin({ enabled: false, style: 'slanted' })).toBe(false)
   })
 
   it('клітинка синя й видна незалежно від збереженої прозорості; лінія всередині плитки', () => {
@@ -159,11 +172,11 @@ describe('фон сторінки — зошитові види', () => {
     expect(rec.strokes[0].moves).toEqual([[19.5, 0, 19.5, 20], [0, 19.5, 20, 19.5]])
   })
 
-  it('лінійка: лише горизонтальна синя лінія, темніша за клітинку', () => {
+  it('лінійка: лише горизонтальна лінія зошита, непрозора', () => {
     const rec = recordCanvas()
     _applyGridToCanvas(useWBStore(), grid('ruled', 32))
     expect(rec.strokes[0].ink).toBe(NOTEBOOK_INK)
     expect(rec.strokes[0].moves).toEqual([[0, 31.5, 32, 31.5]])
-    expect(rec.strokes[0].alpha).toBeGreaterThan(0.4)
+    expect(rec.strokes[0].alpha).toBe(1)
   })
 })

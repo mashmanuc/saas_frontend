@@ -74,21 +74,40 @@ export function usePageGrid() {
 }
 
 // ─── Зошитові види: клітинка, лінійка, коса лінія ───────────────────────────
+//
+// Зразок — аркуш «у косу лінійку», який власник показав 2026-10-22 («подивись, як у людей
+// нормально зроблено»): світло-блакитні лінії #90caf9, червоне поле #ff9999; коса — три лінії
+// на рядок (вузький робочий рядок, над ним два однакові проміжки з допоміжною лінією), рідкі
+// похилі під 65°. Масштаб дошки — як у лінійки: 1 мм = 4 px (клітинка 20 px = 5 мм).
 
-/** Синя лінія зошита. Масштаб дошки — як у лінійки: 1 мм = 4 px (клітинка 20 px = 5 мм). */
-export const NOTEBOOK_INK = '#2f6fd0'
+/** Лінія зошита (блакитна, як друкована лінія). */
+export const NOTEBOOK_INK = '#90caf9'
+/** Поле зошита — червона вертикаль ліворуч (лише «в лінійку» і «в косу»: письмові зошити). */
+export const NOTEBOOK_MARGIN_INK = '#ff9999'
+export const NOTEBOOK_MARGIN_PX = 88
 
 const NOTEBOOK_STYLES: ReadonlySet<GridStyle> = new Set<GridStyle>(['small-grid', 'large-grid', 'ruled', 'slanted'])
+const MARGIN_STYLES: ReadonlySet<GridStyle> = new Set<GridStyle>(['ruled', 'slanted'])
+
+/** Чи має сторінка з цією сіткою червоне поле. */
+export function hasNotebookMargin(grid: Pick<WBPageGridSettings, 'enabled' | 'style'>): boolean {
+  return grid.enabled && MARGIN_STYLES.has(grid.style)
+}
 
 /**
- * Коса лінія (письмо в 1–2 класі): рядок 4 мм, між рядками 6 мм, похилі під ~65° — нахил письма.
- * Плитка — два рядки заввишки (80 px) і крок похилих завширшки (37 px): за 80 px похила
- * зсувається рівно на 37 px, тож на межах плиток лінії не рвуться (atan(80/37) ≈ 65,2°).
+ * Коса лінія: рядок 4 мм (16 px), над ним два проміжки по 6,25 мм (25 px) — крок 66 px; у зразку
+ * 18 : 29 : 28 px. Похилі — кожні ~103 px (у зразку 115 при рядку 18), кут ≈ 65°.
+ * Плитка — 10 кроків заввишки (660 px) і 308 px завширшки з трьома похилими: за 660 px похила
+ * зсувається рівно на ширину плитки, тож на межах плиток ні рядки, ні похилі не рвуться
+ * (atan(660/308) ≈ 64,98°).
  */
 export const SLANTED_ROW_PX = 16
-export const SLANTED_GAP_PX = 24
-export const SLANTED_TILE_W = 37
-export const SLANTED_TILE_H = 2 * (SLANTED_ROW_PX + SLANTED_GAP_PX)
+export const SLANTED_HALF_PX = 25
+export const SLANTED_STEP_PX = SLANTED_ROW_PX + 2 * SLANTED_HALF_PX
+export const SLANTED_TILE_H = 10 * SLANTED_STEP_PX
+export const SLANTED_TILE_W = 308
+export const SLANTED_PER_TILE = 3
+const SLANTED_TOP_PX = 12
 
 function drawNotebookTile(
   canvas: HTMLCanvasElement,
@@ -98,24 +117,32 @@ function drawNotebookTile(
 ): void {
   // Розмір полотна скидає стан контексту — колір і товщину ставимо після нього.
   if (style === 'slanted') {
-    canvas.width = SLANTED_TILE_W
-    canvas.height = SLANTED_TILE_H
+    const w = SLANTED_TILE_W
+    const h = SLANTED_TILE_H
+    canvas.width = w
+    canvas.height = h
     ctx.strokeStyle = NOTEBOOK_INK
     ctx.lineWidth = 1
-    // Похилі світліші за рядки, як у зошиті. Сусідні копії (±ширина) докреслюють кути плитки.
-    ctx.globalAlpha = 0.3
+    // Похилі трохи світліші за рядки, як у зразку. Копія зліва (−ширина) докреслює ту частину,
+    // що вийшла за правий край плитки.
+    ctx.globalAlpha = 0.8
     ctx.beginPath()
-    for (const dx of [-SLANTED_TILE_W, 0, SLANTED_TILE_W]) {
-      ctx.moveTo(dx, SLANTED_TILE_H)
-      ctx.lineTo(dx + SLANTED_TILE_W, 0)
+    for (let i = 0; i < SLANTED_PER_TILE; i++) {
+      const x = (i * w) / SLANTED_PER_TILE
+      for (const dx of [-w, 0]) {
+        ctx.moveTo(x + dx, h)
+        ctx.lineTo(x + dx + w, 0)
+      }
     }
     ctx.stroke()
-    ctx.globalAlpha = 0.6
+    // Рядки кожні 66 px: низ рядка (над ним — попередній рядок), допоміжна, верх робочого рядка.
+    // Перша лінія — на пів проміжку нижче краю аркуша, як у зразку (не по самому краю).
+    ctx.globalAlpha = 1
     ctx.beginPath()
-    for (let top = SLANTED_GAP_PX / 2; top < SLANTED_TILE_H; top += SLANTED_ROW_PX + SLANTED_GAP_PX) {
-      for (const y of [top, top + SLANTED_ROW_PX]) {
+    for (let top = SLANTED_TOP_PX; top < h; top += SLANTED_STEP_PX) {
+      for (const y of [top, top + SLANTED_HALF_PX, top + 2 * SLANTED_HALF_PX]) {
         ctx.moveTo(0, y + 0.5)
-        ctx.lineTo(SLANTED_TILE_W, y + 0.5)
+        ctx.lineTo(w, y + 0.5)
       }
     }
     ctx.stroke()
@@ -125,7 +152,7 @@ function drawNotebookTile(
   canvas.height = size
   ctx.strokeStyle = NOTEBOOK_INK
   ctx.lineWidth = 1
-  ctx.globalAlpha = style === 'ruled' ? 0.6 : 0.4
+  ctx.globalAlpha = 1
   // Лінія на пів пікселя всередині плитки: на самому краю видно лише її половину.
   const edge = size - 0.5
   ctx.beginPath()
