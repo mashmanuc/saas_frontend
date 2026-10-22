@@ -11010,7 +11010,11 @@
       "timelineCardSub": "events · dates · sources",
       "mapCard": "Event map",
       "mapCardSub": "places · routes · sources",
-      "trigSolverHint": "Trigonometric equation / inequality"
+      "trigSolverHint": "Trigonometric equation / inequality",
+      "ruler": "Ruler",
+      "rulerSub": "Place it along a line and turn it by the little circle",
+      "rulerUnit": "cm",
+      "instruments": "Drawing tools"
     },
     "graphmash3d": {
       "surfaces": "Surfaces",

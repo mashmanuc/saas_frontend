@@ -35,6 +35,8 @@ export const NON_SCENE_INSERT_IDS = [
   'inequalities.number_line',
   // 2026-10-20: «Наочні сцени» — лише плитки вчителя; Інтегралик їх не вставляє (boardActions._allInserts).
   ...MATH_SCENE_IDS.map((id) => `scenes.${id}`),
+  // 2026-10-22: екранна лінійка — креслярський інструмент учителя, не сцена; Інтегралик її не вставляє.
+  'instruments.ruler',
 ]
 
 export function sceneMetricFromAction(action) {

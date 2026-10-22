@@ -263,6 +263,10 @@ export interface WBAsset {
     /** «Наочна сцена» (2026-10-20) — готова жива сцена `public/scenes/{uk|en}/{id}.html` у вікні.
      *  data = MathSceneData { version, sceneId } (types/mathScene.ts). Стан усередині сцени — не ops. */
     | 'math_scene'
+    /** Екранна лінійка (2026-10-22, власник: «ми зараз робимо лінійку… Це буде все в геометрії жити»).
+     *  Нативний Konva-вузол; даних понад геометрію немає (x, y, w, h, rotation, locked). Масштаб — 1 клітинка
+     *  сітки = 5 мм (`constants/rulerDefaults.ts`), кількість сантиметрів — з довжини `w`. */
+    | 'ruler'
   /**
    * Asset source descriptor.
    * - URL для image/audio/video/document_viewer

@@ -93,6 +93,15 @@
             @cut="openPdfFragment"
             @quick-cut="onQuickCut"
           />
+          <!-- Екранна лінійка (2026-10-22): один Konva-вузол у шарі асетів — під шаром штрихів, тож лінія пером
+               уздовж неї лягає поверх. Рухається, повертається й розтягується тим самим конвеєром, що картинка
+               (клік / dragend через шар, transformend — тут); натиски ловить лише з інструментом «Вибір». -->
+          <v-shape
+            v-else-if="asset.type === 'ruler'"
+            :config="getRulerConfig(asset)"
+            @transformstart="rememberRulerAnchor"
+            @transformend="handleAssetTransformEnd(asset, $event)"
+          />
           <!-- ASSET_LIFECYCLE_SSOT Phase 2B: провалена картинка (INV-ASSET-3/8).
                Автор бачить ⚠ placeholder; учень/replay — нічого (наступна гілка). -->
           <v-group
@@ -1017,6 +1026,9 @@ import { handwriteBusyId, solveWithFeedback } from '../../composables/useHandwri
 import { announceTaskActions, askTaskHelp, taskHelpBusy } from '@/modules/intent/taskHelp'
 import { windowControlsPlacement, windowControlsZIndex, windowControlsCovered, isVisuallyAbove, WINDOW_CONTROLS_INSET_PX } from '../../board/windowControlsPlacement'
 import { nativeAssetsAboveOverlays } from '../../board/nativeAssetLayerOrder'
+// Екранна лінійка (2026-10-22): масштаб від клітинки дошки, малювання й утримання на аркуші.
+import { clampRulerWidth, rulerHeightPx, rulerMaxWidthPx, rulerMinWidthPx, rulerPxPerCm } from '../../constants/rulerDefaults'
+import { clampRulerBox, clampRulerCenter, drawRuler, type RulerBox } from '../../board/rulerShape'
 import { attachImageContextMenuProxy, topImageAssetAt } from '../../board/imageContextMenuProxy'
 import { installKonvaStaleDragGuard } from '../../board/konvaStaleDragGuard'
 import { nextPresentationScale, presentationScaleOf, withPresentationScale } from '../../board/cardPresentation'
@@ -2813,6 +2825,38 @@ const konvaShapePreview = computed<{ type: string; config: Record<string, unknow
 // On touch/stylus devices (maxTouchPoints > 0) we use larger anchors (20px)
 // so they can be grabbed with a finger or stylus on a multimedia board.
 const isTouchDevice = typeof window !== 'undefined' && navigator.maxTouchPoints > 0
+
+// Екранна лінійка (2026-10-22): виділена саме вона — лише бокові ручки (довжина) і ручка повороту.
+const selectedIsRuler = computed(() => {
+  const id = selectedNode.value?.id?.()
+  return !!id && assets.value.some((a) => a.id === id && a.type === 'ruler')
+})
+
+/** Бокова ручка, за яку почали тягти лінійку (з `transformstart`). */
+let rulerResizeAnchor: string | null = null
+
+function rememberRulerAnchor(): void {
+  rulerResizeAnchor = transformerRef.value?.getNode()?.getActiveAnchor() ?? null
+}
+
+/**
+ * Довжина лінійки під час розтягування — у межах мін/макс (рамка Transformer'а — в екранних px), край навпроти
+ * ручки на місці. Konva перемикає бокову ручку на протилежну, щойно курсор перейшов за другий край (навіть без
+ * дзеркала), — лінійка росла б у інший бік. Поки ручка не та, з якої почали, рамка стоїть.
+ */
+function rulerBoundBox<B extends RulerBox>(oldBox: B, newBox: B): B {
+  const active = transformerRef.value?.getNode()?.getActiveAnchor() ?? null
+  if (rulerResizeAnchor && active !== rulerResizeAnchor) return oldBox
+  const zoom = props.zoom || 1
+  const g = wbStore.gridSize
+  return clampRulerBox(oldBox, newBox, rulerMinWidthPx(g) * zoom, rulerMaxWidthPx(g) * zoom, active === 'middle-left')
+}
+
+/** Ручка повороту лінійки — кружечок (підказка плитки: «поверніть за кружечок»). */
+function rulerAnchorStyle(anchor: Konva.Rect): void {
+  if (anchor.hasName('rotater')) anchor.cornerRadius(anchor.width() / 2)
+}
+
 const transformerConfig = computed(() => ({
   anchorSize: isTouchDevice ? 20 : 9,
   anchorCornerRadius: isTouchDevice ? 4 : 2,
@@ -2834,6 +2878,16 @@ const transformerConfig = computed(() => ({
     'middle-left', 'middle-right',
     'bottom-left', 'bottom-center', 'bottom-right',
   ],
+  // Лінійка: висота стала, довжина — бокові ручки в межах мін/макс, без дзеркала; поворот — як у всіх.
+  ...(selectedIsRuler.value
+    ? {
+        keepRatio: false,
+        enabledAnchors: ['middle-left', 'middle-right'],
+        flipEnabled: false,
+        boundBoxFunc: rulerBoundBox,
+        anchorStyleFunc: rulerAnchorStyle,
+      }
+    : {}),
 }))
 
 // Selection rect (rubber band) — soft indigo
@@ -4914,6 +4968,10 @@ function handleOverlayForeignDrag(payload: { assetId: string; ev: PointerEvent }
 function handleAssetDragEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event>): void {
   const node = e.target
   liveTransform.value = null // clear drag live-sync — overlay знову читає зі store
+  if (asset.type === 'ruler') {
+    commitRulerGeometry(asset, node)
+    return
+  }
   // center-rotation: node.x()/y() = ЦЕНТР. Drag НЕ змінює розмір → беремо БАЗОВУ
   // ширину без scaleX: верх-лівий кут = центр − w/2. (scaleX під час реального drag = 1;
   // під час drop-анімації може бути ≠1 — свідомо ігноруємо, бо розмір не міняється.)
@@ -5043,9 +5101,35 @@ function handleOverlayHeightRequest(assetId: string, neededPx: number): void {
   })
 }
 
+/**
+ * Екранна лінійка (2026-10-22): одна штатна `asset_update` після перетягування, повороту чи розтягування.
+ * Довжина — у межах мін/макс, висота — стандартна (від клітинки дошки), повернута рамка — на аркуші
+ * (`clampRulerCenter`: вертикальна лінійка біля лівого краю не стрибає вбік, як стрибала б від `clampAssetToPage`).
+ */
+function commitRulerGeometry(asset: WBAsset, node: Konva.Node): void {
+  const g = wbStore.gridSize
+  const w = clampRulerWidth(node.width() * Math.abs(node.scaleX()), g)
+  const h = rulerHeightPx(g)
+  node.scaleX(1)
+  node.scaleY(1)
+  const rotation = node.rotation()
+  const page = wbStore.currentPage
+  const center = clampRulerCenter(
+    { x: node.x(), y: node.y() }, w, h, rotation,
+    { w: page?.width ?? PAGE_WIDTH, h: page?.height ?? PAGE_HEIGHT }, ASSET_REACH_PX,
+  )
+  node.x(center.x)
+  node.y(center.y)
+  emit('asset-update', { ...asset, x: center.x - w / 2, y: center.y - h / 2, w, h, rotation })
+}
+
 function handleAssetTransformEnd(asset: WBAsset, e: Konva.KonvaEventObject<Event>): void {
   liveTransform.value = null   // clear live state — overlay now reads from store
   const node = e.target
+  if (asset.type === 'ruler') {
+    commitRulerGeometry(asset, node)
+    return
+  }
   // center-rotation: рахуємо верх-лівий кут + новий розмір ДО скидання scale
   // (nodeTopLeft бере width*scaleX/height*scaleY = розмір після resize).
   const tl = nodeTopLeft(node)
@@ -5608,6 +5692,70 @@ function getClipChildImageConfig(asset: WBAsset): Record<string, unknown> {
   }
 }
 
+// ─── Екранна лінійка (2026-10-22) ───────────────────────────────────────────
+// Один Konva.Shape з власним sceneFunc: тіло, поділки й числа малює `drawRuler` (board/rulerShape.ts).
+// Конфіг кешується за підписом, як getAssetConfig: штрих пером поруч не створює нового об'єкта конфігу.
+const rulerConfigCache = new Map<string, { sig: string; config: Record<string, unknown> }>()
+const rulerSceneFuncs = new Map<string, (ctx: Konva.Context, shape: Konva.Shape) => void>()
+
+/** sceneFunc для масштабу й підпису одиниці. Під час розтягування ділить на scaleX — сантиметр лишається сантиметром. */
+function rulerSceneFunc(pxPerCm: number, unit: string): (ctx: Konva.Context, shape: Konva.Shape) => void {
+  const key = `${pxPerCm}|${unit}`
+  const known = rulerSceneFuncs.get(key)
+  if (known) return known
+  const fn = (ctx: Konva.Context, shape: Konva.Shape): void => {
+    const sx = Math.abs(shape.scaleX()) || 1
+    ctx.save()
+    ctx.scale(1 / sx, 1)
+    drawRuler(ctx, {
+      w: shape.width() * sx,
+      h: shape.height(),
+      pxPerCm,
+      unit,
+      shadowUnit: Math.abs(shape.getAbsoluteScale().y) * ctx.getCanvas().getPixelRatio(),
+    })
+    ctx.restore()
+  }
+  rulerSceneFuncs.set(key, fn)
+  return fn
+}
+
+/** Влучання — уся смужка лінійки (і поділки, і проміжки між ними). */
+function rulerHitFunc(ctx: Konva.Context, shape: Konva.Shape): void {
+  ctx.beginPath()
+  ctx.rect(0, 0, shape.width(), shape.height())
+  ctx.closePath()
+  ctx.fillStrokeShape(shape)
+}
+
+function getRulerConfig(asset: WBAsset): Record<string, unknown> {
+  const selectable = currentTool.value === 'select'
+  const isLockedItem = !!asset.locked
+  const isMultiSel = isInMultiSelection(asset.id)
+  const pxPerCm = rulerPxPerCm(wbStore.gridSize)
+  const unit = t('winterboard.insertTiles.rulerUnit')
+  const sig = `${asset.x}|${asset.y}|${asset.w}|${asset.h}|${asset.rotation}|${isLockedItem ? 1 : 0}|${selectable ? 1 : 0}|ms${isMultiSel ? 1 : 0}|${pxPerCm}|${unit}`
+  const cached = rulerConfigCache.get(asset.id)
+  if (cached && cached.sig === sig) return cached.config
+  const config: Record<string, unknown> = {
+    id: asset.id,
+    name: 'asset',
+    ...centerXf(asset),
+    // width/height — для nodeTopLeft, рамки Transformer'а й влучання
+    width: asset.w,
+    height: asset.h,
+    draggable: selectable && !isLockedItem && !isMultiSel,
+    dragBoundFunc: keepInsideTopLeft,
+    // З пером лінійка натисків не ловить — перо малює крізь неї (шар штрихів над шаром асетів).
+    listening: selectable,
+    perfectDrawEnabled: false,
+    sceneFunc: rulerSceneFunc(pxPerCm, unit),
+    hitFunc: rulerHitFunc,
+  }
+  rulerConfigCache.set(asset.id, { sig, config })
+  return config
+}
+
 // ─── Background layer cache ─────────────────────────────────────────────────
 
 function hasRenderableArea(layer: Konva.Layer): boolean {
@@ -6131,6 +6279,7 @@ watch(
     strokeConfigCache.clear()
     // Clear asset config memoization cache
     assetConfigCache.clear()
+    rulerConfigCache.clear()
     // Clear smoothing cache
     clearSmoothedCache()
     // Memory cleanup: image caches grow unbounded across pages. Trade-off — re-decode

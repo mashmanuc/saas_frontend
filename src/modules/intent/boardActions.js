@@ -1197,7 +1197,10 @@ async function _allInserts() {
   const mod = await import('@/modules/winterboard/components/sidebar/insertRegistry')
   // «Наочні сцени» (2026-10-20) — лише плитки «Інструментів» пілоту math_scenes; Інтегралику їх не даємо:
   // інакше він бачив би їх у всіх учителів повз пілот, а 16 плиток витісняли б інструменти зі стелі каталогу.
-  return typeof mod.allInserts === 'function' ? mod.allInserts().filter((e) => e.family !== 'scenes') : []
+  // Креслярські інструменти (лінійка, 2026-10-22) — річ у руці вчителя, не матеріал: Інтегралик їх не вставляє.
+  return typeof mod.allInserts === 'function'
+    ? mod.allInserts().filter((e) => e.family !== 'scenes' && e.family !== 'instruments')
+    : []
 }
 
 /** Ліміт каталогу в parse-контексті — дзеркало BE `MAX_TOOLS` (apps/intent/ai/parser.py). */

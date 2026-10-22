@@ -25,7 +25,7 @@ import {
   presentationScaleOf,
   withPresentationScale,
 } from '../board/cardPresentation'
-import { cardWindowActions } from '../board/windowActions'
+import { NO_WINDOW_ACTIONS, cardWindowActions } from '../board/windowActions'
 import { minimizedAsset, restoredAsset } from '../board/boardTray'
 import { useWBStore } from '../board/state/boardStore'
 import { cancelPendingUpdates } from '../board/state/assetUpdateBatcher'
@@ -54,12 +54,13 @@ describe('INV-PRES-1 · можливості подання всіх 28 типі
     // росте, коли вчитель відкриває відповідь.
     // 26 → 27: числова пряма (Б-184). Не текстова — фіксований розмір, як quadratic_card.
     // 27 → 28: «Наочна сцена» (2026-10-20). Не текстова — вікно фіксованого розміру зі сценою.
-    expect(STANDARD_ASSET_TYPES).toHaveLength(28)
+    // 28 → 29: екранна лінійка (2026-10-22). Креслярський інструмент, не вікно — без верхньої панелі.
+    expect(STANDARD_ASSET_TYPES).toHaveLength(29)
     for (const type of STANDARD_ASSET_TYPES) {
       const c = assetCapabilities(type)
       const text = TEXT.includes(type)
       expect([type, c.windowChrome, c.contentFit, c.textScale])
-        .toEqual([type, true, text ? 'height' : 'none', text ? 'teacher-shared' : 'none'])
+        .toEqual([type, type !== 'ruler', text ? 'height' : 'none', text ? 'teacher-shared' : 'none'])
     }
   })
 
@@ -257,6 +258,12 @@ describe('INV-PRES-5 · верхня панель', () => {
     expect(cardWindowActions(task, TEACHER)).toEqual({ scale: true, minimize: true, expand: true, delete: false, handwrite: false, handwriteSolves: false, fitHeight: false, taskHelp: false })
     expect(cardWindowActions({ id: 'c', type: 'visual_capsule' } as never, TEACHER).scale).toBe(false)
     expect(cardWindowActions(task, { isTutor: false, mode: 'edit' }).scale).toBe(false)
+  })
+
+  it('тип без верхньої панелі (лінійка) — жодної дії вікна: видаляють її 🗑 панелі виділення', () => {
+    const ruler = { id: 'r', type: 'ruler', x: 0, y: 0, w: 640, h: 64, rotation: 0 } as unknown as WBAsset
+    expect(cardWindowActions(ruler, TEACHER)).toEqual(NO_WINDOW_ACTIONS)
+    expect(cardWindowActions(ruler, { ...TEACHER, canSolve: true } as never)).toEqual(NO_WINDOW_ACTIONS)
   })
 })
 

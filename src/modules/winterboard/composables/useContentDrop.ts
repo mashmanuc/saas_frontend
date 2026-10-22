@@ -29,6 +29,9 @@ import {
 import { NUMBER_LINE_DRAG_MIME, buildNumberLineAsset } from '../constants/numberLineDefaults'
 import { MATH_SCENE_DRAG_MIME, buildMathSceneAsset } from '../constants/mathSceneDefaults'
 import { isMathSceneId } from '../types/mathScene'
+import { RULER_DRAG_MIME, buildRulerAsset } from '../constants/rulerDefaults'
+import { getActivePinia } from 'pinia'
+import { useWBStore } from '../board/state/boardStore'
 import { notifyError } from '@/utils/notify'
 import { i18n } from '@/i18n'
 // Phase Calculus (2026-05-15) — derivative + integral cards drop wiring.
@@ -344,6 +347,12 @@ export function useContentDrop(options: UseContentDropOptions) {
     const mathSceneRaw = event.dataTransfer?.getData(MATH_SCENE_DRAG_MIME)
     if (mathSceneRaw) {
       addAtPosition(MATH_SCENE_DRAG_MIME, mathSceneRaw, screenToCanvas(event.clientX, event.clientY))
+      return
+    }
+    // Екранна лінійка (2026-10-22) — той самий builder, що й клік.
+    const rulerRaw = event.dataTransfer?.getData(RULER_DRAG_MIME)
+    if (rulerRaw) {
+      addAtPosition(RULER_DRAG_MIME, rulerRaw, screenToCanvas(event.clientX, event.clientY))
       return
     }
 
@@ -1115,6 +1124,14 @@ export function useContentDrop(options: UseContentDropOptions) {
       }
       if (!isMathSceneId(sceneId)) return
       onAssetAdd(buildMathSceneAsset(pos, sceneId) as unknown as WBAsset)
+      return
+    }
+
+    // Екранна лінійка (2026-10-22): розмір — від клітинки поточної дошки (1 клітинка = 5 мм). Payload порожній.
+    // Сторінки без активного сховища (юніт-тести) немає дошки — масштаб за замовчуванням (gridSize 20).
+    if (mime === RULER_DRAG_MIME) {
+      const gridSize = getActivePinia() ? useWBStore().gridSize : undefined
+      onAssetAdd(buildRulerAsset(pos, gridSize))
       return
     }
 

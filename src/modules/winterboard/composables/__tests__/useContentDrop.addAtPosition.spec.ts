@@ -64,6 +64,9 @@ import {
 } from '../../constants/evidenceCardDefaults'
 import { MATH_SCENE_DRAG_MIME } from '../../types/mathScene'
 import { DEFAULT_MATH_SCENE_W, DEFAULT_MATH_SCENE_H } from '../../constants/mathSceneDefaults'
+import { RULER_DRAG_MIME } from '../../constants/rulerDefaults'
+import { createPinia, setActivePinia } from 'pinia'
+import { useWBStore } from '../../board/state/boardStore'
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
 
@@ -291,6 +294,34 @@ describe('useContentDrop.addAtPosition', () => {
     it('does NOT call onAssetAdd for an unrecognised MIME', () => {
       const { addAtPosition, onAssetAdd } = makeComposable()
       addAtPosition('application/x-unknown', '{}', DROP_POS)
+      expect(onAssetAdd).not.toHaveBeenCalled()
+    })
+  })
+
+  // ── ruler (екранна лінійка, 2026-10-22) ────────────────────────────────────
+  describe('ruler', () => {
+    it('нова лінійка: 0…15 см + поля по 0,5 см при клітинці 20 px (40 px/см); центр — у точці вставки', () => {
+      const { onAssetAdd, addAtPosition } = makeComposable()
+      addAtPosition(RULER_DRAG_MIME, '{}', DROP_POS)
+      expect(onAssetAdd).toHaveBeenCalledOnce()
+      const asset = onAssetAdd.mock.calls[0][0]
+      expect(asset).toMatchObject({ type: 'ruler', src: '', rotation: 0, locked: false, w: 640, h: 64 })
+      expect(asset.data).toBeUndefined()
+      expect(asset.x).toBe(DROP_POS.x - 320)
+      expect(asset.y).toBe(DROP_POS.y - 32)
+    })
+
+    it('розмір — від клітинки поточної дошки (gridSize 30 → 60 px/см)', () => {
+      setActivePinia(createPinia())
+      useWBStore().gridSize = 30
+      const { onAssetAdd, addAtPosition } = makeComposable()
+      addAtPosition(RULER_DRAG_MIME, '{}', DROP_POS)
+      expect(onAssetAdd.mock.calls[0][0]).toMatchObject({ type: 'ruler', w: 960, h: 96 })
+    })
+
+    it('canDraw=false — нічого не вставляється', () => {
+      const { onAssetAdd, addAtPosition } = makeComposable(false)
+      addAtPosition(RULER_DRAG_MIME, '{}', DROP_POS)
       expect(onAssetAdd).not.toHaveBeenCalled()
     })
   })

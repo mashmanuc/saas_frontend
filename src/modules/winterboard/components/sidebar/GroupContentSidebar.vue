@@ -364,6 +364,11 @@
               <div class="tools-results">
                 <InsertTileWithAdd v-for="e in geomashEntries" :key="e.id" :entry="e" />
               </div>
+              <!-- Креслярські інструменти (2026-10-22, власник: «це буде все в геометрії жити») — лінійка, усім -->
+              <div class="tools-subhead" data-testid="tools-instruments">{{ t('winterboard.insertTiles.instruments') }}</div>
+              <div class="tools-results">
+                <InsertTileWithAdd v-for="e in instrumentEntries" :key="e.id" :entry="e" />
+              </div>
             </template>
 
             <!-- 3D: стартовий набір -->
@@ -608,6 +613,7 @@ const currentAppLabel = computed(() =>
 )
 const threeDEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === '3d'))
 const geomashEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'geomash'))
+const instrumentEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'instruments'))
 const sceneEntries = computed<InsertEntry[]>(
   () => visibleInserts(gateOpts.value).filter(e => e.family === 'scenes'))
 const inequalityEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'inequalities'))

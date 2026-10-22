@@ -33,6 +33,7 @@ import { GRAPHMASH_3D_DRAG_MIME, GEOMASH_DRAG_MIME } from '../../constants/mashI
 import { MAP_CARD_DRAG_MIME, TIMELINE_CARD_DRAG_MIME } from '../../constants/evidenceCardDefaults'
 import { NUMBER_LINE_DRAG_MIME } from '../../constants/numberLineDefaults'
 import { MATH_SCENE_DRAG_MIME } from '../../types/mathScene'
+import { RULER_DRAG_MIME } from '../../constants/rulerDefaults'
 import type { GeoPresetMeta } from '../../vendor/geo2d'
 
 /** Родина інструмента (секція каталогу). '2d'/'3d'/'geomash' зарезервовані під
@@ -46,6 +47,7 @@ export type MashFamily =
   | 'trig'        // Тригонометрія (trig_circle + helix + trig_solver)
   | 'evidence'    // Універсальні доказові об'єкти: шкала й карта
   | 'scenes'      // «Наочні сцени» (2026-10-20, пілот math_scenes): готові живі сцени в вікні
+  | 'instruments' // Креслярські інструменти (2026-10-22): лінійка; живуть у «Геометрії»
   | '2d' | '3d' | 'geomash' | 'other'
 
 export interface InsertEntry {
@@ -299,6 +301,19 @@ const EVIDENCE_INSERTS: InsertEntry[] = [
   },
 ]
 
+// ── Креслярські інструменти (2026-10-22) — екранна лінійка; усім учителям, у картці «Геометрія» ──
+// Власник 22.10: «ми зараз робимо лінійку, циркуль реальний… Це буде все в геометрії жити».
+const INSTRUMENT_INSERTS: InsertEntry[] = [
+  {
+    id: 'instruments.ruler', family: 'instruments', category: 'instruments',
+    dragMime: RULER_DRAG_MIME, payload: '{}',
+    labelKey: 'winterboard.insertTiles.ruler', labelFallback: 'Лінійка',
+    iconKey: 'ruler', sublabelKey: 'winterboard.insertTiles.rulerSub',
+    sublabel: 'Прикладіть до лінії й поверніть за кружечок',
+    keywords: kw('лінійка', 'ruler', 'сантиметри', 'см', 'міліметри', 'виміряти', 'довжина', 'креслення'),
+  },
+]
+
 /** Усі build-time вставки (без рантайм-geo). Для тестів + швидких шляхів. */
 export const STATIC_INSERTS: readonly InsertEntry[] = [
   ...STEREO_INSERTS,
@@ -310,6 +325,7 @@ export const STATIC_INSERTS: readonly InsertEntry[] = [
   ...GEOMASH_INSERTS,
   ...EVIDENCE_INSERTS,
   ...SCENE_INSERTS,
+  ...INSTRUMENT_INSERTS,
 ]
 
 // ── planimetry (geometry_2d_v2) — РАНТАЙМ ──────────────────────────────────────
@@ -386,7 +402,7 @@ export type MashApp = '2d' | '3d' | 'geometry' | 'stereo' | 'content' | 'scenes'
 const FAMILY_TO_APP: Readonly<Record<string, MashApp>> = {
   analysis: '2d', quadratic: '2d', trig: '2d', inequalities: '2d',
   '3d': '3d',
-  planimetry: 'geometry', geomash: 'geometry',
+  planimetry: 'geometry', geomash: 'geometry', instruments: 'geometry',
   stereo: 'stereo',
   evidence: 'content',
   scenes: 'scenes',

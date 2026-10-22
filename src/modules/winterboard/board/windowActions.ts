@@ -63,6 +63,8 @@ export function cardWindowActions(
   // Картка домашки — лише «📋 Скопіювати картинку» в її шапці (власник 2026-10-20: «кнопки на кучу позлипались»).
   if (asset.type === 'theory_card' && isHomeworkCardData(asset.data)) return NO_WINDOW_ACTIONS
   const caps = assetCapabilities(asset.type)
+  // Тип без верхньої панелі картки (лінійка, 2026-10-22) — без групи «— ⛶ ×»: видаляють його 🗑 панелі виділення.
+  if (!caps.windowChrome) return NO_WINDOW_ACTIONS
   const ready = hasHandwritableSolution(asset)
   const solves = viewer.mode === 'edit' && !ready && viewer.canSolve === true && isIntegralykSolvable(asset)
   return {

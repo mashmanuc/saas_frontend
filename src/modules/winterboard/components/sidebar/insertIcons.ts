@@ -388,6 +388,15 @@ function scenesIcon() {
   ])
 }
 
+/** Креслярські інструменти (2026-10-22): лінійка — смужка з поділками (довга кожні 5 мм, коротка між ними). */
+function rulerIcon(): VNode {
+  return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: CUR, 'stroke-width': '1.5',
+    'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+    h('rect', { x: 2, y: 8, width: 20, height: 8, rx: 1.5 }),
+    h('path', { d: 'M5 8v4M8 8v2M11 8v4M14 8v2M17 8v4M20 8v2' }),
+  ])
+}
+
 export const InsertIcon: FunctionalComponent<{ family: string; iconKey: string }> = (props) => {
   switch (props.family) {
     case 'stereo': return stereoIcon(props.iconKey)
@@ -400,6 +409,7 @@ export const InsertIcon: FunctionalComponent<{ family: string; iconKey: string }
     case 'evidence': return evidenceIcon(props.iconKey)
     case 'inequalities': return numberLineIcon()
     case 'scenes': return scenesIcon()
+    case 'instruments': return rulerIcon()
     default:
       return h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: CUR, 'stroke-width': '1.5' },
         [h('rect', { x: 4, y: 4, width: 16, height: 16, rx: 2 })])

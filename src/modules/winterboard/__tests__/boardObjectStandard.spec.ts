@@ -136,6 +136,16 @@ describe('INV-STD-4 · похідні списки не змінили пове�
     expect(fullscreen).toEqual([...FULLSCREEN_BEFORE_TLV2_05A, 'visual_capsule', 'math_scene'].sort())
   })
 
+  it('лінійка (2026-10-22) — нативний Konva-вузол: рухається й розтягується, без ⛶, трею й верхньої панелі', () => {
+    expect(assetStandard('ruler')?.render).toBe('konva')
+    const c = assetCapabilities('ruler')
+    expect([c.movable, c.resizable, c.duplicable, c.deletable, c.lockable, c.layerable])
+      .toEqual([true, true, true, true, true, true])
+    expect([c.fullscreen, c.minimizable, c.windowChrome, c.contentFit, c.textScale, c.fitHeight])
+      .toEqual([false, false, false, 'none', 'none', false])
+    expect(OVERLAY_PROXY_TYPES.has('ruler')).toBe(false)
+  })
+
   it('ручки розміру медіа — лише відео і YouTube, як було', () => {
     const media = STANDARD_ASSET_TYPES.filter(isResizableMediaAsset).sort()
     expect(media).toEqual(['video_player', 'youtube_player'])
@@ -145,9 +155,11 @@ describe('INV-STD-4 · похідні списки не змінили пове�
   // Змінено свідомо — рішення власника 2026-09-28 («кожний можна згорнути», ТЗ
   // TZ_REMOTE_SCENARIO §4.1). До того 05B виключав медіа: сховане відео грало б звук.
   // Цю умову тепер закриває правило «згорнутий програвач мовчить» (mediaMinimize.spec.ts).
-  it('TLV2-05B + «Сценарій»: згортаються всі картки, медіа теж', () => {
+  // Лінійка (2026-10-22) — свідомий виняток: креслярський інструмент, не вікно; згортати її нічого.
+  it('TLV2-05B + «Сценарій»: згортаються всі картки, медіа теж; лінійка — ні', () => {
     const minimizable = STANDARD_ASSET_TYPES.filter(t => assetCapabilities(t).minimizable).sort()
-    expect(minimizable).toEqual([...STANDARD_ASSET_TYPES].sort())
+    expect(minimizable).toEqual(STANDARD_ASSET_TYPES.filter(t => t !== 'ruler').sort())
+    expect(assetCapabilities('ruler').minimizable).toBe(false)
     for (const media of ['audio_player', 'video_player', 'youtube_player']) {
       expect(assetCapabilities(media).minimizable, media).toBe(true)
     }

@@ -188,6 +188,11 @@ export const BOARD_ASSET_STANDARD: Readonly<Record<string, BoardObjectStandardEn
   // Повноекранний перегляд презентації — заглушка (`WBSoloRoom.presentation-expand`),
   // тому `fullscreen: false`: кнопки без дії стандарт не дозволяє.
   document_viewer: card('konva', { fitHeight: true }),
+  // Екранна лінійка (2026-10-22, власник: «ми зараз робимо лінійку, циркуль реальний… Це буде все в геометрії
+  // жити»). Креслярський інструмент, а не вікно: тягнеться, повертається й розтягується в довжину Transformer'ом,
+  // дублюється, видаляється, блокується, міняє шар. Згортати в трей, розгортати ⛶ і ставити верхню панель
+  // картки («— ⛶ ×») нічого — `minimizable`, `fullscreen` і `windowChrome` вимкнено.
+  ruler: card('konva', { minimizable: false, windowChrome: false }),
 
   // ── Медіа-оверлеї з власним drag ──────────────────────────────────────────
   // Аудіо не має ручок розміру (`WBCanvas.isResizableMedia` — лише video/youtube).
