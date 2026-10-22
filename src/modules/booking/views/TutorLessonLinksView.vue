@@ -1,6 +1,6 @@
 <template>
   <div class="lesson-links-view">
-    <nav class="lesson-links-tabs" aria-label="Tutor profile steps">
+    <nav v-if="tabs.length" class="lesson-links-tabs" aria-label="Tutor profile steps">
       <RouterLink
         v-for="tab in tabs"
         :key="tab.id"
@@ -47,7 +47,7 @@ import Button from '@/ui/Button.vue'
 const { t } = useI18n()
 const router = useRouter()
 const activeTab = 'lesson-links'
-const tabs = [
+const PROFILE_TABS = [
   { id: 'photo', labelKey: 'marketplace.profile.editor.photoTitle', to: { name: 'tutor-profile', query: { step: 'photo' } } },
   { id: 'basic', labelKey: 'marketplace.profile.editor.basicTitle', to: { name: 'tutor-profile', query: { step: 'basic' } } },
   { id: 'subjects', labelKey: 'marketplace.profile.editor.subjectsLanguagesTitle', to: { name: 'tutor-profile', query: { step: 'subjects' } } },
@@ -65,6 +65,10 @@ const tabs = [
     to: { name: 'tutor-profile', query: { step: 'publish' } },
   }
 ]
+// Marketplace Extraction (2026-06-18): анкети репетитора (`tutor-profile`) на сайті немає. RouterLink на неіснуючий
+// маршрут кидає «No match», і сторінка падала цілком на «Щось пішло не так» — кнопка «Редагувати» в розкладі
+// не працювала (власник 2026-10-22). Кроки анкети показуємо лише тоді, коли сам маршрут є.
+const tabs = router.hasRoute('tutor-profile') ? PROFILE_TABS : []
 const previousTab = tabs.find((tab) => tab.id === 'privacy')
 const nextTab = tabs.find((tab) => tab.id === 'publish')
 
