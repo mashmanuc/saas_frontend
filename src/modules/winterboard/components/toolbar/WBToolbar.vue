@@ -50,6 +50,37 @@
             @update:current-size="emit('size-change', $event)"
           />
         </div>
+        <!-- Креслярські інструменти (власник 2026-10-22: «так, роби кнопку зліва») — одразу після лінії
+             й фігур. Лише там, де кімната вміє вставляти предмети (дає ADD_TOOL_TO_BOARD_KEY):
+             кнопка без дії «мовчала» б. -->
+        <template v-if="si === DRAFTING_AFTER_SUBGROUP && addTool">
+          <button
+            :ref="(el) => { draftingTrigger = el as HTMLElement | null }"
+            type="button"
+            class="wb-toolbar__btn wb-toolbar__btn--tooltip"
+            :class="{ 'wb-toolbar__btn--active': draftingOpen }"
+            :aria-label="t('winterboard.insertTiles.instruments')"
+            :data-tooltip="t('winterboard.insertTiles.instruments')"
+            :aria-expanded="draftingOpen"
+            aria-haspopup="menu"
+            :tabindex="getTabIndex(0, DRAFTING_DOM_INDEX)"
+            data-testid="wb-drafting-trigger"
+            @click="draftingOpen = !draftingOpen"
+          >
+            <svg class="wb-toolbar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="8" width="20" height="8" rx="1.5" />
+              <path d="M5 8v4M8 8v2M11 8v4M14 8v2M17 8v4M20 8v2" />
+            </svg>
+            <span v-if="showLabels" class="wb-toolbar__label">{{ t('winterboard.touchLabels.drafting') }}</span>
+          </button>
+          <WBDraftingFlyout
+            v-model:open="draftingOpen"
+            :anchor="draftingTrigger"
+            :add-tool="addTool"
+            :dock="dock"
+          />
+        </template>
       </template>
     </div>
 
@@ -173,7 +204,7 @@
 // Ref: TASK_BOARD.md B1.3, B3.1
 // B3.1: Roving tabindex, arrow key nav, Tab between groups, focus trap
 
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { WBToolType } from '../../types/winterboard'
 
@@ -194,6 +225,8 @@ import WBIconSticky from './icons/WBIconSticky.vue'
 import WBIconLock from './icons/WBIconLock.vue'
 import WBIconUnlock from './icons/WBIconUnlock.vue'
 import WBColorFlyout from './WBColorFlyout.vue'
+import WBDraftingFlyout from './WBDraftingFlyout.vue'
+import { ADD_TOOL_TO_BOARD_KEY, type AddToolFn } from '../../composables/useAddToolToBoard'
 import { useNoHoverLabels } from '../../composables/useNoHoverLabels'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
@@ -324,9 +357,21 @@ const STYLE_DOM_INDEX = toolSubGroups
   .slice(0, STYLE_AFTER_SUBGROUP + 1)
   .reduce((n, group) => n + group.length, 0)
 
+// Креслярські інструменти — ще одна кнопка групи після підгрупи «лінія, прямокутник, коло».
+// Немає вставки в кімнаті — немає й кнопки, тоді зсуву теж немає.
+const addTool = inject<AddToolFn | null>(ADD_TOOL_TO_BOARD_KEY, null)
+const DRAFTING_AFTER_SUBGROUP = 2
+const DRAFTING_TOOL_INDEX = toolSubGroups
+  .slice(0, DRAFTING_AFTER_SUBGROUP + 1)
+  .reduce((n, group) => n + group.length, 0)
+const DRAFTING_DOM_INDEX = DRAFTING_TOOL_INDEX + 1
+const draftingOpen = ref(false)
+const draftingTrigger = ref<HTMLElement | null>(null)
+
 function toolDomIndex(toolId: WBToolType): number {
   const i = drawingTools.findIndex(t => t.id === toolId)
-  return i < STYLE_DOM_INDEX ? i : i + 1
+  const afterStyle = i < STYLE_DOM_INDEX ? i : i + 1
+  return addTool && i >= DRAFTING_TOOL_INDEX ? afterStyle + 1 : afterStyle
 }
 
 // ─── B3: Conditional visibility ─────────────────────────────────────────────

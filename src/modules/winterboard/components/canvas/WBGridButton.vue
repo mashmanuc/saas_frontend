@@ -55,6 +55,7 @@
 import { ref, onMounted, onBeforeUnmount, h } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { GRID_OPTIONS, type GridType } from '../../composables/useGridOverlay'
+import { NOTEBOOK_INK } from '../../composables/usePageGrid'
 
 const props = defineProps<{
   modelValue: GridType
@@ -103,6 +104,8 @@ onBeforeUnmount(() => {
 function renderPreview(type: GridType) {
   const c = '#94a3b8' // slate-400
   const bg = '#f8fafc' // slate-50
+  // Зошитові види — тим самим синім, що й на дошці (власник 2026-10-22: «як зошит»).
+  const ink = NOTEBOOK_INK
 
   switch (type) {
     case 'none':
@@ -114,15 +117,15 @@ function renderPreview(type: GridType) {
       return h('g', [
         h('rect', { x: 0, y: 0, width: 28, height: 28, fill: bg, rx: 3 }),
         ...[7, 14, 21].flatMap(v => [
-          h('line', { x1: v, y1: 1, x2: v, y2: 27, stroke: c, 'stroke-width': 0.5 }),
-          h('line', { x1: 1, y1: v, x2: 27, y2: v, stroke: c, 'stroke-width': 0.5 }),
+          h('line', { x1: v, y1: 1, x2: v, y2: 27, stroke: ink, 'stroke-width': 0.6 }),
+          h('line', { x1: 1, y1: v, x2: 27, y2: v, stroke: ink, 'stroke-width': 0.6 }),
         ]),
       ])
     case 'large-grid':
       return h('g', [
         h('rect', { x: 0, y: 0, width: 28, height: 28, fill: bg, rx: 3 }),
-        h('line', { x1: 14, y1: 1, x2: 14, y2: 27, stroke: c, 'stroke-width': 0.5 }),
-        h('line', { x1: 1, y1: 14, x2: 27, y2: 14, stroke: c, 'stroke-width': 0.5 }),
+        h('line', { x1: 14, y1: 1, x2: 14, y2: 27, stroke: ink, 'stroke-width': 0.6 }),
+        h('line', { x1: 1, y1: 14, x2: 27, y2: 14, stroke: ink, 'stroke-width': 0.6 }),
       ])
     case 'dots':
       return h('g', [
@@ -137,7 +140,17 @@ function renderPreview(type: GridType) {
       return h('g', [
         h('rect', { x: 0, y: 0, width: 28, height: 28, fill: bg, rx: 3 }),
         ...[7, 14, 21].map(y =>
-          h('line', { x1: 1, y1: y, x2: 27, y2: y, stroke: c, 'stroke-width': 0.5 }),
+          h('line', { x1: 1, y1: y, x2: 27, y2: y, stroke: ink, 'stroke-width': 0.8 }),
+        ),
+      ])
+    case 'slanted':
+      return h('g', [
+        h('rect', { x: 0, y: 0, width: 28, height: 28, fill: bg, rx: 3 }),
+        ...[3, 11, 19].map(x =>
+          h('line', { x1: x, y1: 26, x2: x + 9, y2: 2, stroke: ink, 'stroke-width': 0.5, 'stroke-opacity': 0.6 }),
+        ),
+        ...[7, 11, 18, 22].map(y =>
+          h('line', { x1: 1, y1: y, x2: 27, y2: y, stroke: ink, 'stroke-width': 0.8 }),
         ),
       ])
     case 'coordinate':

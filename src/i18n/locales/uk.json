@@ -7778,6 +7778,7 @@
       "unlock": "Відкріпити",
       "youtube": "YouTube",
       "formula": "Формула",
+      "drafting": "Креслення",
       "invite": "Учень",
       "remote": "Пульт",
       "share": "Поділитися",
@@ -9651,7 +9652,8 @@
       "smallGrid": "Дрібна клітинка",
       "largeGrid": "Велика клітинка",
       "dots": "Крапки",
-      "ruled": "Лінійки",
+      "ruled": "В лінійку",
+      "slanted": "В косу лінію",
       "coordinate": "Координатна площина"
     },
     "emptySession": {

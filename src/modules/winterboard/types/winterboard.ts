@@ -431,13 +431,13 @@ export const STICKY_DEFAULTS = {
 // Bug fix: grid is now per-page (not global), with configurable color/opacity
 
 /** Visual style for per-page grid pattern (Phase 10 expansion) */
-export type GridStyle = 'dots' | 'lines' | 'small-grid' | 'large-grid' | 'ruled' | 'coordinate'
+export type GridStyle = 'dots' | 'lines' | 'small-grid' | 'large-grid' | 'ruled' | 'slanted' | 'coordinate'
 
 export interface WBPageGridSettings {
   enabled: boolean
   /** Tile size in pixels */
   size: number
-  /** Visual style: dots, lines, small-grid, large-grid, ruled, coordinate */
+  /** Visual style: dots, lines, small-grid, large-grid, ruled, slanted (коса лінія), coordinate */
   style: GridStyle
   /** CSS color string — default '#000000' */
   color: string

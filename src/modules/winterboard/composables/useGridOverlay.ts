@@ -7,6 +7,7 @@
  * - large-grid: large square cells (~40px) — for general sketching
  * - dots: dot grid — minimal visual noise, popular with tutors
  * - ruled: horizontal ruled lines — for writing practice
+ * - slanted: коса лінія (рядок + похилі під ~65°) — письмо в 1–2 класі
  * - coordinate: full coordinate plane with axes + labels — math/physics
  *
  * State is persisted per-session in localStorage.
@@ -18,7 +19,7 @@ import { ref, computed, watch } from 'vue'
 import { useWBStore } from '../board/state/boardStore'
 import type { WBPageGridSettings } from '../types/winterboard'
 
-export type GridType = 'none' | 'small-grid' | 'large-grid' | 'dots' | 'ruled' | 'coordinate'
+export type GridType = 'none' | 'small-grid' | 'large-grid' | 'dots' | 'ruled' | 'slanted' | 'coordinate'
 
 export interface GridOption {
   id: GridType
@@ -37,6 +38,8 @@ export const GRID_OPTIONS: GridOption[] = [
   { id: 'large-grid',  nameKey: 'winterboard.grid.largeGrid',  icon: 'large-grid' },
   { id: 'dots',        nameKey: 'winterboard.grid.dots',       icon: 'dots' },
   { id: 'ruled',       nameKey: 'winterboard.grid.ruled',      icon: 'ruled' },
+  // Власник 2026-10-22: «треба зробити в косу лінійку і в лінійку… як зошит».
+  { id: 'slanted',     nameKey: 'winterboard.grid.slanted',    icon: 'slanted' },
 ]
 
 const STORAGE_PREFIX = 'wb_grid_'
@@ -78,6 +81,8 @@ function gridTypeToSettings(type: GridType): Partial<WBPageGridSettings> {
     case 'large-grid': return { enabled: true, style: 'large-grid', size: 40 }
     case 'dots':       return { enabled: true, style: 'dots',       size: 20 }
     case 'ruled':      return { enabled: true, style: 'ruled',      size: 32 }
+    // Розмір плитки коси — свій (SLANTED_TILE_* у usePageGrid); 40 = рядок + проміжок, 10 мм.
+    case 'slanted':    return { enabled: true, style: 'slanted',    size: 40 }
     case 'coordinate': return { enabled: true, style: 'coordinate', size: 40 }
     default:           return { enabled: false }
   }

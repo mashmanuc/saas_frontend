@@ -7690,6 +7690,7 @@
       "unlock": "Unlock",
       "youtube": "YouTube",
       "formula": "Formula",
+      "drafting": "Drafting",
       "invite": "Student",
       "remote": "Remote",
       "share": "Share",
@@ -9934,6 +9935,7 @@
       "largeGrid": "Large grid",
       "dots": "Dots",
       "ruled": "Ruled lines",
+      "slanted": "Slanted lines",
       "coordinate": "Coordinate plane"
     },
     "emptySession": {

@@ -73,6 +73,71 @@ export function usePageGrid() {
   }
 }
 
+// ─── Зошитові види: клітинка, лінійка, коса лінія ───────────────────────────
+
+/** Синя лінія зошита. Масштаб дошки — як у лінійки: 1 мм = 4 px (клітинка 20 px = 5 мм). */
+export const NOTEBOOK_INK = '#2f6fd0'
+
+const NOTEBOOK_STYLES: ReadonlySet<GridStyle> = new Set<GridStyle>(['small-grid', 'large-grid', 'ruled', 'slanted'])
+
+/**
+ * Коса лінія (письмо в 1–2 класі): рядок 4 мм, між рядками 6 мм, похилі під ~65° — нахил письма.
+ * Плитка — два рядки заввишки (80 px) і крок похилих завширшки (37 px): за 80 px похила
+ * зсувається рівно на 37 px, тож на межах плиток лінії не рвуться (atan(80/37) ≈ 65,2°).
+ */
+export const SLANTED_ROW_PX = 16
+export const SLANTED_GAP_PX = 24
+export const SLANTED_TILE_W = 37
+export const SLANTED_TILE_H = 2 * (SLANTED_ROW_PX + SLANTED_GAP_PX)
+
+function drawNotebookTile(
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D,
+  style: GridStyle,
+  size: number,
+): void {
+  // Розмір полотна скидає стан контексту — колір і товщину ставимо після нього.
+  if (style === 'slanted') {
+    canvas.width = SLANTED_TILE_W
+    canvas.height = SLANTED_TILE_H
+    ctx.strokeStyle = NOTEBOOK_INK
+    ctx.lineWidth = 1
+    // Похилі світліші за рядки, як у зошиті. Сусідні копії (±ширина) докреслюють кути плитки.
+    ctx.globalAlpha = 0.3
+    ctx.beginPath()
+    for (const dx of [-SLANTED_TILE_W, 0, SLANTED_TILE_W]) {
+      ctx.moveTo(dx, SLANTED_TILE_H)
+      ctx.lineTo(dx + SLANTED_TILE_W, 0)
+    }
+    ctx.stroke()
+    ctx.globalAlpha = 0.6
+    ctx.beginPath()
+    for (let top = SLANTED_GAP_PX / 2; top < SLANTED_TILE_H; top += SLANTED_ROW_PX + SLANTED_GAP_PX) {
+      for (const y of [top, top + SLANTED_ROW_PX]) {
+        ctx.moveTo(0, y + 0.5)
+        ctx.lineTo(SLANTED_TILE_W, y + 0.5)
+      }
+    }
+    ctx.stroke()
+    return
+  }
+  canvas.width = size
+  canvas.height = size
+  ctx.strokeStyle = NOTEBOOK_INK
+  ctx.lineWidth = 1
+  ctx.globalAlpha = style === 'ruled' ? 0.6 : 0.4
+  // Лінія на пів пікселя всередині плитки: на самому краю видно лише її половину.
+  const edge = size - 0.5
+  ctx.beginPath()
+  if (style !== 'ruled') {
+    ctx.moveTo(edge, 0)
+    ctx.lineTo(edge, size)
+  }
+  ctx.moveTo(0, edge)
+  ctx.lineTo(size, edge)
+  ctx.stroke()
+}
+
 // ─── Internal: canvas tile generator ────────────────────────────────────────
 
 /**
@@ -99,6 +164,18 @@ export function _applyGridToCanvas(
   if (!ctx) return
 
   const { size, style, color, opacity } = grid
+
+  // Зошитові види — сині лінії «як у зошиті» (власник 2026-10-22: «зробити менш прозорим, щоб
+  // видно було… лінійка синя має бути, як зошит»). БУЛО: світло-сіра лінія під прозорістю 0,4 ще й
+  // на самому краю плитки (видно лише її половину) — на проєкторі й у відеозв'язку клітинки майже
+  // не було. Колір і прозорість — від виду, не від збереженого `opacity`: інакше старі сторінки
+  // лишилися б блідими.
+  if (NOTEBOOK_STYLES.has(style)) {
+    drawNotebookTile(canvas, ctx, style, size)
+    wbStore.setGridPattern(canvas.toDataURL())
+    return
+  }
+
   canvas.width  = size
   canvas.height = size
 
@@ -111,30 +188,6 @@ export function _applyGridToCanvas(
     ctx.beginPath()
     ctx.arc(size / 2, size / 2, 1.5, 0, Math.PI * 2)
     ctx.fill()
-  } else if (style === 'small-grid') {
-    // Thin grid lines — tile size 20px
-    // Use 1px lines so globalAlpha still produces visible result at opacity 0.4
-    ctx.strokeStyle = '#94a3b8'
-    ctx.lineWidth   = 1
-    ctx.beginPath()
-    ctx.moveTo(size, 0);    ctx.lineTo(size, size)   // right edge
-    ctx.moveTo(0,    size); ctx.lineTo(size, size)   // bottom edge
-    ctx.stroke()
-  } else if (style === 'large-grid') {
-    // Larger grid lines — tile size 40px
-    ctx.strokeStyle = '#94a3b8'
-    ctx.lineWidth   = 1
-    ctx.beginPath()
-    ctx.moveTo(size, 0);    ctx.lineTo(size, size)   // right edge
-    ctx.moveTo(0,    size); ctx.lineTo(size, size)   // bottom edge
-    ctx.stroke()
-  } else if (style === 'ruled') {
-    // Horizontal ruled lines only — blue tint
-    ctx.strokeStyle = '#60a5fa'
-    ctx.lineWidth   = 1
-    ctx.beginPath()
-    ctx.moveTo(0, size); ctx.lineTo(size, size)      // bottom edge only
-    ctx.stroke()
   } else if (style === 'coordinate') {
     // Coordinate plane tile: two-level grid (5 minor cells per major cell)
     // Major cell = tile size (40px); minor cell = 8px
