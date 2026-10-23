@@ -926,6 +926,17 @@ const routes = [
               requiresStaff: true
             },
           },
+          // 2026-10-23: майстерня банку задач — власник переглядає, виправляє, ставить тему/рівень і «перевірено мною»
+          {
+            path: 'task-workshop',
+            name: 'staff-task-workshop',
+            component: () => import('../modules/staff/views/StaffTaskWorkshopView.vue'),
+            meta: {
+              requiresAuth: true,
+              roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN],
+              requiresStaff: true
+            },
+          },
         ],
       },
       // Phase 16: Knowledge domain routes (inside PageShell for sidebar + header)

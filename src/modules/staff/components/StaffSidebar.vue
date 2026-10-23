@@ -108,6 +108,17 @@
           <Coins class="nav-icon-svg" :size="18" />
           <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.aiCosts') }}</span>
         </router-link>
+        <!-- 2026-10-23: майстерня банку задач (власник) -->
+        <router-link
+          to="/staff/task-workshop"
+          class="nav-item"
+          :class="{ active: route.path.startsWith('/staff/task-workshop') }"
+          :title="collapsed ? $t('staff.sidebar.taskWorkshop') : undefined"
+          data-testid="staff-nav-task-workshop"
+        >
+          <ClipboardCheck class="nav-icon-svg" :size="18" />
+          <span v-if="!collapsed" class="nav-label">{{ $t('staff.sidebar.taskWorkshop') }}</span>
+        </router-link>
         <!-- 2026-09-26: виплати тьюторам — спадок marketplace (у v1 ми тьюторам не платимо). -->
         <router-link
           v-if="PAYOUTS_VISIBLE"
@@ -213,6 +224,7 @@ import {
   Lightbulb,
   CreditCard,
   Coins,
+  ClipboardCheck,
   Banknote,
   HeartPulse,
   PackageOpen,
