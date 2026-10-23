@@ -37,6 +37,7 @@ function mountView() {
 }
 
 beforeEach(() => {
+  vi.clearAllMocks()
   vi.mocked(api.getWorkshopTopics).mockResolvedValue({ topics: [
     { id: 'right-triangles', label: 'Прямокутні трикутники', parent: null, total: 12, verified: 3 },
     { id: 'right-triangles.pythagoras', label: 'Теорема Піфагора', parent: 'right-triangles', total: 5, verified: 1 },
@@ -83,6 +84,26 @@ describe('StaffTaskWorkshopView', () => {
     await flushPromises()
     expect(api.verifyWorkshopTask).toHaveBeenCalledWith(7, { level: 3, note: '', expected_revision: 'rev-2' })
     expect(api.getWorkshopTask).toHaveBeenLastCalledWith(8)                  // наступна задача
+    w.unmount()
+  })
+
+  it('counts a first check in the topic tree at once, a repeated check does not count twice', async () => {
+    const w = mountView()
+    await flushPromises()
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '2' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+    await flushPromises()
+    expect(w.find('[data-testid="ws-topic-right-triangles"]').text()).toContain('4/12')
+
+    vi.mocked(api.getWorkshopTask).mockImplementation(async (id: number) => ({ ...TASK, id,
+      verification: { level: 2, note: '', at: '2026-10-23T10:00:00Z', by: 'o@m4sh', stale: false, topics: [] } }))
+    await w.find('[data-testid="ws-prev"]').trigger('click')                 // уже перевірена — перевіряємо вдруге
+    await flushPromises()
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+    await flushPromises()
+    expect(api.verifyWorkshopTask).toHaveBeenCalledTimes(2)
+    expect(w.find('[data-testid="ws-topic-right-triangles"]').text()).toContain('4/12')
+    expect(api.getWorkshopTopics).toHaveBeenCalledTimes(1)                   // без перерахунку всієї бази
     w.unmount()
   })
 

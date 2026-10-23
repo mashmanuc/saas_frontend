@@ -282,6 +282,13 @@ const visibleTopics = computed(() => {
   return topicOptions.value.filter(r => r.label.toLowerCase().includes(needle)).map(r => ({ ...r, depth: 0 }))
 })
 
+// Сервер рахує «перевірено» лише при відкритті сторінки (власник 23.10 бачив 0/614 після десяти перевірених),
+// тож першу перевірку задачі додаємо до всіх її тем на місці, без перерахунку всієї бази.
+function countVerified(rawTopics: string[]) {
+  const ids = new Set(rawTopics)
+  topics.value = topics.value.map(tp => (ids.has(tp.id) ? { ...tp, verified: tp.verified + 1 } : tp))
+}
+
 function toggle(id: string) {
   if (expanded.has(id)) expanded.delete(id)
   else expanded.add(id)
@@ -415,6 +422,7 @@ async function save() {
     setDraft(task)
     replaceListItem(task)
     say(t('staff.taskWorkshop.saved'))
+    if (payload.topic) loadTopics()   // задача перейшла в іншу тему — лічильники обох тем змінились
   } catch (err) {
     fail(err)
   } finally {
@@ -430,11 +438,13 @@ async function verifyAndNext() {
     await save()
     if (messageBad.value || !current.value) return
   }
+  const firstCheck = !current.value.verification
   busy.value = true
   try {
     const task = await verifyWorkshopTask(current.value.id, { level: level.value, note: note.value,
                                                              expected_revision: current.value.revision })
     replaceListItem(task)
+    if (firstCheck) countVerified(task.raw_topics)
     say('')
   } catch (err) {
     busy.value = false
