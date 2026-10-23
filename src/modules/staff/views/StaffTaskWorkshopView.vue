@@ -42,7 +42,7 @@
             @click="setSource(src)"
           >{{ $t(`staff.taskWorkshop.sources.${src}`) }}</button>
         </div>
-        <div v-if="selectedNode" class="ws-readiness" :class="{ ok: selectedNode.ready }" data-testid="ws-readiness">
+        <div v-if="selectedNode?.levels" class="ws-readiness" :class="{ ok: selectedNode.ready }" data-testid="ws-readiness">
           <p class="ws-readiness-title">{{ readinessText }}</p>
           <div class="ws-readiness-levels">
             <span
@@ -337,7 +337,7 @@ function countVerified(rawTopics: string[], before: number | null, after: number
 const selectedNode = computed(() => topics.value.find(tp => tp.id === selectedTopic.value) || null)
 const readinessText = computed(() => {
   const node = selectedNode.value
-  if (!node) return ''
+  if (!node?.levels) return ''   // сервер ще без рівнів (сторінка виходить раніше за сервер) — смугу не показуємо
   if (node.ready) return t('staff.taskWorkshop.readyYes')
   if (node.levels.every(n => n >= READY_PER_LEVEL)) return t('staff.taskWorkshop.readyWaitsSub')
   return t('staff.taskWorkshop.readyNo', { n: READY_PER_LEVEL })
