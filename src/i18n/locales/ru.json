@@ -8372,6 +8372,7 @@
       "toolsSearch": "Поиск инструмента...",
       "loading": "Загрузка материалов...",
       "processing": "Обработка...",
+      "processingProgress": "Готово {ready} из {total}",
       "failed": "Ошибка",
       "dropToUpload": "Перетащите файл для загрузки",
       "load_failed": "Ошибка загрузки",
@@ -8434,6 +8435,8 @@
     },
     "pdfSelector": {
       "pageCount": "{count} стр.",
+      "pageCountProgress": "{ready} из {total} стр.",
+      "pageNotReady": "Страница ещё готовится…",
       "close": "Закрыть",
       "dragFull": "Перетащить весь PDF",
       "pageAlt": "Страница {n}",

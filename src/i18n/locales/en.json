@@ -8447,6 +8447,7 @@
       "toolsSearch": "Search tools...",
       "loading": "Loading materials...",
       "processing": "Processing...",
+      "processingProgress": "Ready {ready} of {total}",
       "failed": "Failed",
       "dropToUpload": "Drop file to upload",
       "load_failed": "Failed to load",
@@ -8531,6 +8532,8 @@
     },
     "pdfSelector": {
       "pageCount": "{count} pages",
+      "pageCountProgress": "{ready} of {total} pp.",
+      "pageNotReady": "Page is still being prepared…",
       "close": "Close",
       "dragFull": "Drag full PDF",
       "pageAlt": "Page {n}",

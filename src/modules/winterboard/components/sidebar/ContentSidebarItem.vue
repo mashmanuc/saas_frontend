@@ -86,8 +86,11 @@
     <span
       v-if="item.processing_status === 'pending' || item.processing_status === 'processing'"
       class="sidebar-item__badge sidebar-item__badge--pending"
+      data-testid="sidebar-processing-badge"
     >
-      {{ t('winterboard.contentSidebar.processing') }}
+      {{ isPartialPdf && item.page_count
+        ? t('winterboard.contentSidebar.processingProgress', { ready: readyPages, total: item.page_count })
+        : t('winterboard.contentSidebar.processing') }}
     </span>
     <span
       v-else-if="item.processing_status === 'failed'"
@@ -155,8 +158,22 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+/** Скільки сторінок PDF уже готово (сервер віддає їх поступово, поки обробка йде). */
+const readyPages = computed(() => Object.keys(props.item.pages ?? {}).length)
+
+/**
+ * PDF ще обробляється, але перші сторінки вже є (власник 2026-10-23: «Чого так довго вантажить? Алгебру
+ * 10 клас» — 448 сторінок висіли в «Обробці» ~3,5 хв). Такий файл відкривається одразу: готові сторінки
+ * можна гортати й класти, документ на дошці дотягує решту сам.
+ */
+const isPartialPdf = computed(() =>
+  props.item.asset_category === 'pdf'
+  && (props.item.processing_status === 'pending' || props.item.processing_status === 'processing')
+  && readyPages.value > 0,
+)
+
 const isReady = computed(() =>
-  !props.item.processing_status || props.item.processing_status === 'ready',
+  !props.item.processing_status || props.item.processing_status === 'ready' || isPartialPdf.value,
 )
 
 // Audio/video можна відтворювати та перетягувати навіть без завершення processing

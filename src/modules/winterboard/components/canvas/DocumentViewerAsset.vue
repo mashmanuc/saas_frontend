@@ -69,7 +69,7 @@ import { useI18n } from 'vue-i18n'
 import type { WBAsset } from '../../types/winterboard'
 import { documentHeaderText } from '../../board/documentTitle'
 import { keepInsideTopLeft } from '../../board/konvaDragBounds'
-import { getDocumentPageUrl } from '../../composables/useDocumentPageCache'
+import { getDocumentPageUrl, isDocumentStillProcessing, refreshIncompleteDocument } from '../../composables/useDocumentPageCache'
 import {
   CUT_CONTENT_TYPES, QUICK_MIN_VIEWER_W, quickRelease, viewerPointToPage, type FragRect,
 } from '../library/pdfFragmentRect'
@@ -143,8 +143,37 @@ const isFetchingPage = ref(false)
 // Це уникає duplicate fire при mount → 1 HTTP call замість 2.
 watch(
   () => props.asset.currentPage,
-  () => loadCurrentPage(),
+  () => { pageWaitTries = 0; loadCurrentPage() },
 )
+
+/**
+ * PDF ще обробляється (2026-10-23, поступова обробка): документ одразу знає всі сторінки, але дальніх
+ * картинок ще немає. Тоді — «Сторінка ще готується…» і перепитуємо раз на 4 с, поки сторінка не
+ * з'явиться (стеля ~10 хв на одну сторінку; новий перехід — нова стеля).
+ */
+const pageWaiting = ref(false)
+let pageWaitTimer: ReturnType<typeof setTimeout> | null = null
+let pageWaitTries = 0
+const PAGE_WAIT_MS = 4000
+const PAGE_WAIT_MAX = 150
+
+function clearPageWait(): void {
+  if (pageWaitTimer) clearTimeout(pageWaitTimer)
+  pageWaitTimer = null
+}
+
+function waitForPage(): void {
+  const contentId = props.asset.content_ref?.content_id
+  pageWaiting.value = !!contentId && isDocumentStillProcessing(contentId)
+  if (!pageWaiting.value || !contentId || pageWaitTries >= PAGE_WAIT_MAX) return
+  pageWaitTimer = setTimeout(() => {
+    pageWaitTries += 1
+    refreshIncompleteDocument(contentId)
+    loadCurrentPage()
+  }, PAGE_WAIT_MS)
+}
+
+onBeforeUnmount(clearPageWait)
 
 /**
  * Адреса сторінки: або з бекенду (хмарний документ), або з самого об'єкта.
@@ -167,6 +196,7 @@ const hasPageSource = computed(() =>
 )
 
 async function loadCurrentPage() {
+  clearPageWait()
   if (!hasPageSource.value) { currentPageImage.value = null; return }
 
   const pageIndex = props.asset.currentPage ?? 0
@@ -177,8 +207,10 @@ async function loadCurrentPage() {
 
   if (!url) {
     currentPageImage.value = null
+    waitForPage()
     return
   }
+  pageWaiting.value = false
 
   const img = new Image()
   img.crossOrigin = 'anonymous'
@@ -317,7 +349,7 @@ const loadingTextConfig = computed(() => ({
   x: 0,
   y: HEADER_H + contentH.value / 2 - 8,
   width: props.asset.w,
-  text: '...',
+  text: pageWaiting.value ? t('winterboard.pdfSelector.pageNotReady') : '...',
   fontSize: 16,
   fontFamily: 'Inter, sans-serif',
   fill: '#94a3b8',

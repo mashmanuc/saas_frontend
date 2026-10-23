@@ -9939,6 +9939,7 @@
       "toolsSearch": "Пошук інструмента...",
       "loading": "Завантаження матеріалів...",
       "processing": "Обробка...",
+      "processingProgress": "Готово {ready} з {total}",
       "failed": "Помилка",
       "dropToUpload": "Перетягніть файл для завантаження",
       "load_failed": "Помилка завантаження",
@@ -10009,6 +10010,8 @@
     },
     "pdfSelector": {
       "pageCount": "{count} стор.",
+      "pageCountProgress": "{ready} з {total} стор.",
+      "pageNotReady": "Сторінка ще готується…",
       "close": "Закрити",
       "dragFull": "Перетягнути весь PDF",
       "pageAlt": "Сторінка {n}",

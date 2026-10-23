@@ -30,6 +30,30 @@ const _cache = new Map<number, Promise<Map<number, string>>>()
 const _errors = new Map<number, { error: unknown; ts: number }>()
 
 /**
+ * Документ, що ще обробляється (PDF віддає сторінки поступово, 2026-10-23): коли взято сторінки й чи
+ * була обробка вже закінчена. Неповний документ можна перепитати не частіше за раз на
+ * INCOMPLETE_REFRESH_MS — лише коли потрібної сторінки ще немає.
+ */
+const _incomplete = new Map<number, number>()
+const INCOMPLETE_REFRESH_MS = 3500
+
+/** Чи документ ще обробляється (за останньою відповіддю сервера). */
+export function isDocumentStillProcessing(contentId: number): boolean {
+  return _incomplete.has(contentId)
+}
+
+/**
+ * Сторінки ще немає, а документ обробляється — забути взяте, щоб наступний запит узяв свіже.
+ * Повертає, чи варто перепитати (готовий документ і надто частий запит — ні).
+ */
+export function refreshIncompleteDocument(contentId: number): boolean {
+  const at = _incomplete.get(contentId)
+  if (at === undefined || Date.now() - at < INCOMPLETE_REFRESH_MS) return false
+  _cache.delete(contentId)
+  return true
+}
+
+/**
  * Fetch (or return cached) page URL map for a content item.
  * Returns Map<0-based-index, thumbnail_url>.
  * One API call per content_id — all viewers of the same document share the result.
@@ -63,6 +87,9 @@ export function getDocumentPageMap(
       const cj = (raw.data as Record<string, unknown>)?.content_json
         ?? (raw.content_json as Record<string, unknown>)
         ?? {}
+      const status = (raw.data as Record<string, unknown>)?.processing_status ?? raw.processing_status
+      if (status === 'pending' || status === 'processing') _incomplete.set(contentId, Date.now())
+      else _incomplete.delete(contentId)
 
       const rawMap = contentType === 'presentation'
         ? ((cj as Record<string, unknown>).slides ?? {}) as Record<string, Record<string, string>>
@@ -120,4 +147,5 @@ export function getDocumentPageCacheError(contentId: number): { error: unknown; 
 export function retryDocumentPageCache(contentId: number): void {
   _cache.delete(contentId)
   _errors.delete(contentId)
+  _incomplete.delete(contentId)
 }

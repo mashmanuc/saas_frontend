@@ -2,8 +2,10 @@
   <div class="pdf-selector">
     <div class="pdf-selector__header">
       <span class="pdf-selector__title">{{ item.title }}</span>
-      <span class="pdf-selector__count">
-        {{ t('winterboard.pdfSelector.pageCount', { count: sortedPages.length }) }}
+      <span class="pdf-selector__count" data-testid="pdf-selector-count">
+        {{ totalPages > sortedPages.length
+          ? t('winterboard.pdfSelector.pageCountProgress', { ready: sortedPages.length, total: totalPages })
+          : t('winterboard.pdfSelector.pageCount', { count: sortedPages.length }) }}
       </span>
       <button
         class="pdf-selector__close"
@@ -97,14 +99,29 @@ const { t } = useI18n()
 const lazyPages = ref<Record<string, { thumbnail_url: string }> | null>(null)
 const isLoadingPages = ref(false)
 
+// Стан обробки й загальна кількість — з картки або з останньої відповіді сервера (свіжіше).
+const liveStatus = ref<string | null>(null)
+const liveTotal = ref<number | null>(null)
+
 const sortedPages = computed(() => {
-  const pages = lazyPages.value ?? props.item.pages ?? {}
+  // Обидва джерела можуть рости, поки PDF обробляється: беремо те, де сторінок більше.
+  const fromProps = props.item.pages ?? {}
+  const fromLazy = lazyPages.value ?? {}
+  const pages = Object.keys(fromLazy).length >= Object.keys(fromProps).length ? fromLazy : fromProps
   return Object.entries(pages)
     .map(([num, data]) => ({
       number: parseInt(num, 10),
       thumbnail_url: data.thumbnail_url,
     }))
     .sort((a, b) => a.number - b.number)
+})
+
+/** Скільки сторінок буде всього (сервер знає це з початку обробки). */
+const totalPages = computed(() => Math.max(liveTotal.value ?? 0, props.item.page_count ?? 0, sortedPages.value.length))
+
+const isStillProcessing = computed(() => {
+  const s = liveStatus.value ?? props.item.processing_status
+  return s === 'pending' || s === 'processing'
 })
 
 // If status='ready' but pages missing → display as 'pending' (backend will fix via validate hook)
@@ -118,29 +135,60 @@ const effectiveStatus = computed(() => {
   return props.item.processing_status ?? 'ready'
 })
 
+/** Свіжі сторінки, стан і кількість з сервера. */
+async function fetchPages(): Promise<void> {
+  const detail = await learningContentApi.getItemDetail(props.item.content_item_id as number)
+  const raw = (detail as unknown as Record<string, unknown>)
+  const body = (raw.data as Record<string, unknown>) ?? raw
+  const cj = (body.content_json as Record<string, unknown>) ?? {}
+  const pages = cj.pages as Record<string, { thumbnail_url: string }> | undefined
+  if (pages && Object.keys(pages).length > 0) lazyPages.value = pages
+  if (typeof body.processing_status === 'string') liveStatus.value = body.processing_status
+  if (typeof cj.page_count === 'number') liveTotal.value = cj.page_count
+}
+
+// Поки PDF обробляється — підтягуємо нові сторінки кожні 4 с (2026-10-23). Стеля ~10 хв: файл, що
+// завис, не опитуємо вічно; сторінки, що вже є, лишаються.
+const PAGE_POLL_MS = 4000
+const PAGE_POLL_MAX = 150
+let pagePollTimer: ReturnType<typeof setInterval> | null = null
+let pagePolls = 0
+
+function stopPagePolling(): void {
+  if (pagePollTimer) clearInterval(pagePollTimer)
+  pagePollTimer = null
+}
+
+function startPagePolling(): void {
+  if (pagePollTimer || !props.item.content_item_id) return
+  pagePolls = 0
+  pagePollTimer = setInterval(async () => {
+    pagePolls += 1
+    try {
+      await fetchPages()
+    } catch (e) {
+      console.warn('[PdfPageSelector] poll pages failed', { contentItemId: props.item.content_item_id, e })
+    }
+    if (!isStillProcessing.value || pagePolls >= PAGE_POLL_MAX) stopPagePolling()
+  }, PAGE_POLL_MS)
+}
+
 // Load pages on mount if not present in props
 onMounted(async () => {
-  const hasPropPages = props.item.pages && Object.keys(props.item.pages).length > 0
-  if (hasPropPages) return
   if (!props.item.content_item_id) return
   if (props.item.processing_status === 'failed') return
-
-  isLoadingPages.value = true
-  try {
-    const detail = await learningContentApi.getItemDetail(props.item.content_item_id as number)
-    const raw = (detail as unknown as Record<string, unknown>)
-    const cj = (raw.data as Record<string, unknown>)?.content_json
-      ?? (raw.content_json as Record<string, unknown>)
-      ?? {}
-    const pages = (cj as Record<string, unknown>).pages as Record<string, { thumbnail_url: string }> | undefined
-    if (pages && Object.keys(pages).length > 0) {
-      lazyPages.value = pages
+  const hasPropPages = props.item.pages && Object.keys(props.item.pages).length > 0
+  if (!hasPropPages) {
+    isLoadingPages.value = true
+    try {
+      await fetchPages()
+    } catch {
+      // Non-critical — silently fall through to "no pages" state
+    } finally {
+      isLoadingPages.value = false
     }
-  } catch {
-    // Non-critical — silently fall through to "no pages" state
-  } finally {
-    isLoadingPages.value = false
   }
+  if (isStillProcessing.value) startPagePolling()
 })
 
 // WS listener: backend sends 'content.processing_complete' when Celery finishes
@@ -151,11 +199,14 @@ function onProcessingComplete(e: Event) {
   if (pages && Object.keys(pages).length > 0) {
     lazyPages.value = pages
   }
+  liveStatus.value = (detail.processing_status as string) ?? 'ready'
+  stopPagePolling()
 }
 
 window.addEventListener('content:processing-complete', onProcessingComplete)
 onUnmounted(() => {
   window.removeEventListener('content:processing-complete', onProcessingComplete)
+  stopPagePolling()
 })
 
 function dragPage(e: DragEvent, pageNumber: number) {

@@ -156,10 +156,15 @@ export function useGroupSidebar(
           : (res as unknown as Record<string, unknown>)
 
         const newStatus = (detail.processing_status as string) ?? item.processing_status
-        if (newStatus !== item.processing_status) {
+        const cjNow = (detail.content_json as Record<string, unknown>) ?? {}
+        // PDF віддає готові сторінки поступово (2026-10-23) — оновлюємо картку й тоді, коли їх побільшало,
+        // а не лише наприкінці обробки: «Готово N з M» і можна відкривати.
+        const readyNow = Object.keys((cjNow.pages as Record<string, unknown>) ?? {}).length
+        const readyBefore = Object.keys(item.pages ?? {}).length
+        if (newStatus !== item.processing_status || readyNow !== readyBefore) {
           const idx = items.value.findIndex(i => i.content_item_id === item.content_item_id)
           if (idx !== -1) {
-            const cj = (detail.content_json as Record<string, unknown>) ?? {}
+            const cj = cjNow
             items.value.splice(idx, 1, {
               ...items.value[idx],
               processing_status: newStatus,
