@@ -186,9 +186,11 @@
             </p>
             <p v-if="current.rejection" class="ws-state bad">{{ $t('staff.taskWorkshop.rejected', { reason: current.rejection.reason }) }}</p>
 
-            <button type="button" class="ws-btn primary wide" :disabled="busy" data-testid="ws-verify" @click="verifyAndNext">
+            <!-- Власник 24.10: без рівня підтвердити не можна — кнопка неактивна, причина під нею, а не вгорі сторінки. -->
+            <button type="button" class="ws-btn primary wide" :disabled="busy || !level" data-testid="ws-verify" @click="verifyAndNext">
               ✓ {{ $t('staff.taskWorkshop.verify') }}
             </button>
+            <p v-if="!level" class="ws-state bad" data-testid="ws-level-required">{{ $t('staff.taskWorkshop.levelRequired') }}</p>
             <p class="ws-muted small">{{ $t('staff.taskWorkshop.verifyHint') }}</p>
             <template v-if="!current.rejection">
               <input v-model="rejectReason" class="ws-input" :placeholder="$t('staff.taskWorkshop.rejectPrompt')" data-testid="ws-reject-reason" />

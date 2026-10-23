@@ -74,12 +74,18 @@ describe('StaffTaskWorkshopView', () => {
     expect(api.updateWorkshopTask).toHaveBeenCalledWith(7, { expected_revision: 'rev-1', reason: '',
       text: 'Катети $6$ і $8$. Знайдіть гіпотенузу.' })
 
-    await w.find('[data-testid="ws-verify"]').trigger('click')
+    // Без рівня — ні кнопкою (неактивна, причина під нею), ні клавішею Enter.
+    expect(w.find('[data-testid="ws-verify"]').attributes('disabled')).toBeDefined()
+    expect(w.find('[data-testid="ws-level-required"]').text()).toContain('рівень')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
     await flushPromises()
-    expect(api.verifyWorkshopTask).not.toHaveBeenCalled()                // без рівня — ні
+    expect(api.verifyWorkshopTask).not.toHaveBeenCalled()
     expect(w.find('[data-testid="ws-message"]').text()).toContain('рівень')
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: '3' }))
+    await flushPromises()
+    expect(w.find('[data-testid="ws-verify"]').attributes('disabled')).toBeUndefined()
+    expect(w.find('[data-testid="ws-level-required"]').exists()).toBe(false)
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
     await flushPromises()
     expect(api.verifyWorkshopTask).toHaveBeenCalledWith(7, { level: 3, note: '', expected_revision: 'rev-2' })
