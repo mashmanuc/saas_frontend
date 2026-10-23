@@ -5,30 +5,21 @@
   <!-- Landing / Role Selection -->
   <url>
     <loc>https://m4sh.org/</loc>
-    <lastmod>2026-02-12</lastmod>
+    <lastmod>2026-10-24</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="uk" href="https://m4sh.org/" />
     <xhtml:link rel="alternate" hreflang="en" href="https://m4sh.org/?lang=en" />
   </url>
   
-  <!-- Marketplace -->
+  <!-- Лендінг для вчителя (гість з / потрапляє сюди) -->
   <url>
-    <loc>https://m4sh.org/marketplace</loc>
-    <lastmod>2026-02-12</lastmod>
-    <changefreq>daily</changefreq>
+    <loc>https://m4sh.org/start</loc>
+    <lastmod>2026-10-24</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="uk" href="https://m4sh.org/marketplace" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://m4sh.org/marketplace?lang=en" />
   </url>
-  
-  <url>
-    <loc>https://m4sh.org/marketplace/search</loc>
-    <lastmod>2026-02-12</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  
+
   <!-- Auth Pages -->
   <url>
     <loc>https://m4sh.org/auth/login</loc>
@@ -88,9 +79,8 @@
   </url>
   
   <!-- 
-    Note: Dynamic tutor profiles (/marketplace/tutors/:slug) and 
-    public profiles (/profile/:userId) should be generated dynamically 
-    via backend API and added to this sitemap or separate sitemap-tutors.xml
+    Note: public profiles (/profile/:userId) should be generated dynamically
+    via backend API. Каталогу репетиторів (/marketplace) немає з червня 2026.
   -->
   
 </urlset>

@@ -5,10 +5,8 @@ User-agent: *
 Allow: /
 
 # Public pages - високий пріоритет для індексації
-Allow: /marketplace
-Allow: /marketplace/tutors/
-Allow: /marketplace/search
-Allow: /marketplace/categories/
+# (каталогу репетиторів /marketplace немає з червня 2026 — рядки прибрано 2026-10-24)
+Allow: /start
 Allow: /profile/
 Allow: /legal/
 
