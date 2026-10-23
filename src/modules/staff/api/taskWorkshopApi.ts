@@ -1,19 +1,29 @@
 /**
  * Staff: майстерня банку задач (власник 2026-10-23; ТЗ saas_docs/domains/learning_program/TZ_TASK_WORKSHOP_ADMIN_2026-10-23.md).
  * Бекенд — apps/staff/api/task_workshop_views.py → apps/lesson_constructor/services/task_workshop.py.
- * «Перевірено мною» не впливає на добір задач для уроків; «відхилити» — навпаки, прибирає задачу з добору.
+ * «Перевірено мною» не впливає на добір задач, доки тема не стала «готовою» (10 чинних перевірок на кожен рівень —
+ * тоді урок з теми бере лише перевірені, власник 2026-10-24); «відхилити» прибирає задачу з добору.
+ * Джерело: наші / чужі (старі банки, лише перегляд і «відхилити») / усі.
  * Кожен запис несе `expected_revision`: якщо задачу змінили з іншого місця — 409, сторінку треба оновити.
  */
 import apiClient from '@/utils/apiClient'
 
 export type WorkshopState = 'all' | 'new' | 'verified' | 'rejected' | 'edited'
+export type WorkshopSource = 'ours' | 'foreign' | 'all'
+
+/** Скільки чинних перевірок на рівні треба, щоб тема стала готовою (бекенд: owner_ready.READY_PER_LEVEL). */
+export const READY_PER_LEVEL = 10
 
 export interface WorkshopTopic {
   id: string
   label: string
   parent: string | null
   total: number
+  /** Чинні перевірки власника (лише наші задачі) = сума `levels`. */
   verified: number
+  /** Чинні перевірки на рівнях 1–5. */
+  levels: number[]
+  ready: boolean
 }
 
 export interface WorkshopListItem {
@@ -27,6 +37,7 @@ export interface WorkshopListItem {
   stale: boolean
   rejected: boolean
   edited: boolean
+  foreign: boolean
 }
 
 export interface WorkshopList {
@@ -88,6 +99,7 @@ export interface WorkshopTask {
   edited: boolean
   edits: WorkshopEdit[]
   duplicates: number
+  foreign: boolean
 }
 
 export interface WorkshopUpdate {
@@ -101,12 +113,12 @@ export interface WorkshopUpdate {
 
 const BASE = '/v1/staff/task-workshop'
 
-export function getWorkshopTopics(): Promise<{ topics: WorkshopTopic[] }> {
-  return apiClient.get(`${BASE}/topics/`)
+export function getWorkshopTopics(source: WorkshopSource = 'ours'): Promise<{ topics: WorkshopTopic[] }> {
+  return apiClient.get(`${BASE}/topics/`, { params: { source } })
 }
 
-export function listWorkshopTasks(params: { topic?: string; state?: WorkshopState; q?: string; page?: number }):
-  Promise<WorkshopList> {
+export function listWorkshopTasks(params: { topic?: string; state?: WorkshopState; q?: string; page?: number;
+                                            source?: WorkshopSource }): Promise<WorkshopList> {
   return apiClient.get(`${BASE}/tasks/`, { params })
 }
 

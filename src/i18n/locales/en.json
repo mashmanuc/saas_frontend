@@ -4796,7 +4796,7 @@
     },
     "taskWorkshop": {
       "title": "Task bank workshop",
-      "help": "Review and fix our tasks. \"Checked by me\" does not change which tasks lessons pick; \"Reject\" removes a task from lessons but keeps it in the bank.",
+      "help": "Review and fix tasks. \"Checked by me\" does not affect lessons until the topic is ready (10 checked tasks on every level) — then a lesson on the topic takes only checked tasks. \"Reject\" removes a task from lessons but keeps it in the bank.",
       "topicsSearch": "Find a topic",
       "allTopics": "All topics",
       "states": {
@@ -4853,7 +4853,19 @@
       "checkSolutionBad": "No solution",
       "source": "Source",
       "conflict": "The task was changed elsewhere — reload the page.",
-      "error": "The action failed."
+      "error": "The action failed.",
+      "sources": {
+        "ours": "Ours",
+        "foreign": "Foreign",
+        "all": "All"
+      },
+      "foreignBadge": "foreign",
+      "foreignNote": "Foreign task (old bank, no rights to it): view and \"Reject\" only. It cannot be edited or checked and does not count towards ready topics.",
+      "readyMark": "Topic is ready",
+      "readyYes": "Topic is ready: lessons take only the tasks you checked.",
+      "readyNo": "Not ready yet: {n} checked tasks are needed on every level. Until then lessons take all tasks of the topic.",
+      "readyWaitsSub": "Levels are filled, but subtopics are not ready yet. Until then lessons take all tasks of the topic.",
+      "levelShort": "Level {level}:"
     },
     "aiCosts": {
       "title": "AI costs",

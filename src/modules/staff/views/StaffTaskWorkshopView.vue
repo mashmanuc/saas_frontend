@@ -23,6 +23,7 @@
           >
             <span v-if="row.hasChildren" class="ws-caret" @click.stop="toggle(row.id)">{{ expanded.has(row.id) ? '▾' : '▸' }}</span>
             <span class="ws-topic-label">{{ row.label }}</span>
+            <span v-if="row.ready" class="ws-ready-mark" :title="$t('staff.taskWorkshop.readyMark')">✓</span>
             <span class="ws-count">{{ row.verified }}/{{ row.total }}</span>
           </button>
         </template>
@@ -30,6 +31,28 @@
 
       <!-- Список -->
       <section class="ws-col ws-list" data-testid="ws-list">
+        <div class="ws-states">
+          <button
+            v-for="src in SOURCES"
+            :key="src"
+            type="button"
+            class="ws-chip"
+            :class="{ active: source === src }"
+            :data-testid="`ws-source-${src}`"
+            @click="setSource(src)"
+          >{{ $t(`staff.taskWorkshop.sources.${src}`) }}</button>
+        </div>
+        <div v-if="selectedNode" class="ws-readiness" :class="{ ok: selectedNode.ready }" data-testid="ws-readiness">
+          <p class="ws-readiness-title">{{ readinessText }}</p>
+          <div class="ws-readiness-levels">
+            <span
+              v-for="(n, i) in selectedNode.levels"
+              :key="i"
+              class="ws-readiness-level"
+              :class="{ done: n >= READY_PER_LEVEL }"
+            >{{ $t('staff.taskWorkshop.levelShort', { level: i + 1 }) }} {{ n }}/{{ READY_PER_LEVEL }}</span>
+          </div>
+        </div>
         <div class="ws-states">
           <button
             v-for="s in STATES"
@@ -61,6 +84,7 @@
             <span v-if="item.verified" class="ws-badge ok" :class="{ stale: item.stale }">✓{{ item.level }}</span>
             <span v-if="item.rejected" class="ws-badge bad">✕</span>
             <span v-if="item.edited" class="ws-badge">✎</span>
+            <span v-if="item.foreign" class="ws-badge foreign">{{ $t('staff.taskWorkshop.foreignBadge') }}</span>
           </span>
           <span class="ws-item-text">{{ item.text }}</span>
         </button>
@@ -102,6 +126,8 @@
               </details>
             </div>
 
+            <p v-if="current.foreign" class="ws-state bad" data-testid="ws-foreign">{{ $t('staff.taskWorkshop.foreignNote') }}</p>
+            <template v-else>
             <h2 class="ws-h">{{ $t('staff.taskWorkshop.editor') }}</h2>
             <label class="ws-label">{{ $t('staff.taskWorkshop.fieldText') }}
               <textarea v-model="draft.text" class="ws-area" rows="4" data-testid="ws-edit-text" />
@@ -153,11 +179,13 @@
                 <button type="button" class="ws-btn" @click="revert(e.id)">{{ $t('staff.taskWorkshop.revert') }}</button>
               </div>
             </details>
+            </template>
           </div>
 
           <!-- Розмітка -->
           <aside class="ws-right" data-testid="ws-markup">
             <h2 class="ws-h">{{ $t('staff.taskWorkshop.markup') }}</h2>
+            <template v-if="!current.foreign">
             <label class="ws-label">{{ $t('staff.taskWorkshop.topic') }}
               <select v-model="topicDraft" class="ws-input" data-testid="ws-topic-select">
                 <option v-for="row in topicOptions" :key="row.id" :value="row.id">{{ '— '.repeat(row.depth) }}{{ row.label }}</option>
@@ -192,6 +220,7 @@
             </button>
             <p v-if="!level" class="ws-state bad" data-testid="ws-level-required">{{ $t('staff.taskWorkshop.levelRequired') }}</p>
             <p class="ws-muted small">{{ $t('staff.taskWorkshop.verifyHint') }}</p>
+            </template>
             <template v-if="!current.rejection">
               <input v-model="rejectReason" class="ws-input" :placeholder="$t('staff.taskWorkshop.rejectPrompt')" data-testid="ws-reject-reason" />
               <button type="button" class="ws-btn danger wide" :disabled="busy || !rejectReason.trim()" data-testid="ws-reject" @click="reject">
@@ -228,10 +257,12 @@ import { renderTextWithLatex } from '@/modules/learning-content/utils/contentRen
 import {
   getWorkshopTask, getWorkshopTopics, listWorkshopTasks, rejectWorkshopTask, revertWorkshopEdit,
   unrejectWorkshopTask, updateWorkshopTask, verifyWorkshopTask,
-  type WorkshopContent, type WorkshopList, type WorkshopState, type WorkshopTask, type WorkshopTopic,
+  READY_PER_LEVEL, type WorkshopContent, type WorkshopList, type WorkshopSource, type WorkshopState, type WorkshopTask,
+  type WorkshopTopic,
 } from '../api/taskWorkshopApi'
 
 const STATES: WorkshopState[] = ['all', 'new', 'verified', 'rejected', 'edited']
+const SOURCES: WorkshopSource[] = ['ours', 'foreign', 'all']
 const letters = ['А', 'Б', 'В', 'Г', 'Д', 'Е']
 const { t, locale } = useI18n()
 
@@ -239,6 +270,7 @@ const topics = ref<WorkshopTopic[]>([])
 const topicSearch = ref('')
 const expanded = reactive(new Set<string>())
 const selectedTopic = ref('')
+const source = ref<WorkshopSource>('ours')
 const state = ref<WorkshopState>('all')
 const query = ref('')
 const list = ref<WorkshopList | null>(null)
@@ -284,12 +316,32 @@ const visibleTopics = computed(() => {
   return topicOptions.value.filter(r => r.label.toLowerCase().includes(needle)).map(r => ({ ...r, depth: 0 }))
 })
 
-// Сервер рахує «перевірено» лише при відкритті сторінки (власник 23.10 бачив 0/614 після десяти перевірених),
-// тож першу перевірку задачі додаємо до всіх її тем на місці, без перерахунку всієї бази.
-function countVerified(rawTopics: string[]) {
+// Сервер рахує перевірки лише при відкритті сторінки (власник 23.10 бачив 0/614 після десяти перевірених),
+// тож зміну рахуємо на місці: чинна перевірка задачі йде в усі її теми на своєму рівні (повторна — переносить
+// з рівня на рівень), без перерахунку всієї бази. «Готова» (з урахуванням підтем) знає лише сервер — дерево
+// перечитуємо, коли рівень теми дійшов до порогу.
+function countVerified(rawTopics: string[], before: number | null, after: number) {
   const ids = new Set(rawTopics)
-  topics.value = topics.value.map(tp => (ids.has(tp.id) ? { ...tp, verified: tp.verified + 1 } : tp))
+  let reached = false
+  topics.value = topics.value.map((tp) => {
+    if (!ids.has(tp.id)) return tp
+    const levels = [...(tp.levels || [0, 0, 0, 0, 0])]
+    if (before) levels[before - 1] -= 1
+    levels[after - 1] += 1
+    if (before !== after && levels[after - 1] === READY_PER_LEVEL) reached = true
+    return { ...tp, levels, verified: levels.reduce((a, b) => a + b, 0) }
+  })
+  if (reached) loadTopics()
 }
+
+const selectedNode = computed(() => topics.value.find(tp => tp.id === selectedTopic.value) || null)
+const readinessText = computed(() => {
+  const node = selectedNode.value
+  if (!node) return ''
+  if (node.ready) return t('staff.taskWorkshop.readyYes')
+  if (node.levels.every(n => n >= READY_PER_LEVEL)) return t('staff.taskWorkshop.readyWaitsSub')
+  return t('staff.taskWorkshop.readyNo', { n: READY_PER_LEVEL })
+})
 
 function toggle(id: string) {
   if (expanded.has(id)) expanded.delete(id)
@@ -311,7 +363,7 @@ function fail(err: unknown) {
 // ── Завантаження ──
 async function loadTopics() {
   try {
-    topics.value = (await getWorkshopTopics()).topics
+    topics.value = (await getWorkshopTopics(source.value)).topics
   } catch (err) {
     fail(err)
   }
@@ -320,7 +372,7 @@ async function loadTopics() {
 async function loadList(page = 1, openIndex: number | 'last' = 0) {
   try {
     list.value = await listWorkshopTasks({ topic: selectedTopic.value || undefined, state: state.value,
-                                           q: query.value.trim() || undefined, page })
+                                           q: query.value.trim() || undefined, page, source: source.value })
     const items = list.value.items
     if (items.length) await openAt(openIndex === 'last' ? items.length - 1 : Math.min(openIndex, items.length - 1))
     else current.value = null
@@ -366,6 +418,12 @@ function chooseTopic(id: string) {
 
 function setState(s: WorkshopState) {
   state.value = s
+  loadList(1)
+}
+
+function setSource(s: WorkshopSource) {
+  source.value = s
+  loadTopics()
   loadList(1)
 }
 
@@ -433,20 +491,22 @@ async function save() {
 }
 
 async function verifyAndNext() {
-  if (!current.value) return
+  if (!current.value || current.value.foreign) return
   if (!level.value) return say(t('staff.taskWorkshop.levelRequired'), true)
   say('')
   if (dirty.value) {
     await save()
     if (messageBad.value || !current.value) return
   }
-  const firstCheck = !current.value.verification
+  const was = current.value.verification
+  const before = was && !was.stale && !current.value.rejection ? was.level : null
+  const chosen = level.value
   busy.value = true
   try {
     const task = await verifyWorkshopTask(current.value.id, { level: level.value, note: note.value,
                                                              expected_revision: current.value.revision })
     replaceListItem(task)
-    if (firstCheck) countVerified(task.raw_topics)
+    if (!task.rejection) countVerified(task.raw_topics, before, chosen)
     say('')
   } catch (err) {
     busy.value = false
@@ -569,6 +629,14 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 .ws-badge.ok { background: #d1fae5; color: #065f46; }
 .ws-badge.ok.stale { background: #fef3c7; color: #92400e; }
 .ws-badge.bad { background: #fee2e2; color: #991b1b; }
+.ws-badge.foreign { background: #e5e7eb; color: #374151; }
+.ws-ready-mark { color: #047857; font-weight: 700; font-size: 12px; }
+.ws-readiness { border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 8px; background: #fffbeb; }
+.ws-readiness.ok { background: #ecfdf5; border-color: #a7f3d0; }
+.ws-readiness-title { margin: 0 0 4px; font-size: 12px; }
+.ws-readiness-levels { display: flex; flex-wrap: wrap; gap: 4px; }
+.ws-readiness-level { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--bg-secondary); }
+.ws-readiness-level.done { background: #d1fae5; color: #065f46; }
 .ws-pager { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; padding-top: 6px; }
 .ws-main { max-height: none; overflow: visible; container-type: inline-size; }
 .ws-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
