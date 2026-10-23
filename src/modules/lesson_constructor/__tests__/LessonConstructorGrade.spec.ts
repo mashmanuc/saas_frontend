@@ -116,8 +116,8 @@ describe('вибір теми за класом — сторінка конст�
   it('та сама тема у двох розділах — світиться лише той, з якого обрали', async () => {
     const w = mount(LessonConstructorPage)
     await w.find('[data-testid="topic-grade-7"]').trigger('click')
+    // «Ознаки рівності» — перевірена добірка в обох розділах 7 класу геометрії: одна тема — вибір одразу.
     await unit(w, 'Трикутники. Ознаки рівності трикутників').trigger('click')
-    await w.find('[data-testid="topic-refine-triangles"]').trigger('click')
     await backToTopic(w)
     expect(w.findAll('.tgp-unit--on').map((b: any) => b.find('.tgp-unit__title').text()))
       .toEqual(['Трикутники. Ознаки рівності трикутників'])
@@ -234,14 +234,21 @@ describe('вибір теми за класом — дані', () => {
 
   // Власник 2026-10-21 («так, роби»): старі теми — «збірна» (класи впереміш); розділ з перевіреними добірками показує
   // лише їх, розділ без добірок — як був; стара база лишається під «НМТ».
-  it('розділ з перевіреними добірками показує лише їх; розділ без добірок — старі теми, як були', () => {
+  it('розділ з перевіреними добірками показує лише їх (у геометрії — ще й сусідні теми); без добірок — як були', () => {
     const verified = new Set<string>(VERIFIED_TOPICS)
     for (const g of GRADES) {
       for (const t of gradeTracks(g, LABELS)) {
         for (const u of t.units) {
           const source = CURRICULUM.find((c) => c.grade === g && c.track === t.track && c.title === u.title)!
           const anyVerified = source.topics.some((id) => verified.has(id))
-          expect(u.topics.every((id) => verified.has(id))).toBe(anyVerified)
+          if (t.track !== 'geometry') {
+            expect(u.topics.every((id) => verified.has(id))).toBe(anyVerified)
+            continue
+          }
+          // Геометрія (власник 23.10): добірки першими, сховано лише тему-батька добірки.
+          const shown = u.topics.filter((id) => verified.has(id))
+          expect(u.topics.slice(0, shown.length)).toEqual(shown)
+          expect(u.topics.some((id) => shown.some((v) => v.startsWith(`${id}.`)))).toBe(false)
         }
       }
     }

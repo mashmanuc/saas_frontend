@@ -32,7 +32,7 @@ export const CURRICULUM = [
   { grade: 8, track: "algebra", title: "Квадратні рівняння", topics: ["linear-quadratic-rational-equations", "word-problem-equations", "linear-quadratic-rational-equations.quadratic.coefficients", "linear-quadratic-rational-equations.quadratic.incomplete", "linear-quadratic-rational-equations.quadratic.discriminant", "linear-quadratic-rational-equations.quadratic.vieta", "linear-quadratic-rational-equations.quadratic.inverse-vieta", "linear-quadratic-rational-equations.quadratic.factorization", "linear-quadratic-rational-equations.quadratic.reducible", "linear-quadratic-rational-equations.quadratic.word-problems"] },
   { grade: 8, track: "geometry", title: "Чотирикутники", topics: ["parallelogram-rhombus-trapezoid", "rectangle-square", "areas", "areas.parallelogram"] },
   { grade: 8, track: "geometry", title: "Подібність трикутників", topics: ["triangles.similarity"] },
-  { grade: 8, track: "geometry", title: "Розв'язування прямокутних трикутників", topics: ["right-triangles"] },
+  { grade: 8, track: "geometry", title: "Розв'язування прямокутних трикутників", topics: ["right-triangles", "right-triangles.pythagoras", "right-triangles.trigonometry"] },
   { grade: 8, track: "geometry", title: "Многокутники. Площі многокутників", topics: ["circle-polygon", "rectangle-square", "parallelogram-rhombus-trapezoid", "areas", "areas.polygon", "areas.triangle", "areas.rectangle-square", "areas.parallelogram"] },
   { grade: 9, track: "algebra", title: "Нерівності", topics: ["inequalities-systems", "inequalities-systems.numeric", "inequalities-systems.linear", "inequalities-systems.systems.linear", "inequalities-systems.estimates", "inequalities-systems.rational"] },
   { grade: 9, track: "algebra", title: "Квадратична функція", topics: ["linear-quadratic-functions", "function-basics", "linear-quadratic-functions.quadratic.graph-transformations", "linear-quadratic-functions.quadratic.properties"] },
@@ -69,6 +69,9 @@ export const GRADES = [5, 6, 7, 8, 9, 10, 11] as const
 
 // Теми з перевіреною добіркою: розділ, де вони є, у «За класом» показує лише їх.
 export const VERIFIED_TOPICS = [
+  "areas.circle",
+  "areas.parallelogram",
+  "areas.triangle",
   "combinatorics.arrangements",
   "combinatorics.combinations",
   "combinatorics.counting",
@@ -139,10 +142,15 @@ export const VERIFIED_TOPICS = [
   "real-numbers.rational.add-subtract",
   "real-numbers.rational.multiply-divide",
   "real-numbers.rational.order-of-operations",
+  "right-triangles.pythagoras",
+  "right-triangles.trigonometry",
   "sequences.applications",
   "sequences.arithmetic.sum",
   "sequences.arithmetic.term",
   "sequences.general",
   "sequences.geometric.sum",
   "sequences.geometric.term",
+  "triangles.congruence",
+  "triangles.similarity",
+  "triangles.solving",
 ] as const

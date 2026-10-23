@@ -36,22 +36,28 @@ const VERIFIED: ReadonlySet<string> = new Set(VERIFIED_TOPICS)
  * Розділи класу за курсами, у порядку програми. Теми, яких конструктор не знає (`labels`), відкидаються, а розділ
  * без жодної — не показується: кнопка, що нікуди не веде, гірша за її відсутність.
  *
- * Власник 2026-10-21 («так, роби»): розділ, де вже є перевірені добірки (`VERIFIED_TOPICS`), показує лише їх — стара
- * широка тема в ньому ховається («збірна»: класи впереміш, як «Кути» з радіанами 10 класу). Розділ без добірок — як
- * був. Уся стара база лишається під «НМТ». Нова добірка в розділі сама витісняє стару тему.
+ * Власник 2026-10-21 («так, роби»): розділ, де вже є перевірені добірки (`VERIFIED_TOPICS`), показує їх першими, а
+ * стара широка тема над ними ховається («збірна»: класи впереміш, як «Кути» з радіанами 10 класу). Уся стара база
+ * лишається під «НМТ».
+ *
+ * Власник 23.10 (через Полу): у геометрії добірка витісняє лише свою тему-батька, сусідні теми розділу лишаються —
+ * інакше в «Чотирикутниках» 8 класу від усього розділу лишилась би сама «Площа паралелограма». Математика й алгебра
+ * — як були (там розділи вже звірені з добірками; м'якше правило відкрило б у них сховані теми).
  */
 export function gradeTracks(grade: Grade, labels: Readonly<Record<string, string>>): GradeTrack[] {
   return TRACK_ORDER.flatMap((track) => {
     const units = CURRICULUM.filter((u) => u.grade === grade && u.track === track)
-      .map((u, i) => ({ no: i + 1, title: u.title, topics: verifiedFirst(distinctByLabel(u.topics, labels)) }))
+      .map((u, i) => ({ no: i + 1, title: u.title, topics: verifiedFirst(distinctByLabel(u.topics, labels), track) }))
       .filter((u) => u.topics.length > 0)
     return units.length ? [{ track, label: TRACK_LABELS[track], units }] : []
   })
 }
 
-function verifiedFirst(ids: string[]): string[] {
+function verifiedFirst(ids: string[], track: Track): string[] {
   const verified = ids.filter((id) => VERIFIED.has(id))
-  return verified.length ? verified : ids
+  if (track !== 'geometry') return verified.length ? verified : ids
+  const rest = ids.filter((id) => !VERIFIED.has(id) && !verified.some((v) => v.startsWith(`${id}.`)))
+  return [...verified, ...rest]
 }
 
 function distinctByLabel(ids: readonly string[], labels: Readonly<Record<string, string>>): string[] {
