@@ -11312,6 +11312,7 @@
         "solutionZoomIn": "Збільшити текст розбору",
         "solutionZoomOut": "Зменшити текст розбору",
         "solutionZoomReset": "Звичайний розмір",
+        "matchScore": "Правильно: {n} з {m}",
         "showAnswer": "Показати відповідь",
         "hideAnswer": "Сховати відповідь",
         "showSolution": "Показати розбір",

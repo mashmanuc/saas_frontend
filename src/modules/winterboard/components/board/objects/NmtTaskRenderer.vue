@@ -145,7 +145,53 @@
         </div>
       </div>
 
-      <!-- ── matching ─────────────────────────────────────── -->
+      <!-- ── matching: бланк НМТ (LAW §9 v1.48) ─────────────────
+           Дві колонки — пункти «1, 2, 3» і ВСІ варіанти «А–Д» (із зайвими), під ними бланк:
+           у кожному рядку учень обирає одну літеру. Вибір локальний, як у single_choice;
+           «Показати відповідь» фарбує кожен рядок окремо. -->
+      <div v-else-if="data.taskType === 'matching' && matching" class="nmt-task__match" data-testid="nmt-match">
+        <div class="nmt-task__match-cols">
+          <div class="nmt-task__match-col">
+            <div v-for="item in matching.left" :key="item.id" class="nmt-task__match-item">
+              <span class="nmt-task__match-label">{{ item.label }}</span>
+              <span class="nmt-task__match-text" v-html="renderTextWithLatex(item.text)" />
+            </div>
+          </div>
+          <div class="nmt-task__match-col">
+            <div v-for="item in matching.right" :key="item.id" class="nmt-task__match-item">
+              <span class="nmt-task__match-label">{{ item.label }}</span>
+              <span class="nmt-task__match-text" v-html="renderTextWithLatex(item.text)" />
+            </div>
+          </div>
+        </div>
+        <div class="nmt-task__match-sheet">
+          <div
+            v-for="item in matching.left"
+            :key="item.id"
+            class="nmt-task__match-row"
+            :class="matchRowClass(item.id)"
+            :data-testid="`nmt-match-row-${item.label}`"
+          >
+            <span class="nmt-task__match-row-label">{{ item.label }}</span>
+            <button
+              v-for="opt in matching.right"
+              :key="opt.id"
+              type="button"
+              class="nmt-task__match-cell"
+              :class="matchCellClass(item.id, opt.id)"
+              :aria-pressed="matchPicks[item.id] === opt.id"
+              @click.stop="pickMatch(item.id, opt.id)"
+              @mousedown.stop
+              @pointerdown.stop
+            >{{ opt.label }}</button>
+          </div>
+        </div>
+        <div v-if="data.showAnswer && matchPickedCount > 0" class="nmt-task__match-score" data-testid="nmt-match-score">
+          {{ t('winterboard.widget.nmtTask.matchScore', { n: matchCorrectCount, m: matching.left.length }) }}
+        </div>
+      </div>
+
+      <!-- ── matching (старі картки без бланка — як до v1.48) ── -->
       <div v-else-if="data.taskType === 'matching'" class="nmt-task__pairs">
         <div
           v-for="(pair, i) in data.pairs"
@@ -399,6 +445,50 @@ useExportCapture(
 
 const data = computed(() => (props.asset.data as unknown as NmtTaskData))
 
+/* ── matching: бланк НМТ (LAW §9 v1.48) ────────────────────────────────────────
+   Обрана літера в кожному рядку — локально (як selectedIds): ні ops, ні Replay.  */
+const matching = computed(() => {
+  const m = data.value.matching
+  return m && Array.isArray(m.left) && m.left.length && Array.isArray(m.right) && m.right.length ? m : null
+})
+
+/** left.id → обраний right.id */
+const matchPicks = ref<Record<string, string>>({})
+
+function pickMatch(leftId: string, rightId: string) {
+  const next = { ...matchPicks.value }
+  if (next[leftId] === rightId) delete next[leftId]   // повторний натиск знімає вибір
+  else next[leftId] = rightId
+  matchPicks.value = next
+}
+
+const matchPickedCount = computed(() => Object.keys(matchPicks.value).length)
+
+/** Бал НМТ: по одному за кожну правильну пару. */
+const matchCorrectCount = computed(() => {
+  const m = matching.value
+  if (!m) return 0
+  return m.left.filter((l) => matchPicks.value[l.id] !== undefined && matchPicks.value[l.id] === m.answer?.[l.id]).length
+})
+
+function matchRowClass(leftId: string) {
+  const pick = matchPicks.value[leftId]
+  if (!data.value.showAnswer || pick === undefined) return {}
+  return pick === matching.value?.answer?.[leftId] ? { 'is-correct': true } : { 'is-wrong': true }
+}
+
+function matchCellClass(leftId: string, rightId: string) {
+  const picked = matchPicks.value[leftId] === rightId
+  const correct = matching.value?.answer?.[leftId] === rightId
+  const shown = data.value.showAnswer
+  return {
+    'is-selected': picked,
+    'is-correct': shown && correct,
+    'is-wrong': shown && picked && !correct,
+  }
+}
+
+
 /**
  * TLV2-05C · масштаб типографіки задачі = спільний учительський (`data.presentationScale`,
  * SYSTEM_LAW §9.C) × локальний множник пульта `view.zoom` — лише поки картка розгорнута
@@ -444,6 +534,7 @@ const { requestFit: requestAutoFit } = useCardContentFit({
     () => solutionBasePx.value,
     () => presentationScale.value,
     () => props.asset.w,
+    () => matchPickedCount.value > 0,
   ],
   emitHeight: (neededPx) => emit('request-height', neededPx),
 })
@@ -568,7 +659,7 @@ const hasAnswerToShow = computed(() => {
     return (d.options?.some(o => o.isCorrect)) ?? false
   }
   if (d.taskType === 'open_answer')   return !!d.correctAnswer
-  if (d.taskType === 'matching')      return (d.pairs?.length ?? 0) > 0
+  if (d.taskType === 'matching')      return !!matching.value || (d.pairs?.length ?? 0) > 0
   return false
 })
 
@@ -975,7 +1066,130 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   flex-shrink: 0;
 }
 
-/* ── matching ────────────────────────────────────────────────────────── */
+/* ── matching: бланк НМТ (LAW §9 v1.48) ──────────────────────────────── */
+.nmt-task__match {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nmt-task__match-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 7px 16px;
+}
+
+.nmt-task__match-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nmt-task__match-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--nmt-font-13);
+  color: #374151;
+}
+
+.nmt-task__match-label {
+  flex-shrink: 0;
+  min-width: 22px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.nmt-task__match-text {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.nmt-task__match-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nmt-task__match-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 9px;
+  background: #fafafa;
+  transition: border-color 0.13s, background 0.13s;
+}
+
+.nmt-task__match-row.is-correct {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.nmt-task__match-row.is-wrong {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.nmt-task__match-row-label {
+  flex-shrink: 0;
+  min-width: 22px;
+  font-size: var(--nmt-font-13);
+  font-weight: 800;
+  color: #475569;
+}
+
+.nmt-task__match-cell {
+  width: 34px;
+  height: 30px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 7px;
+  background: #fff;
+  color: #475569;
+  font-size: var(--nmt-font-12);
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color 0.13s, background 0.13s, color 0.13s;
+}
+
+.nmt-task__match-cell:hover {
+  border-color: var(--accent-mid);
+  background: var(--accent-light);
+}
+
+.nmt-task__match-cell.is-selected {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--color-on-accent);
+}
+
+.nmt-task__match-cell.is-correct {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.nmt-task__match-cell.is-selected.is-correct {
+  background: #16a34a;
+  color: #fff;
+}
+
+.nmt-task__match-cell.is-wrong {
+  border-color: #dc2626;
+  background: #dc2626;
+  color: #fff;
+}
+
+.nmt-task__match-score {
+  font-size: var(--nmt-font-13);
+  font-weight: 700;
+  color: #374151;
+}
+
+/* ── matching (старі картки) ─────────────────────────────────────────── */
 .nmt-task__pairs {
   display: flex;
   flex-direction: column;

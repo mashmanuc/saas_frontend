@@ -10057,6 +10057,7 @@
         "solutionZoomIn": "Увеличить текст разбора",
         "solutionZoomOut": "Уменьшить текст разбора",
         "solutionZoomReset": "Обычный размер",
+        "matchScore": "Правильно: {n} из {m}",
         "showAnswer": "Показать ответ",
         "hideAnswer": "Скрыть ответ",
         "showSolution": "Показать разбор",

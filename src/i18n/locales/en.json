@@ -11224,6 +11224,7 @@
         "solutionZoomIn": "Enlarge the solution text",
         "solutionZoomOut": "Shrink the solution text",
         "solutionZoomReset": "Default size",
+        "matchScore": "Correct: {n} of {m}",
         "showAnswer": "Show answer",
         "hideAnswer": "Hide answer",
         "showSolution": "Show solution",

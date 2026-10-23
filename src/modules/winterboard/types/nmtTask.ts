@@ -41,6 +41,27 @@ export interface NmtTaskOption {
 }
 
 /** One left↔right pair in a matching task. */
+/** Пункт однієї з колонок бланка відповідності (LAW §9 v1.48). */
+export interface NmtTaskMatchItem {
+  /** Значення з джерела — непрозоре, лише для порівняння. */
+  id: string
+  /** Підпис на картці: «1», «2»… ліворуч; «А», «Б»… праворуч (за позицією). */
+  label: string
+  /** LaTeX-compatible. */
+  text: string
+}
+
+/**
+ * Бланк відповідності, як у НМТ (LAW §9 v1.48): усі варіанти праворуч (разом із зайвими)
+ * і ключ відповіді окремо. Картки без цього поля малюються старим способом із `pairs`.
+ */
+export interface NmtTaskMatching {
+  left: NmtTaskMatchItem[]
+  right: NmtTaskMatchItem[]
+  /** left.id → right.id */
+  answer: Record<string, string>
+}
+
 export interface NmtTaskPair {
   id: string
   /** Left side text — LaTeX-compatible. */
@@ -95,6 +116,8 @@ export interface NmtTaskData {
   selectCount?: number
   /** Populated for taskType === 'matching'. */
   pairs?: NmtTaskPair[]
+  /** Бланк НМТ для 'matching' (LAW §9 v1.48); старі картки — лише `pairs`. */
+  matching?: NmtTaskMatching
   /** Populated for taskType === 'open_answer'. */
   correctAnswer?: string
   /** Input hint for open_answer ('text' | 'number'). */
