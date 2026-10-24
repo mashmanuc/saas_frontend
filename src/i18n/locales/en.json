@@ -9386,6 +9386,23 @@
       }
     },
     "remote": {
+      "dictation": {
+        "button": "Dictation",
+        "title": "Dictate to the board",
+        "hint": "Hold the mic and dictate a sentence. Say punctuation in Ukrainian words: «кома», «крапка».",
+        "placeholder": "The sentence will appear here — you can edit it",
+        "holdToSpeak": "Hold and dictate",
+        "write": "Write on the board",
+        "writing": "Writing on the board…",
+        "done": "Done — the sentence is on the board",
+        "reason": {
+          "no_space": "No room on this page — add a new page",
+          "busy": "The board is already writing — wait",
+          "blocked": "Writing stopped: the board changed or can’t be edited now",
+          "unsupported": "The handwriting lacks some character — remove it and try again",
+          "error": "Couldn’t write — try again"
+        }
+      },
       "mirror": {
         "recHint": "The lesson will be recorded automatically. After “Stop” it will appear in “My Replays”.",
         "open": "Board mirror",

@@ -28,7 +28,8 @@ import { notifyError, notifyInfo, notifyWarning } from '@/utils/notify'
 import { tAssistantGlobal } from '@/modules/intent/assistantLook'
 import {
   HANDWRITE_GAP, HANDWRITE_INK, HANDWRITE_MARGIN, HANDWRITE_MIN_W, LAYOUT_MAX_H, PAGE_OBJECT_LIMIT, answerTextOf,
-  hasHandwritableSolution, isIntegralykSolvable, occupiedRects, wholePageArea, writingAreasNear, type Rect,
+  dictationArea, hasHandwritableSolution, isIntegralykSolvable, occupiedRects, wholePageArea, writingAreasNear,
+  type Rect,
 } from '../board/handwriteSolution'
 import {
   STEP_SCALES, originalOfCopy, placeStep, sessionOf, shortHash, stepCopyId, stepGap, stepSessions, stepStrokeId,
@@ -42,7 +43,10 @@ export interface HandwriteLayoutRequest {
   float?: { w: number; h: number }
   /** v1.32: писати рівно цим розміром (покроково — один розмір на весь розв'язок). */
   scale?: number
+  /** v1.49: почерк — закритий набір сервера (`apps/handwriting` `HANDS`); без поля — 'classic', як було. */
+  hand?: HandwriteHand
 }
+export type HandwriteHand = 'classic' | 'school'
 export type HandwriteLayout =
   | { fits: true; scale: number; size: number; w: number; h: number; duration_ms: number; strokes: Array<{ p: number[][]; t: number }>; steps?: string[] }
   | { fits: false; needed_height: number | null; steps?: string[] }
@@ -723,4 +727,59 @@ export async function nextStepWithFeedback(
     }
   }
   return r
+}
+
+// ── LAW §9 v1.49 · диктант з пульта ─────────────────────────────────────────────────────────────────────────
+
+export type DictationReason = 'no_space' | 'busy' | 'blocked' | 'unsupported' | 'error'
+export type DictationResult = { status: 'written' } | { status: 'stopped' } | { status: 'refused'; reason: DictationReason }
+
+/** Позначка «пишеться диктант» у `handwriteBusyId`: інші ✍ відповідають «Уже пишу», значки об'єктів не пульсують. */
+export const DICTATION_BUSY_ID = '__dictation__'
+
+/**
+ * Почерк диктанту — шкільний пропис (Bad Script + шкільні Т, П, Г, Ґ, А, т; власник 2026-10-25: «роби з bad script,
+ * але з можливістю потім змінити»). Змінити почерк диктанту — тут; ✍ Інтегралика пише як було ('classic').
+ */
+export const DICTATION_HAND: HandwriteHand = 'school'
+
+/**
+ * Речення з пульта — рукописом (власник 2026-10-24: «…для неї багато часу займає написання речень на дошці… в нас є
+ * телефон мікрофон дошка і пропис»). Той самий почерк і шлях, що ✍ розв'язку: сервер вписує текст у вільне місце
+ * (`/solution/`, `mode: 'full'`, без «Відповідь:»), клієнт кладе штатні `stroke_add` у темпі руки одним кроком
+ * «Скасувати». Місце — під усім, що вже є на поточній сторінці (`dictationArea`).
+ */
+export async function handwriteDictation(text: string, depsIn?: HandwriteDeps): Promise<DictationResult> {
+  const refuse = (reason: DictationReason): DictationResult => ({ status: 'refused', reason })
+  if (active || handwriteBusyId.value !== null) return refuse('busy')
+  const deps = depsIn ?? await defaultDeps()
+  const { store, sync } = deps
+  const boardId = store.workspaceId
+  const page = store.pages[store.currentPageIndex]
+  const writable = () => store.mode === 'edit' && sync.mode === 'SYNC' && !sync.inputLocked && store.workspaceId === boardId
+  if (!page || !boardId || !writable()) return refuse('blocked')
+  const area = dictationArea(page, page.width ?? 1920, store.currentPageCanvasHeight ?? page.height ?? 1080)
+  if (!area) return refuse('no_space')
+  handwriteBusyId.value = DICTATION_BUSY_ID
+  try {
+    let layout: HandwriteLayout
+    try {
+      layout = await deps.fetchLayout({ text, width: area.w, height: area.h, mode: 'full', answer: '', hand: DICTATION_HAND })
+    } catch (err) {
+      if (err instanceof HandwriteUnsupported) return refuse('unsupported')
+      console.warn('[WB:dictation] layout failed:', err)
+      return refuse('error')
+    }
+    if (!layout.fits) return refuse('no_space')
+    if (!writable() || store.pages[store.currentPageIndex]?.id !== page.id) return refuse('blocked')
+    // Сторінка вміщує щонайбільше PAGE_OBJECT_LIMIT штрихів і об'єктів — зайве сховище мовчки відкидає, і на дошці
+    // лишилось би обрізане речення («…діду», стенд 24.10) під «Готово» на телефоні. Не влазить ціле — «немає місця».
+    if (page.strokes.length + page.assets.length + layout.strokes.length > PAGE_OBJECT_LIMIT) return refuse('no_space')
+    const key = shortHash(`${page.id}|${text}|${Date.now()}`)
+    const strokes = toStrokes(layout, area.x, area.y, (i) => `dict-${key}-${i}`)
+    const r = await drawStrokes(deps, writable, page.id, strokes, layout.strokes.map((s) => s.t), null)
+    return r.status === 'written' ? { status: 'written' } : { status: 'stopped' }
+  } finally {
+    handwriteBusyId.value = null
+  }
 }

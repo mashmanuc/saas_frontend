@@ -159,6 +159,26 @@ export function writingAreasNear(task: Rect, rects: Rect[], pageW: number, pageH
   return [right, below].filter((a): a is Rect => a !== null)
 }
 
+/** Відступ між реченнями диктанту — менший за відступ розв'язку: рядки йдуть один за одним, як у зошиті. */
+export const DICTATION_GAP = 16
+
+/**
+ * LAW §9 v1.49 «✍️ Диктант»: речення пишеться під усім, що вже є на сторінці (штрихи й об'єкти), на всю ширину
+ * сторінки з полями — кожне наступне нижче за попереднє. Знизу не лишилось місця на рядок — null («нова сторінка»).
+ */
+export function dictationArea(page: PageLike | null | undefined, pageW: number, pageH: number): Rect | null {
+  const rects = occupiedRects(page)
+  const bottom = rects.reduce((m, r) => Math.max(m, r.y + r.h), 0)
+  const y = rects.length ? Math.max(HANDWRITE_MARGIN, bottom + DICTATION_GAP) : HANDWRITE_MARGIN
+  const area: Rect = {
+    x: HANDWRITE_MARGIN,
+    y,
+    w: Math.min(pageW - 2 * HANDWRITE_MARGIN, LAYOUT_MAX_W),
+    h: Math.min(pageH - HANDWRITE_MARGIN - y, LAYOUT_MAX_H),
+  }
+  return area.w >= HANDWRITE_MIN_W && area.h >= HANDWRITE_MIN_H ? area : null
+}
+
 /** Уся сторінка без полів — для нової сторінки (не більша за `LAYOUT_MAX_*`). */
 export function wholePageArea(pageW: number, pageH: number): Rect {
   return {

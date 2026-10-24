@@ -48,6 +48,7 @@ import { ref, computed, watch, onMounted, onUnmounted, type Ref, type ComputedRe
 import { derivePair } from '../remote/remotePair'
 import { remoteEntryUrl } from '../remote/remoteEntry'
 import { readPhotoRequest, type RemotePhotoResult } from '../remote/photoContract'
+import { readDictateArgs, type DictationReason, type RemoteDictationResult } from '../remote/dictationContract'
 import type { RemotePhotoAdapter } from '../remote/remotePhotoAdapter'
 import type { RemoteScenarioAdapter } from '../remote/remoteScenarioAdapter'
 import type { RemoteRecordingAdapter } from '../remote/remoteRecordingAdapter'
@@ -111,6 +112,11 @@ export interface UseBoardRemoteOptions {
   handwriteNext?: (target?: any | null) => void
   /** v1.32: стан покрокового письма для пульта (`remote.state.handwrite_step`). */
   handwriteStep?: () => { status: string; written: number; total: number; reason?: string; target?: boolean }
+  /**
+   * v1.49 «✍️ Диктант»: написати речення рукописом під уже написаним (`handwriteDictation`). Є колбек — `caps`
+   * отримує 'dictation' і пульт показує кнопку; без нього (класна кімната) команда отримує `refused: error`.
+   */
+  dictate?: (text: string) => Promise<{ status: 'written' } | { status: 'stopped' } | { status: 'refused'; reason: DictationReason }>
 }
 
 /** v1.18: чому ноутбук тимчасово не пише в дошку (закритий набір, як на сервері). */
@@ -147,7 +153,7 @@ export interface RemoteCommandDetail {
     | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
     | 'assistant.ask' | 'assistant.answer'
     | 'recording.start' | 'recording.stop'
-    | 'card.handwrite' | 'card.handwrite_next' | 'object.select'
+    | 'card.handwrite' | 'card.handwrite_next' | 'object.select' | 'board.dictate'
   args: {
     index?: number; text?: string; delta?: number; dir?: number; what?: 'answer' | 'solution' | 'question'; subject?: string; language?: string
     ref?: { provider: string; id: string }; title?: string; object_id?: string
@@ -224,6 +230,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
   const assistantState = ref<RemoteAssistantState | null>(null)
   /** v1.9: результат останньої спроби photo.add — лише в пам'яті вкладки, іде в кожен remote.state */
   const photoResult = ref<RemotePhotoResult | null>(null)
+  /** v1.49: відповідь на останнє речення диктанту — у кожному стані, доки не прийде наступне. */
+  const dictationResult = ref<RemoteDictationResult | null>(null)
   /** v1.20: остання відповідь Інтегралика на запит із пульта — іде в кожен remote.state */
   const assistantReply = ref<RemoteAssistantReply | null>(null)
   /** v1.28: відповідь на останню команду запису від Дзеркала — лише в пам'яті вкладки, іде в кожен remote.state */
@@ -268,8 +276,12 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       ...(opts.scenario ? ['scenario'] : []),
       // v1.35: у `objects` — усі види «Сценарію» (етап 2): телефон ховає «випадайку» відео, тап у «Сценарії» обирає
       ...(opts.scenario && opts.view?.listsAllKinds?.() ? ['objects'] : []),
+      // v1.49: ноутбук пише продиктоване рукописом — на пульті кнопка «✍️ Диктант»
+      ...(opts.dictate ? ['dictation'] : []),
     ]
     if (photoResult.value) msg.photo = photoResult.value
+    // v1.49: відповідь на останнє речення диктанту («Пишу… / Готово / причина» на пульті)
+    if (dictationResult.value) msg.dictation = dictationResult.value
     if (assistantReply.value) msg.assistant_reply = wireAssistantReply(assistantReply.value)
     // v1.19: на поточній сторінці фото-фон — телефон показує «Прибрати фон сторінки»
     if (opts.photo) msg.bg_photo = opts.photo.hasBackgroundPhoto()
@@ -673,6 +685,33 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         return   // новий currentPage → watch надішле стан
       }
       // v1.9: фото вже в «Матеріалах»; перевіряє й кладе ноутбук, пульт лише просить
+      // v1.49 «✍️ Диктант»: речення рукописом під уже написаним; відповідь — `dictation` у стані (П5 «не тиша»)
+      case 'board.dictate': {
+        const req = readDictateArgs(d.args)
+        if (!req) return
+        if (!opts.dictate) {
+          dictationResult.value = { request_id: req.requestId, status: 'refused', reason: 'error' }
+          sendState()
+          return
+        }
+        dictationResult.value = { request_id: req.requestId, status: 'writing' }
+        sendState()
+        opts.dictate(req.text).then(
+          (r) => {
+            dictationResult.value = r.status === 'written'
+              ? { request_id: req.requestId, status: 'done' }
+              // зупинено посеред письма (скасували, перегорнули) — чесно «дошку змінили», не «готово»
+              : { request_id: req.requestId, status: 'refused', reason: r.status === 'stopped' ? 'blocked' : r.reason }
+            sendState()
+          },
+          (err) => {
+            console.warn('[WB:remote] board.dictate failed:', err)
+            dictationResult.value = { request_id: req.requestId, status: 'refused', reason: 'error' }
+            sendState()
+          },
+        )
+        return
+      }
       case 'photo.add': {
         const req = readPhotoRequest(d.args as Record<string, unknown>)
         if (!req) return

@@ -1,0 +1,96 @@
+// «✍️ Диктант» з пульта (LAW §9 v1.49, 2026-10-24) — спільний контракт телефона й ноутбука.
+//
+// Власник: «вчителька української мови казала що для неї багато часу займає написання речень на дошці для
+// подальшого їх розбору… а в нас є телефон мікрофон дошка і пропис». Учитель диктує речення на телефоні — ноутбук
+// пише його рукописом (той самий почерк, що ✍ розв'язку) під уже написаним на поточній сторінці.
+
+/** Стеля речення — як на сервері (`REMOTE_DICTATE_TEXT_MAX_LEN`). */
+export const DICTATE_TEXT_MAX_LEN = 300
+
+export const DICTATION_STATUSES = ['writing', 'done', 'refused'] as const
+export type DictationStatus = typeof DICTATION_STATUSES[number]
+
+/** Причини відмови — закритий набір, як на сервері. */
+export const DICTATION_REASONS = ['no_space', 'busy', 'blocked', 'unsupported', 'error'] as const
+export type DictationReason = typeof DICTATION_REASONS[number]
+
+/** `remote.state.dictation`: відповідь ноутбука на останнє речення. */
+export interface RemoteDictationResult {
+  request_id: string
+  status: DictationStatus
+  reason?: DictationReason
+}
+
+const REQUEST_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+
+/** Розбір `remote.state.dictation` на телефоні — ті самі правила, що на сервері; зіпсоване — undefined. */
+export function parseRemoteDictation(raw: unknown): RemoteDictationResult | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const v = raw as Record<string, unknown>
+  if (Object.keys(v).some((k) => k !== 'request_id' && k !== 'status' && k !== 'reason')) return undefined
+  if (typeof v.request_id !== 'string' || !REQUEST_ID_RE.test(v.request_id)) return undefined
+  if (!(DICTATION_STATUSES as readonly unknown[]).includes(v.status)) return undefined
+  const out: RemoteDictationResult = { request_id: v.request_id, status: v.status as DictationStatus }
+  if (v.status === 'refused') {
+    if (!(DICTATION_REASONS as readonly unknown[]).includes(v.reason)) return undefined
+    out.reason = v.reason as DictationReason
+  } else if (v.reason !== undefined) {
+    return undefined
+  }
+  return out
+}
+
+/** Аргументи `board.dictate` на ноутбуці: закритий набір, ті самі межі, що на сервері; інше — null. */
+export function readDictateArgs(args: unknown): { requestId: string; text: string } | null {
+  if (!args || typeof args !== 'object' || Array.isArray(args)) return null
+  const a = args as Record<string, unknown>
+  if (Object.keys(a).length !== 2 || typeof a.request_id !== 'string' || typeof a.text !== 'string') return null
+  if (!REQUEST_ID_RE.test(a.request_id)) return null
+  const text = a.text.trim()
+  // eslint-disable-next-line no-control-regex
+  if (!text || text.length > DICTATE_TEXT_MAX_LEN || /[\u0000-\u001f]/.test(text)) return null
+  return { requestId: a.request_id, text }
+}
+
+/**
+ * Розділові знаки словами → знаки. Телефон розпізнає мову без пунктуації, а для розбору речення вона важлива:
+ * учитель каже «Сонце сходило кома і птахи співали крапка». Довші назви — першими («крапка з комою» раніше за «крапка»).
+ * Межу слова задаємо пробілами: `\b` у JS бачить лише латиницю.
+ */
+const SPOKEN_MARKS: ReadonlyArray<[string, string]> = [
+  ['крапка з комою', ';'],
+  ['три крапки', '…'],
+  ['знак питання', '?'],
+  ['знак оклику', '!'],
+  ['двокрапка', ':'],
+  ['крапка', '.'],
+  ['кома', ','],
+  ['тире', ' —'],
+]
+
+/** Продиктоване → речення: розділові слова стають знаками, перша літера велика, зайві пробіли прибрано. */
+export function spokenToText(raw: string): string {
+  let s = String(raw ?? '').replace(/\s+/g, ' ').trim()
+  for (const [phrase, mark] of SPOKEN_MARKS) {
+    const re = new RegExp(`(^|\\s)${phrase.replace(/ /g, '\\s+')}(?=$|[\\s.,!?;:…])`, 'giu')
+    s = s.replace(re, mark)
+  }
+  s = s
+    .replace(/\s+([,.;:!?…])/g, '$1')               // без пробілу перед знаком
+    .replace(/([,.;:!?…])(?=[^\s,.;:!?…»)])/g, '$1 ')  // пробіл після знака
+    .replace(/\s+/g, ' ')
+    .trim()
+  return s ? s[0].toLocaleUpperCase('uk') + s.slice(1) : ''
+}
+
+/** Новий шматок диктування — до вже набраного в полі (через пробіл), без подвійних пробілів. */
+export function appendDictated(current: string, spoken: string): string {
+  const piece = spokenToText(spoken)
+  if (!piece) return current
+  const base = current.replace(/\s+$/, '')
+  if (!base) return piece
+  // продовження речення після коми — з малої; після кінця речення — з великої (spokenToText уже зробив)
+  const continues = !/[.!?…]$/.test(base)
+  const next = continues ? piece[0].toLocaleLowerCase('uk') + piece.slice(1) : piece
+  return `${base} ${next}`
+}

@@ -351,6 +351,19 @@
         <p v-if="scenarioWhy" class="wb-remote__why" role="status" data-testid="scenario-why-empty">{{ scenarioWhy }}</p>
       </template>
 
+      <!-- LAW §9 v1.49 «✍️ Диктант» (власник 2026-10-24): речення голосом — ноутбук пише рукописом. Лише за caps ∋ 'dictation'. -->
+      <button
+        v-if="canDictate"
+        type="button"
+        class="wb-remote__add-btn wb-remote__scenario-btn"
+        data-testid="open-dictation"
+        :disabled="!isReady"
+        @click="openSheet('dictation')"
+      >
+        <span aria-hidden="true">✍️</span>
+        <span>{{ t('winterboard.remote.dictation.button') }}</span>
+      </button>
+
       <!-- LAW §9 v1.20 (власник 2026-09-29, «так»): Інтегралик ТЕКСТОМ — тихо. Розмова лише тут,
            на телефоні; ноутбук вікна не відкриває і кладе матеріал на підготовчу сторінку одразу
            після поточної, не перемикаючи екран. «Показати» — перейти туди.
@@ -578,6 +591,47 @@
         @send="onScenarioSend"
       />
 
+      <!-- LAW §9 v1.49 «✍️ Диктант»: голос дописує поле (не команди й не Інтегралик); учитель бачить і може виправити
+           текст, «Написати на дошці» — ноутбук пише рукописом під уже написаним. Відповідь — «Пишу… / Готово / причина». -->
+      <div v-if="canDictate" v-show="sheet === 'dictation'" class="wb-remote__dictation" data-testid="dictation-sheet">
+        <p class="wb-remote__note">{{ t('winterboard.remote.dictation.hint') }}</p>
+        <textarea
+          v-model="dictText"
+          class="wb-remote__dictation-text"
+          data-testid="dictation-text"
+          rows="4"
+          :maxlength="DICTATE_TEXT_MAX_LEN"
+          :placeholder="t('winterboard.remote.dictation.placeholder')"
+        />
+        <button
+          v-if="ptt.supported"
+          type="button"
+          class="wb-remote__video-mic"
+          :class="{ 'wb-remote__video-mic--on': ptt.listening.value && dictationVoiceActive }"
+          data-testid="dictation-mic"
+          :disabled="!isReady"
+          :aria-pressed="ptt.listening.value && dictationVoiceActive"
+          @pointerdown.prevent="startDictationVoice"
+          @pointerup.prevent="ptt.release()"
+          @pointercancel.prevent="ptt.release()"
+          @pointerleave="ptt.release()"
+          @contextmenu.prevent
+        >
+          <span aria-hidden="true">🎙</span>
+          {{ ptt.listening.value && dictationVoiceActive ? t('winterboard.remote.listening') : t('winterboard.remote.dictation.holdToSpeak') }}
+        </button>
+        <button
+          type="button"
+          class="wb-remote__ai-btn"
+          data-testid="dictation-send"
+          :disabled="!isReady || !dictText.trim() || dictationState === 'writing'"
+          @click="sendDictation"
+        >
+          {{ t('winterboard.remote.dictation.write') }}
+        </button>
+        <p v-if="dictationLine" class="wb-remote__why" role="status" data-testid="dictation-status">{{ dictationLine }}</p>
+      </div>
+
       <!-- LAW §9 v1.22 (власник 2026-09-29, «так»): розмова з Інтеграликом — аркушем. Ваш текст, повна
            відповідь, «Так / Ні», «Готово — сторінка N» · «Показати» (чи «На екрані»); поле — внизу аркуша. -->
       <div v-show="sheet === 'assistant'" class="wb-remote__ai-sheet" data-testid="assistant-sheet">
@@ -734,6 +788,7 @@ import { derivePair } from '../remote/remotePair'
 import { firstTipSeen, markFirstTipSeen, remoteEntryUrl } from '../remote/remoteEntry'
 import type { RemoteStateDetail, RemoteCap, RemoteAssistantReplyDetail, RemoteAssistantReplyStatus, RemoteHandwriteStep, RemoteObject, RemoteObjectNotice } from '../composables/useRemoteChannel'
 import { newRequestId } from '../remote/photoContract'
+import { DICTATE_TEXT_MAX_LEN, appendDictated, type RemoteDictationResult } from '../remote/dictationContract'
 import RemotePhotoPanel from '../components/remote/RemotePhotoPanel.vue'
 import RemoteBoardMirror from '../components/remote/RemoteBoardMirror.vue'
 import { createMirrorFullscreen } from '../remote/mirrorFullscreen'
@@ -919,6 +974,29 @@ const canVideo = computed(() => !caps.value || caps.value.includes('video'))
  * фото й відео, старий ноутбук без `caps` кнопки НЕ отримує: списку він не шле.
  */
 const canScenario = computed(() => caps.value?.includes('scenario') === true)
+// LAW §9 v1.49 «✍️ Диктант»: лише коли ноутбук оголосив, що вміє писати продиктоване рукописом
+const canDictate = computed(() => caps.value?.includes('dictation') === true)
+const dictText = ref('')
+const dictationResult = ref<RemoteDictationResult | null>(null)
+/** id останнього речення з цього телефона — чужі чи старі відповіді не показуємо. */
+const dictationRequestId = ref<string | null>(null)
+const dictationVoiceActive = ref(false)
+/** Стан нашого останнього речення (П5 «не тиша»): пишу / готово / відмова. */
+const dictationState = computed(() => {
+  const r = dictationResult.value
+  if (!dictationRequestId.value) return null
+  if (!r || r.request_id !== dictationRequestId.value) return 'writing'
+  return r.status
+})
+const dictationLine = computed(() => {
+  const st = dictationState.value
+  if (!st) return ''
+  if (st === 'writing') return t('winterboard.remote.dictation.writing')
+  if (st === 'done') return t('winterboard.remote.dictation.done')
+  return t(`winterboard.remote.dictation.reason.${dictationResult.value?.reason ?? 'error'}`)
+})
+// Речення написане — поле чисте для наступного (текст уже на дошці)
+watch(dictationState, (st, prev) => { if (st === 'done' && prev !== 'done') dictText.value = '' })
 const scenario = ref<RemoteStateDetail['scenario'] | null>(null)
 const scenarioCount = computed(() => scenario.value?.items.length ?? 0)
 const scenarioWhy = ref('')
@@ -1194,6 +1272,7 @@ const channel = useRemoteChannel({
     questions.value = s.questions ?? null
     videos.value = s.videos ?? []
     photoResult.value = s.photo ?? null
+    dictationResult.value = s.dictation ?? null
     caps.value = s.caps ?? null
     scenario.value = s.scenario ?? null
     boardBusy.value = s.busy === 'saving_template'
@@ -1319,7 +1398,7 @@ function whyDisabled(which: 'prev' | 'next' | 'ready'): void {
 }
 
 // ── Аркуші (ТЗ §4): один за раз; «Назад» Android закриває аркуш, а не пульт ──
-type Sheet = 'photo' | 'video' | 'settings' | 'scenario' | 'assistant'
+type Sheet = 'photo' | 'video' | 'settings' | 'scenario' | 'assistant' | 'dictation'
 const sheet = ref<Sheet | null>(null)
 /** Ми поклали запис в історію заради «Назад» — і маємо самі його зняти при «×» */
 let sheetInHistory = false
@@ -1330,11 +1409,13 @@ const sheetTitle = computed(() => {
     case 'settings': return t('winterboard.remote.settings')
     case 'scenario': return t('winterboard.remote.scenario.title')
     case 'assistant': return t('winterboard.remote.assistant.sheetTitle')
+    case 'dictation': return t('winterboard.remote.dictation.title')
     default: return ''
   }
 })
 // Дошка перестала вміти «Сценарій» (інша кімната) — аркуш без вмісту не лишаємо
 watch(canScenario, (can) => { if (!can && sheet.value === 'scenario') closeSheet() })
+watch(canDictate, (can) => { if (!can && sheet.value === 'dictation') closeSheet() })
 function openSheet(name: Sheet): void {
   if (sheet.value === name) return
   if (!sheet.value) {
@@ -1369,6 +1450,7 @@ function vibrate(ms: number) {
 }
 
 type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.page' | 'view.zoom' | 'view.scroll' | 'card.reveal'
+  | 'board.dictate'
   | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto' | 'assistant.minimize'
   | 'video.add' | 'video.play' | 'video.pause'
   | 'photo.add' | 'photo.background' | 'photo.background_clear'
@@ -1460,17 +1542,40 @@ const videoVoiceActive = ref(false)
 function startVideoVoice(): void {
   if (!isReady.value || videoSearching.value || sheet.value !== 'video' || ptt.listening.value) return
   if (document.activeElement instanceof HTMLInputElement) document.activeElement.blur()
+  dictationVoiceActive.value = false
   videoVoiceActive.value = true
   ptt.press()
 }
 function startRemoteVoice(): void {
   videoVoiceActive.value = false
+  dictationVoiceActive.value = false
   ptt.press()
+}
+function startDictationVoice(): void {
+  if (!isReady.value || sheet.value !== 'dictation' || ptt.listening.value) return
+  if (document.activeElement instanceof HTMLTextAreaElement) document.activeElement.blur()
+  videoVoiceActive.value = false
+  dictationVoiceActive.value = true
+  ptt.press()
+}
+/** v1.49: речення — ноутбуку; пише він, відповідь прийде полем `dictation` стану. */
+function sendDictation(): void {
+  const text = dictText.value.trim().slice(0, DICTATE_TEXT_MAX_LEN)
+  if (!text) return
+  const requestId = newRequestId()
+  dictationRequestId.value = requestId
+  if (!sendCmd('board.dictate', { request_id: requestId, text })) dictationRequestId.value = null
 }
 
 const ptt = usePushToTalk({
   lang: locale.value === 'en' ? 'en-US' : 'uk-UA',
   onFinal(text) {
+    // v1.49: у вікні диктанту голос дописує поле речення — не команда й не фраза Інтегралику
+    if (dictationVoiceActive.value) {
+      dictationVoiceActive.value = false
+      if (sheet.value === 'dictation') dictText.value = appendDictated(dictText.value, text).slice(0, DICTATE_TEXT_MAX_LEN)
+      return
+    }
     lastPhrase.value = `«${text}»`
     if (videoVoiceActive.value) {
       videoVoiceActive.value = false
@@ -1773,6 +1878,29 @@ onBeforeUnmount(() => {
 .wb-remote__ai-onscreen { flex: none; color: var(--muted); font-size: 14px; white-space: nowrap; }
 .wb-remote__ai-btn--small { flex: none; min-height: 36px; padding: 0 14px; font-size: 14px; }
 /* v1.22: аркуш «Інтегралик» — журнал бере висоту аркуша й прокручується сам, поле внизу */
+.wb-remote__dictation {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wb-remote__dictation-text {
+  width: 100%;
+  min-height: 96px;
+  padding: 10px 12px;
+  /* ті самі кольори, що в полі пошуку відео: на темному пульті білий фон + світлий текст не читались (стенд 24.10) */
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font: inherit;
+  font-size: 17px;
+  line-height: 1.4;
+  resize: vertical;
+  background: var(--surface-3);
+  color: var(--text);
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 .wb-remote__ai-sheet { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
 .wb-remote__ai-log {
   list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px;

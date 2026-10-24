@@ -19,6 +19,7 @@
 import { ref, onUnmounted, type Ref } from 'vue'
 import { getWsBaseUrl, isPresenceAvailable, _getFreshTokenAsync } from './usePresence'
 import { parseRemotePhoto, type RemotePhotoResult } from '../remote/photoContract'
+import { parseRemoteDictation, type RemoteDictationResult } from '../remote/dictationContract'
 import {
   parseRemoteRecording, parseRemoteRecordingResult, type RemoteRecordingInfo, type RemoteRecordingResult,
 } from '../remote/recordingContract'
@@ -31,8 +32,8 @@ export type RemoteChannelState = 'idle' | 'connecting' | 'connected' | 'reconnec
  * v1.35: 'objects' — у перемикачі поточного об'єкта всі види «Сценарію» (етап 2): відео, аудіо, документи,
  * картки, картинки; «випадайку» відео замінює перемикач, дотик у «Сценарії» обирає об'єкт.
  */
-export type RemoteCap = 'photo' | 'video' | 'scenario' | 'objects'
-export const REMOTE_CAPS: readonly RemoteCap[] = ['photo', 'video', 'scenario', 'objects']
+export type RemoteCap = 'photo' | 'video' | 'scenario' | 'objects' | 'dictation'
+export const REMOTE_CAPS: readonly RemoteCap[] = ['photo', 'video', 'scenario', 'objects', 'dictation']
 const REMOTE_CAPS_MAX = 8
 
 /** v1.15 «Сценарій»: наш вид об'єкта (не провайдер). v1.25: + картка й картинка (лише сторінка на екрані). */
@@ -78,6 +79,8 @@ export interface RemoteStateDetail {
   }
   /** v1.9 — результат останньої спроби «фото на дошку» (LAW §9) */
   photo?: RemotePhotoResult
+  /** v1.49: відповідь ноутбука на останнє речення диктанту. */
+  dictation?: RemoteDictationResult
   /**
    * v1.12 — можливості ноутбука (пульт v2): ряд «+ Фото / + Відео» лише за цим полем.
    * Немає поля (старий ноутбук у кеші) — пульт показує все, як до v2.
@@ -479,6 +482,8 @@ export function useRemoteChannel(opts: {
         if (videos) detail.videos = videos
         const photo = parseRemotePhoto(msg.photo)
         if (photo) detail.photo = photo
+        const dictation = parseRemoteDictation(msg.dictation)
+        if (dictation) detail.dictation = dictation
         const caps = parseRemoteCaps(msg.caps)
         if (caps) detail.caps = caps
         const scenario = parseRemoteScenario(msg.scenario)
