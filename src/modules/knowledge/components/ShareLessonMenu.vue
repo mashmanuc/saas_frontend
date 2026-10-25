@@ -36,12 +36,14 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const props = defineProps<{ busy?: boolean }>()
-const emit = defineEmits<{ share: []; transfer: [] }>()
+const emit = defineEmits<{ share: []; transfer: []; 'open-change': [open: boolean] }>()
 
 const open = ref(false)
+// Сторінка піднімає картку з відкритим меню над сусідніми (власник 2026-10-25: меню ховалось під наступну плитку).
+watch(open, (value) => emit('open-change', value))
 const rootEl = ref<HTMLElement | null>(null)
 
 function pick(which: 'share' | 'transfer') {

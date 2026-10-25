@@ -182,6 +182,8 @@ describe('useBoardRemote', () => {
     const view = {
       fitTask: vi.fn(() => 0), changeTextScale: vi.fn(() => 1.25), scrollBy: vi.fn(() => -240),
       reveal: vi.fn(() => 1), resetFocus: vi.fn(), taskCards: vi.fn(() => []),
+      // v1.56: зміну сторінки вирішує адаптер (режим показу або звичайний вигляд)
+      pageChanged: vi.fn(), retryShow: vi.fn(), pageAssetCount: vi.fn(() => 0),
       // Це Ref навмисно: ним моделюємо реальний випадок, коли індекс нової
       // сторінки вже прийшов, а картка задачі догружається пізніше.
       summary: vi.fn(() => ({ count: cardsCount.value, answer: false, solution: true, zoom: 1.5 })),
@@ -232,6 +234,7 @@ describe('useBoardRemote', () => {
     const task = { id: 't1', type: 'nmt_task' }
     const view = {
       fitTask: vi.fn(), changeTextScale: vi.fn(), scrollBy: vi.fn(), reveal: vi.fn(), resetFocus: vi.fn(),
+      pageChanged: vi.fn(), retryShow: vi.fn(), pageAssetCount: vi.fn(() => 0),
       taskCards: vi.fn(() => [task]), handwriteTarget: vi.fn(() => task),
       summary: vi.fn(() => ({ count: cardsCount.value, answer: false, solution: false, zoom: 1 })),
     }
@@ -334,11 +337,11 @@ describe('useBoardRemote', () => {
     expect('frozen' in state).toBe(false)
   })
 
-  it('v1.2: зміна сторінки скидає фокус картки в адаптері', async () => {
+  it('v1.2 / v1.56: зміна сторінки — адаптеру (без режиму показу він скидає фокус картки, у показі — показує нову)', async () => {
     const { view, store } = setupWithView()
     store.currentPageIndex = 2
     await nextTick()
-    expect(view.resetFocus).toHaveBeenCalled()
+    expect(view.pageChanged).toHaveBeenCalledTimes(1)
   })
 
   it('v1.2: без адаптера v1.2-команди ігноруються, старі працюють', () => {

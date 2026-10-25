@@ -10,7 +10,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { reactive, ref, defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
 import {
-  DICTATION_SPEECH_LANG, appendDictated, parseRemoteDictation, readDictateArgs, spokenToText,
+  DICTATION_SPEECH_LANG, appendDictated, normalizeDictation, parseRemoteDictation, readDictateArgs, spokenToText,
 } from '../remote/dictationContract'
 import { DICTATION_GAP, HANDWRITE_MARGIN, PAGE_OBJECT_LIMIT, dictationArea, notebookRuling } from '../board/handwriteSolution'
 import {
@@ -60,9 +60,21 @@ describe('телефон: продиктоване → речення', () => {
     expect(readDictateArgs({ request_id: RID, text: 'Речення.', align: 'right' })).toBeNull()
     for (const bad of [
       { request_id: RID }, { request_id: RID, text: '' }, { request_id: RID, text: 'а'.repeat(301) },
-      { request_id: RID, text: 'рядок\nдругий' }, { request_id: 'x', text: 'Речення.' },
+      { request_id: RID, text: 'рядок\tдругий' }, { request_id: RID, text: 'рядок\r\nдругий' }, { request_id: 'x', text: 'Речення.' },
       { request_id: RID, text: 'Речення.', x: 1 },
     ]) expect(readDictateArgs(bad), JSON.stringify(bad)).toBeNull()
+  })
+
+  it('v1.55: Enter у полі — новий рядок на дошці (власник 25.10: «25 жовтня ⏎ класна робота» посередині)', () => {
+    expect(readDictateArgs({ request_id: RID, text: '25 жовтня\nКласна робота', align: 'center' }))
+      .toEqual({ requestId: RID, text: '25 жовтня\nКласна робота', align: 'center' })
+    // телефон шле лише те, що пропустить сервер: без порожніх рядків, табів і пробілів по краях рядка
+    expect(normalizeDictation('  25 жовтня \r\n\r\n класна робота\n')).toBe('25 жовтня\nкласна робота')
+    expect(normalizeDictation('рядок\tдругий\u0085кінець')).toBe('рядок другий кінець')
+    expect(normalizeDictation(' \n \n ')).toBe('')
+    expect(normalizeDictation('а'.repeat(310))).toHaveLength(300)
+    const sent = normalizeDictation('25 жовтня\n\nкласна робота')
+    expect(readDictateArgs({ request_id: RID, text: sent })?.text).toBe(sent)
   })
 })
 

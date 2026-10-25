@@ -54,9 +54,23 @@ export function readDictateArgs(args: unknown): { requestId: string; text: strin
   if (a.align !== undefined && a.align !== 'left' && a.align !== 'center') return null
   if (!REQUEST_ID_RE.test(a.request_id)) return null
   const text = a.text.trim()
+  // v1.55: з керівних — лише перенос рядка (новий рядок на дошці), як на сервері
   // eslint-disable-next-line no-control-regex
-  if (!text || text.length > DICTATE_TEXT_MAX_LEN || /[\u0000-\u001f]/.test(text)) return null
+  if (!text || text.length > DICTATE_TEXT_MAX_LEN || /[\u0000-\u0009\u000b-\u001f]/.test(text)) return null
   return { requestId: a.request_id, text, align: a.align === 'center' ? 'center' : 'left', ...(a.lang ? { lang: a.lang as DictationLang } : {}) }
+}
+
+/**
+ * v1.55: текст із поля телефона — для ноутбука. Enter у полі — новий рядок на дошці (власник 2026-10-25: «25 жовтня ⏎
+ * класна робота» посередині); порожні рядки й пробіли по краях рядка прибираємо, інші керівні знаки (таб із вставки)
+ * — пробіл: сервер їх не пропустить, а телефон чекав би відповіді, якої не буде.
+ */
+export function normalizeDictation(text: string): string {
+  return text.replace(/\r\n?|[\u2028\u2029]/g, '\n')
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/g, ' ')
+    .split('\n').map((line) => line.trim()).filter(Boolean).join('\n')
+    .slice(0, DICTATE_TEXT_MAX_LEN).trim()
 }
 
 /** v1.50: мова диктанту — якою телефон слухає голос і які розділові слова ставить знаками. */

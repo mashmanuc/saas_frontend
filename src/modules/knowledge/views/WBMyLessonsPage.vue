@@ -263,7 +263,10 @@
               :key="lesson.id"
               :style="{ '--i': Math.min(li, 12) }"
               class="wb-lesson-card wb-template-card ml-card relative"
-              :class="{ 'ml-card--selected': templateSelectedIds.includes(lesson.id) }"
+              :class="{
+                'ml-card--selected': templateSelectedIds.includes(lesson.id),
+                'ml-card--menu-open': openMenuLessonId === lesson.id || openShareLessonId === lesson.id,
+              }"
             >
               <!-- Checkbox (top-left) -->
               <div
@@ -343,6 +346,7 @@
                     :busy="sharingInProgress[lesson.id] || quickGrantingId === lesson.id"
                     @share="handleShare(lesson)"
                     @transfer="quickGrant(lesson)"
+                    @open-change="(open: boolean) => onShareMenu(lesson.id, open)"
                   />
                   <!-- Решта дій — в одному меню «…» (візуальний огляд
                        2026-09-22, Топ-10 №8): на картці було вісім елементів
@@ -854,6 +858,13 @@
   border-color: var(--wb-brand, #047857);
 }
 
+/* Картка з відкритим «⋯» чи «Поділитися ▾» — над сусідніми (власник 2026-10-25: «меню ховається під плитку
+   наступну»). Піднята наведенням картка (`transform`) замикає меню у своєму шарі, і наступна плитка, що йде
+   пізніше в розмітці, малювалась поверх нього — і в плитках, і в списку. */
+.ml-card--menu-open {
+  z-index: 30;
+}
+
 .ml-cover {
   position: relative;
   height: 96px;
@@ -1351,6 +1362,12 @@ const openingLessonId = ref<string | null>(null)
 
 // Меню «…» на картці уроку (Топ-10 №8): одночасно відкрите лише одне.
 const openMenuLessonId = ref<string | null>(null)
+// Картка з відкритим «Поділитися ▾» — теж над сусідніми (`ml-card--menu-open`).
+const openShareLessonId = ref<string | null>(null)
+function onShareMenu(id: string, open: boolean): void {
+  if (open) openShareLessonId.value = id
+  else if (openShareLessonId.value === id) openShareLessonId.value = null
+}
 function toggleLessonMenu(id: string): void {
   openMenuLessonId.value = openMenuLessonId.value === id ? null : id
 }

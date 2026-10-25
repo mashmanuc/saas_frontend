@@ -493,6 +493,7 @@ import { STICKY_DEFAULTS } from '../../types/winterboard'
 import type { ImageReadingTarget } from '../../board/imageReadingTarget'
 import { placeListPopover, sendToPageListHeight, type PopoverPlacement } from '../../board/popoverPlacement'
 import { setCardControlsDock } from '../../composables/cardControlsDock'
+import { showMode } from '../../board/showMode'
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -789,6 +790,8 @@ const isVisible = computed(() =>
   props.selectedIds.length > 0 &&
   props.mode === 'edit' &&
   !selectionIsExpanded.value &&
+  // LAW §9 v1.56: у режимі показу чорної панелі під об'єктом на проєкторі немає
+  !showMode.active &&
   (deviceMode.value === 'desktop' || deviceMode.value === 'display'),
 )
 

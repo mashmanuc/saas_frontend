@@ -9419,6 +9419,7 @@
         "write": "Write on the board",
         "writing": "Writing on the board…",
         "done": "Done — the sentence is on the board",
+        "noAnswer": "The board didn’t take the sentence — tap “Write on the board” again",
         "reason": {
           "no_space": "No room on this page — add a new page",
           "busy": "The board is already writing — wait",
