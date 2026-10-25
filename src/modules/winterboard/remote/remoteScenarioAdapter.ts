@@ -119,9 +119,22 @@ function scenarioTitle(asset: WBAsset, kind: ScenarioKind): string {
   } else if (kind === 'image') {
     title = text(data.caption) || text(data.title)
   } else {
-    title = String((asset as { title?: unknown }).title ?? '')
+    title = text((asset as { title?: unknown }).title)
+    // v1.59 (власник 25.10: «назва файла має бути»): мелодія чи відео з файлу без назви — ім'я файла
+    if (!title && (asset.type === 'audio_player' || asset.type === 'video_player')) title = fileTitle(asset.src)
   }
   return title.slice(0, SCENARIO_TITLE_MAX)
+}
+
+/**
+ * Ім'я файла з адреси, як його назвав учитель: без теки, `?…`, службового префікса сховища (`0b14f74a_`) і розширення.
+ * Лише файли дошки (не YouTube: id провайдера не розбираємо — CLAUDE_RULES «зовнішні контракти»).
+ */
+export function fileTitle(src: unknown): string {
+  if (typeof src !== 'string' || !src) return ''
+  let name = src.split(/[?#]/)[0].split('/').pop() ?? ''
+  try { name = decodeURIComponent(name) } catch { /* зіпсоване %-кодування — лишаємо як є */ }
+  return name.replace(/^[0-9a-f]{8}_/i, '').replace(/\.[a-z0-9]{2,5}$/i, '').replace(/[_\s]+/g, ' ').trim()
 }
 
 const isDocKind = (k: ScenarioKind) => k === 'presentation' || k === 'pdf' || k === 'document'

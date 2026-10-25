@@ -199,11 +199,21 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     return vp && vp.width > 0 && vp.height > 0 ? vp : null
   }
 
-  function zoomTo(rect: { x: number; y: number; w: number; h: number }): boolean {
+  function zoomTo(rect: { x: number; y: number; w: number; h: number }, margin = FOCUS_MARGIN_PX): boolean {
+    if (!viewportFor(rect)) return false
+    if (!savedView) savedView = { zoom: store.zoom, scrollX: store.scrollX, scrollY: store.scrollY }
+    return applyFit(rect, margin)
+  }
+
+  /**
+   * Те саме вписування, що й `zoomTo`, але без запам'ятовування вигляду (ним закінчують показ). v1.59: уся сторінка —
+   * без відступу: аркуш 16:9 на проєкторі 16:9 займає весь екран (з відступом лишались сірі смуги — аркуш не
+   * зсувається прокруткою за лівий/верхній край).
+   */
+  function applyFit(rect: { x: number; y: number; w: number; h: number }, margin = FOCUS_MARGIN_PX): boolean {
     const vp = viewportFor(rect)
     if (!vp) return false
-    if (!savedView) savedView = { zoom: store.zoom, scrollX: store.scrollX, scrollY: store.scrollY }
-    const m = FOCUS_MARGIN_PX
+    const m = margin
     const fit = Math.min((vp.width - 2 * m) / rect.w, (vp.height - 2 * m) / rect.h)
     const zoom = Math.max(FOCUS_ZOOM_MIN, Math.min(FOCUS_ZOOM_MAX, fit))
     // Де стоїть аркуш при цьому масштабі (boardStore.stageOrigin): центр поля або 0.
@@ -216,6 +226,11 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     closeMediaShow()
     applyView(zoom, centerX + rect.x * zoom - targetX, centerY + rect.y * zoom - targetY)
     return true
+  }
+
+  /** Уся сторінка як прямокутник аркуша. */
+  function wholePage(): { x: number; y: number; w: number; h: number } {
+    return { x: 0, y: 0, w: store.pageWidth, h: store.pageHeight }
   }
 
   /** v1.56: у показі на весь екран іде картинка чи документ (не програвач, не картка, не задача). */
@@ -245,7 +260,7 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     }
     objectFocus = null
     showPending = assets.length === 0
-    if (!showPending) zoomTo({ x: 0, y: 0, w: store.pageWidth, h: store.pageHeight })
+    if (!showPending) zoomTo(wholePage(), 0)
     return !showPending
   }
 
@@ -632,7 +647,17 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
    */
   function resetFocus(): void {
     endTaskPresentation()
-    if (savedView || objectFocus) endObjectFocus()
+    // v1.59 (власник 25.10: «коли переходимо з повного екрану, дошка стає меншою за екран»): після «На весь
+    // екран» — уся сторінка вписана в екран і по центру, а не попередній (часто менший) вигляд. Кімната без
+    // вписування (аркуш не зсувається прокруткою, розміру поля немає) — як і було: вигляд до першого показу.
+    if (savedView || objectFocus) {
+      if (applyFit(wholePage(), 0)) {
+        savedView = null
+        objectFocus = null
+      } else {
+        endObjectFocus()
+      }
+    }
     notice = null
     // v1.56: «Уся сторінка» (і все, що знімає показ явно) — кінець режиму показу
     showPending = false

@@ -7,7 +7,7 @@
  *   INV-SHOW-2  у режимі показу нова сторінка — одразу на весь екран її головна (найбільша) картинка;
  *               сторінка без картинки — уся сторінка; режим не знімається
  *   INV-SHOW-3  перемкнути пульт на мелодію в режимі показу — повний екран лишається; інша картинка — на весь екран
- *   INV-SHOW-4  «Уся сторінка» — кінець режиму: вигляд до першого показу, клас на <body> знято
+ *   INV-SHOW-4  «Уся сторінка» — кінець режиму: уся сторінка вписана в екран (v1.59), клас на <body> знято
  *   INV-SHOW-5  без режиму показу зміна сторінки — звичайний вигляд, як і було
  *   INV-SHOW-6  сторінка ще без об'єктів — показ чекає й застосовується, щойно вони з'являться
  */
@@ -66,7 +66,7 @@ describe('режим показу', () => {
     view.pageChanged()
     expect(showMode.active).toBe(true)
     expect(view.objectFocusId()).toBeNull()
-    expect(applied[applied.length - 1][0]).toBeCloseTo(Math.min((1920 - 48) / 1920, (1080 - 48) / 1080), 6)
+    expect(applied[applied.length - 1][0]).toBeCloseTo(1, 6)          // уся сторінка 16:9 — на весь екран 16:9
   })
 
   it('INV-SHOW-3: пульт на мелодію — повний екран лишається; інша картинка — стає на весь екран', () => {
@@ -82,7 +82,7 @@ describe('режим показу', () => {
     expect(applied.length).toBe(before + 1)
   })
 
-  it('INV-SHOW-4: «Уся сторінка» — кінець показу, вигляд до першого показу, клас знято', () => {
+  it('INV-SHOW-4: «Уся сторінка» — кінець показу, уся сторінка вписана в екран (v1.59), клас знято', () => {
     const { store, view, applied } = setup(FESTIVAL())
     view.focusObject('slide-03')
     store.currentPageIndex = 1
@@ -90,7 +90,7 @@ describe('режим показу', () => {
     view.resetFocus()
     expect(showMode.active).toBe(false)
     expect(document.body.classList.contains(SHOW_MODE_BODY_CLASS)).toBe(false)
-    expect(applied[applied.length - 1]).toEqual([0.75, 5, 7])
+    expect(applied[applied.length - 1]).toEqual([1, 0, 0])            // уся сторінка, без сірих смуг
   })
 
   it('INV-SHOW-5: без показу зміна сторінки — звичайний вигляд, як і було', () => {
