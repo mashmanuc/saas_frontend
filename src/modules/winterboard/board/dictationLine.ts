@@ -78,7 +78,7 @@ export function assertDictationLine(value: unknown): asserts value is DictationL
   requireValue(typeof source.text === 'string')
   const chars = Array.from(source.text as string)
   requireValue(chars.length > 0 && chars.length <= 300 && (source.text as string).trim())
-  requireValue(!/[\u0000-\u001f\u007f-\u009f]/u.test(source.text as string))
+  requireValue(!/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/u.test(source.text as string)) // LAW §9 v1.55: `\n` — новий рядок
   requireValue(source.lang === 'uk' || source.lang === 'en')
   requireValue(source.hand === 'classic' || source.hand === 'school')
   requireValue(typeof source.revision === 'string' && source.revision.length === 64 && /^[a-f0-9]{64}$/.test(source.revision))

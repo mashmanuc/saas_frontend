@@ -817,7 +817,8 @@ import { firstTipSeen, markFirstTipSeen, remoteEntryUrl } from '../remote/remote
 import type { RemoteStateDetail, RemoteCap, RemoteAssistantReplyDetail, RemoteAssistantReplyStatus, RemoteHandwriteStep, RemoteObject, RemoteObjectNotice } from '../composables/useRemoteChannel'
 import { newRequestId } from '../remote/photoContract'
 import {
-  DICTATE_TEXT_MAX_LEN, DICTATION_LANGS, DICTATION_SPEECH_LANG, appendDictated, type DictationLang, type RemoteDictationResult,
+  DICTATE_TEXT_MAX_LEN, DICTATION_LANGS, DICTATION_SPEECH_LANG, appendDictated, normalizeDictation, type DictationLang,
+  type RemoteDictationResult,
 } from '../remote/dictationContract'
 import RemotePhotoPanel from '../components/remote/RemotePhotoPanel.vue'
 import RemoteBoardMirror from '../components/remote/RemoteBoardMirror.vue'
@@ -1033,17 +1034,35 @@ function setDictLang(l: DictationLang): void {
   dictLang.value = l
   try { localStorage.setItem(DICT_LANG_KEY, l) } catch { /* приватний режим — мова лише до перезавантаження */ }
 }
-/** Стан нашого останнього речення (П5 «не тиша»): пишу / готово / відмова. */
+/**
+ * v1.55: речення, на яке ноутбук так і не відповів (сервер відкинув команду, ноутбук її не прийняв, повідомлення
+ * загубилось). Власник 2026-10-25: два рядки «Посередині» — «тупо стоїть "Пишу на дошці"». Без повтору (§12):
+ * кажемо, що не вийшло, і кнопка знову доступна. Пізня відповідь ноутбука все одно покаже правду.
+ */
+const dictationNoAnswer = ref<string | null>(null)
+const DICTATION_ACK_TIMEOUT_MS = 8000
+let dictationAckTimer: ReturnType<typeof setTimeout> | null = null
+function dictationUnanswered(): boolean {
+  return !!dictationRequestId.value && dictationResult.value?.request_id !== dictationRequestId.value
+}
+function giveUpDictation(): void {
+  if (dictationAckTimer) { clearTimeout(dictationAckTimer); dictationAckTimer = null }
+  if (dictationUnanswered()) dictationNoAnswer.value = dictationRequestId.value
+}
+/** Стан нашого останнього речення (П5 «не тиша»): пишу / готово / відмова / ноутбук не відповів. */
 const dictationState = computed(() => {
   const r = dictationResult.value
   if (!dictationRequestId.value) return null
-  if (!r || r.request_id !== dictationRequestId.value) return 'writing'
+  if (!r || r.request_id !== dictationRequestId.value) {
+    return dictationNoAnswer.value === dictationRequestId.value ? 'noAnswer' : 'writing'
+  }
   return r.status
 })
 const dictationLine = computed(() => {
   const st = dictationState.value
   if (!st) return ''
   if (st === 'writing') return t('winterboard.remote.dictation.writing')
+  if (st === 'noAnswer') return t('winterboard.remote.dictation.noAnswer')
   if (st === 'done') return t('winterboard.remote.dictation.done')
   return t(`winterboard.remote.dictation.reason.${dictationResult.value?.reason ?? 'error'}`)
 })
@@ -1354,6 +1373,8 @@ const channel = useRemoteChannel({
     vibrate(15)
   },
   onError(code) {
+    // v1.55: відмова сервера, поки речення чекає ноутбука, — ноутбук його вже не отримає; одразу «не вийшло»
+    giveUpDictation()
     // Б-121 (2026-09-28): сервер більше не пускає в кімнату чужої дошки. Відмова йде ДО accept,
     // тож браузер бачить не 4403, а 1006 — канал каже `ws_rejected` (перевірено на стенді;
     // `ws_4403` — якщо колись закриватиме після accept). Раніше тут був `forbidden` після hello.
@@ -1614,14 +1635,16 @@ function startDictationVoice(): void {
 }
 /** v1.49: речення — ноутбуку; пише він, відповідь прийде полем `dictation` стану. */
 function sendDictation(): void {
-  const text = dictText.value.trim().slice(0, DICTATE_TEXT_MAX_LEN)
+  const text = normalizeDictation(dictText.value)
   if (!text) return
   const requestId = newRequestId()
   dictationRequestId.value = requestId
   const args: Record<string, unknown> = { request_id: requestId, text }
   if (canSentence.value) args.lang = dictLang.value
   if (dictCenter.value && canDictateCenter.value) args.align = 'center'
-  if (!sendCmd('board.dictate', args)) dictationRequestId.value = null
+  if (!sendCmd('board.dictate', args)) { dictationRequestId.value = null; return }
+  if (dictationAckTimer) clearTimeout(dictationAckTimer)
+  dictationAckTimer = setTimeout(giveUpDictation, DICTATION_ACK_TIMEOUT_MS)
 }
 
 const ptt = usePushToTalk({
@@ -1782,6 +1805,7 @@ onBeforeUnmount(() => {
   if (whyTimer) clearTimeout(whyTimer)
   if (scenarioWhyTimer) clearTimeout(scenarioWhyTimer)
   if (assistantSentTimer) clearTimeout(assistantSentTimer)
+  if (dictationAckTimer) clearTimeout(dictationAckTimer)
   stopStateWatch()
   mirrorFs.leave()
   try { wakeLock?.release?.() } catch { /* noop */ }
