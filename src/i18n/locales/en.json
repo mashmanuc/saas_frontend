@@ -9763,6 +9763,7 @@
       "minimizeAssistant": "Minimise the Integralyk window",
       "minimizeAssistantIntegralka": "Minimise the Integralka window",
       "scenario": {
+        "timeline": "{pos} of {dur} played",
         "current": "current",
         "button": "Scenario",
         "title": "Scenario",

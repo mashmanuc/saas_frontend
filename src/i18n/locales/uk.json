@@ -9478,6 +9478,7 @@
       "minimizeAssistant": "Згорнути вікно Інтегралика",
       "minimizeAssistantIntegralka": "Згорнути вікно Інтегралки",
       "scenario": {
+        "timeline": "Минуло {pos} з {dur}",
         "current": "поточний",
         "button": "Сценарій",
         "title": "Сценарій",

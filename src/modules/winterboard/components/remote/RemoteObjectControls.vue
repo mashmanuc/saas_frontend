@@ -24,6 +24,20 @@
 
     <!-- Відео й аудіо -->
     <template v-else-if="isPlayable(item)">
+      <!-- LAW §9 v1.57: часова шкала — лише показ; між станами від ноутбука смужку рухає сам телефон -->
+      <div
+        v-if="item.dur"
+        class="wb-scn__time"
+        :data-testid="`${idPrefix}-time`"
+        role="progressbar"
+        :aria-valuemin="0"
+        :aria-valuemax="Math.round(item.dur)"
+        :aria-valuenow="Math.round(shownPos)"
+        :aria-label="t('winterboard.remote.scenario.timeline', { pos: clock(shownPos), dur: clock(item.dur) })"
+      >
+        <span class="wb-scn__time-bar"><span class="wb-scn__time-fill" :style="{ width: `${timeShare * 100}%` }" /></span>
+        <span class="wb-scn__time-text" :data-testid="`${idPrefix}-time-text`">{{ clock(shownPos) }} / {{ clock(item.dur) }}</span>
+      </div>
       <div class="wb-scn__row">
         <!-- Власник 2026-09-28: з кнопок видно стан — «▶ Грає» зелена, «⏸ На паузі» підсвічена -->
         <button
@@ -171,6 +185,39 @@ function pagerOf(it: RemoteScenarioItem): string {
   return t(`winterboard.remote.scenario.${key}`, { n: (it.docPage ?? 0) + 1, total: it.docPages })
 }
 
+// ── v1.57 часова шкала: місце від ноутбука + скільки минуло відтоді, поки грає (не далі за кінець) ──
+const anchor = ref<{ pos: number; at: number }>({ pos: props.item.pos ?? 0, at: Date.now() })
+const now = ref(Date.now())
+let ticker: ReturnType<typeof setInterval> | null = null
+watch(
+  () => [props.item.objectId, props.item.pos, props.item.state] as const,
+  () => { anchor.value = { pos: props.item.pos ?? 0, at: Date.now() }; now.value = Date.now() },
+)
+watch(
+  () => isPlayingNow(props.item) && !!props.item.dur,
+  (running) => {
+    if (ticker) { clearInterval(ticker); ticker = null }
+    if (running) ticker = setInterval(() => { now.value = Date.now() }, 250)
+  },
+  { immediate: true },
+)
+onBeforeUnmount(() => { if (ticker) clearInterval(ticker) })
+const shownPos = computed(() => {
+  const dur = props.item.dur ?? 0
+  const run = isPlayingNow(props.item) ? Math.max(0, now.value - anchor.value.at) / 1000 : 0
+  return Math.min(dur, anchor.value.pos + run)
+})
+const timeShare = computed(() => (props.item.dur ? Math.min(1, shownPos.value / props.item.dur) : 0))
+
+/** 0:07, 3:26, 1:02:05 — як на програвачі. */
+function clock(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds))
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const s = String(total % 60).padStart(2, '0')
+  return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`
+}
+
 const canQuieter = computed(() => props.ready && typeof props.item.volume === 'number' && props.item.volume > 0)
 const canLouder = computed(() => props.ready && typeof props.item.volume === 'number' && props.item.volume < 100)
 const canDocPrev = computed(() => props.ready && !!props.item.docPages && (props.item.docPage ?? 0) > 0)
@@ -214,6 +261,10 @@ function send(cmd: string, args: Record<string, unknown>): void {
 }
 .wb-obj--main { --scn-btn: #1e293b; --scn-btn-active: #334155; }
 .wb-scn__status { margin: 0; font-size: 13px; color: var(--scn-status); }
+.wb-scn__time { display: flex; align-items: center; gap: 8px; }
+.wb-scn__time-bar { flex: 1; height: 6px; border-radius: 3px; background: rgba(148, 163, 184, 0.3); overflow: hidden; }
+.wb-scn__time-fill { display: block; height: 100%; border-radius: 3px; background: #2dd4bf; transition: width 0.25s linear; }
+.wb-scn__time-text { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--scn-status); white-space: nowrap; }
 .wb-scn__status--warn { color: var(--warn); font-weight: 600; }
 /* Кнопки — 48 px, два стовпці (ТЗ §2.3, відступи як v2 §5) */
 .wb-scn__row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }

@@ -25,10 +25,10 @@ import type { WBAsset } from '../types/winterboard'
 import { canMinimize, canShowTray, minimizedAsset, restoredAsset, type TrayViewer } from '../board/boardTray'
 import { isMinimizableAsset, isMinimizedOnBoard } from '../board/objectStandard'
 import {
-  changeVideoVolume, pauseVideo, playVideo, ytPlayErrors, ytPlayStates, ytVolumes,
+  changeVideoVolume, pauseVideo, playVideo, videoTime, ytPlayErrors, ytPlayStates, ytTimeMarks, ytVolumes,
 } from '../board/youtubeRemoteControl'
 import {
-  changeMediaVolume, mediaPlayErrors, mediaPlayStates, mediaVolumes, pauseMedia, playMedia,
+  changeMediaVolume, mediaPlayErrors, mediaPlayStates, mediaTime, mediaTimeMarks, mediaVolumes, pauseMedia, playMedia,
 } from '../board/htmlMediaRemoteControl'
 
 export type ScenarioKind = 'video' | 'audio' | 'presentation' | 'pdf' | 'document' | 'card' | 'image'
@@ -43,6 +43,9 @@ export interface RemoteScenarioItem {
   state?: ScenarioPlayState
   error?: 'not_found' | 'not_embeddable' | 'playback'
   volume?: number
+  /** v1.57: де зараз і скільки всього, секунди (лише відео/аудіо сторінки, що на екрані) */
+  pos?: number
+  dur?: number
   doc_page?: number
   doc_pages?: number
 }
@@ -123,17 +126,28 @@ function scenarioTitle(asset: WBAsset, kind: ScenarioKind): string {
 
 const isDocKind = (k: ScenarioKind) => k === 'presentation' || k === 'pdf' || k === 'document'
 
-function playbackFields(asset: WBAsset): Pick<RemoteScenarioItem, 'state' | 'error' | 'volume'> {
+function playbackFields(asset: WBAsset): Pick<RemoteScenarioItem, 'state' | 'error' | 'volume' | 'pos' | 'dur'> {
   const yt = asset.type === 'youtube_player'
   const state = ((yt ? ytPlayStates[asset.id] : mediaPlayStates[asset.id]) ?? 'idle') as ScenarioPlayState
   const error = yt ? ytPlayErrors[asset.id] : mediaPlayErrors[asset.id]
   const volume = yt ? ytVolumes[asset.id] : mediaVolumes[asset.id]
+  // v1.57: місце читаємо, коли стан і так перераховується (грає/пауза/кінець, перемотали, стала відома тривалість) —
+  // мітка робить ці моменти реактивними; між ними смужку на телефоні рухає сам телефон
+  void (yt ? ytTimeMarks[asset.id] : mediaTimeMarks[asset.id])
+  const time = yt ? videoTime(asset.id) : mediaTime(asset.id)
   return {
     state,
     ...(state === 'error' && error ? { error } : {}),
     // YouTube ще не готовий / елемента нема — поля немає (пульт: «Гучність — щойно…»)
     ...(typeof volume === 'number' ? { volume } : {}),
+    ...(time ? { pos: round1(time.dur ? Math.min(time.pos, time.dur) : time.pos) } : {}),
+    ...(time?.dur ? { dur: round1(time.dur) } : {}),
   }
+}
+
+/** Секунди до 0,1 — як округлює сервер; без зайвих змін стану через мікросекунди. */
+function round1(seconds: number): number {
+  return Math.round(seconds * 10) / 10
 }
 
 function docFields(asset: WBAsset): Pick<RemoteScenarioItem, 'doc_page' | 'doc_pages'> {

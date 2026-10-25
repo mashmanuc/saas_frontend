@@ -34,6 +34,11 @@ export const mediaPlayStates = reactive<Record<string, MediaPlayState>>({})
 export const mediaPlayErrors = reactive<Record<string, MediaPlayError>>({})
 /** Чутна гучність 0…100 (вимкнений звук = 0). */
 export const mediaVolumes = reactive<Record<string, number>>({})
+/**
+ * v1.57: лічильник «місце змінилось не грою» (перемотали, стала відома тривалість) — реактивний, щоб стан пульта
+ * перерахувався й пішов на телефон. Саме місце не реактивне: телефон рухає смужку сам між такими моментами.
+ */
+export const mediaTimeMarks = reactive<Record<string, number>>({})
 const pendingOnTap = new Set<string>()
 let tapArmed = false
 
@@ -72,6 +77,8 @@ export function registerMediaElement(id: string, el: HTMLMediaElement): void {
     on('waiting', () => { if (!el.paused) mediaPlayStates[id] = 'loading' }),
     on('error', () => { mediaPlayErrors[id] = 'playback'; mediaPlayStates[id] = 'error'; pendingOnTap.delete(id) }),
     on('volumechange', () => { mediaVolumes[id] = effectiveVolume(el) }),
+    on('seeked', () => { mediaTimeMarks[id] = (mediaTimeMarks[id] ?? 0) + 1 }),
+    on('durationchange', () => { mediaTimeMarks[id] = (mediaTimeMarks[id] ?? 0) + 1 }),
   ]
   entries.set(id, { el, off: () => offs.forEach((f) => f()) })
   mediaPlayStates[id] = el.paused ? 'idle' : 'playing'
@@ -87,6 +94,15 @@ export function unregisterMediaElement(id: string, el?: HTMLMediaElement): void 
   delete mediaPlayStates[id]
   delete mediaPlayErrors[id]
   delete mediaVolumes[id]
+  delete mediaTimeMarks[id]
+}
+
+/** v1.57: де зараз і скільки всього (секунди); тривалість ще невідома — лише місце; програвача немає — null. */
+export function mediaTime(id: string): { pos: number; dur?: number } | null {
+  const el = entries.get(id)?.el
+  if (!el) return null
+  const pos = Number.isFinite(el.currentTime) ? Math.max(0, el.currentTime) : 0
+  return Number.isFinite(el.duration) && el.duration > 0 ? { pos, dur: el.duration } : { pos }
 }
 
 export function hasMediaElement(id: string): boolean {

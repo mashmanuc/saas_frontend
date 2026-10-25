@@ -20,6 +20,9 @@ import { mount } from '@vue/test-utils'
 const players = vi.hoisted(() => ({
   playVideo: vi.fn(), pauseVideo: vi.fn(), changeVideoVolume: vi.fn(),
   playMedia: vi.fn(), pauseMedia: vi.fn(), changeMediaVolume: vi.fn(),
+  // v1.57: де зараз і скільки всього — за замовчуванням плеєра «немає»
+  videoTime: vi.fn((_id: string): { pos: number; dur?: number } | null => null),
+  mediaTime: vi.fn((_id: string): { pos: number; dur?: number } | null => null),
 }))
 
 vi.mock('../board/youtubeRemoteControl', async () => {
@@ -27,6 +30,7 @@ vi.mock('../board/youtubeRemoteControl', async () => {
   return {
     playVideo: players.playVideo, pauseVideo: players.pauseVideo, changeVideoVolume: players.changeVideoVolume,
     ytPlayStates: reactive({}), ytPlayErrors: reactive({}), ytVolumes: reactive({}),
+    videoTime: players.videoTime, ytTimeMarks: reactive({}),
   }
 })
 vi.mock('../board/htmlMediaRemoteControl', async () => {
@@ -34,6 +38,7 @@ vi.mock('../board/htmlMediaRemoteControl', async () => {
   return {
     playMedia: players.playMedia, pauseMedia: players.pauseMedia, changeMediaVolume: players.changeMediaVolume,
     mediaPlayStates: reactive({}), mediaPlayErrors: reactive({}), mediaVolumes: reactive({}),
+    mediaTime: players.mediaTime, mediaTimeMarks: reactive({}),
   }
 })
 
@@ -150,6 +155,24 @@ describe('INV-SCN-2 · живі поля — лише для поточної с
     // інша сторінка — лише значок і назва
     expect(byId['vid-far']).not.toHaveProperty('state')
     expect(byId['doc-1']).not.toHaveProperty('volume')
+  })
+
+  it('v1.57: де зараз і скільки всього — у відео й аудіо сторінки, що на екрані; округлено до 0,1 с; не далі за кінець', () => {
+    players.mediaTime.mockImplementation((id: string) => (id === 'aud-1' ? { pos: 42.37, dur: 206.94 }
+      : id === 'vid-2' ? { pos: 3.2 } : id === 'vid-far' ? { pos: 1, dur: 2 } : null))
+    players.videoTime.mockImplementation((id: string) => (id === 'yt-1' ? { pos: 300.04, dur: 299.96 } : null))
+    const { adapter } = scenarioSetup([
+      [asset('yt-1', 'youtube_player', 0, 0), asset('aud-1', 'audio_player', 0, 10), asset('vid-2', 'video_player', 0, 20)],
+      [asset('vid-far', 'video_player', 0, 0)],
+    ])
+    const byId = Object.fromEntries(adapter.state().items.map((i) => [i.object_id, i]))
+    expect(byId['aud-1']).toMatchObject({ pos: 42.4, dur: 206.9 })
+    expect(byId['yt-1']).toMatchObject({ pos: 300, dur: 300 })          // похибка плеєра — не далі за кінець
+    expect(byId['vid-2'].pos).toBe(3.2)
+    expect(byId['vid-2']).not.toHaveProperty('dur')                      // тривалість ще невідома
+    expect(byId['vid-far']).not.toHaveProperty('pos')                    // інша сторінка — без живих полів
+    players.mediaTime.mockReset(); players.videoTime.mockReset()
+    players.mediaTime.mockReturnValue(null); players.videoTime.mockReturnValue(null)
   })
 })
 
