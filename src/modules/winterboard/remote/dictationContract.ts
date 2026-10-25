@@ -52,26 +52,47 @@ export function readDictateArgs(args: unknown): { requestId: string; text: strin
   return { requestId: a.request_id, text }
 }
 
+/** v1.50: мова диктанту — якою телефон слухає голос і які розділові слова ставить знаками. */
+export type DictationLang = 'uk' | 'en'
+export const DICTATION_LANGS: readonly DictationLang[] = ['uk', 'en']
+/** Мова розпізнавання на телефоні; англійська — британська, як у шкільних підручниках. */
+export const DICTATION_SPEECH_LANG: Record<DictationLang, string> = { uk: 'uk-UA', en: 'en-GB' }
+
 /**
  * Розділові знаки словами → знаки. Телефон розпізнає мову без пунктуації, а для розбору речення вона важлива:
  * учитель каже «Сонце сходило кома і птахи співали крапка». Довші назви — першими («крапка з комою» раніше за «крапка»).
  * Межу слова задаємо пробілами: `\b` у JS бачить лише латиницю.
  */
-const SPOKEN_MARKS: ReadonlyArray<[string, string]> = [
-  ['крапка з комою', ';'],
-  ['три крапки', '…'],
-  ['знак питання', '?'],
-  ['знак оклику', '!'],
-  ['двокрапка', ':'],
-  ['крапка', '.'],
-  ['кома', ','],
-  ['тире', ' —'],
-]
+const SPOKEN_MARKS: Record<DictationLang, ReadonlyArray<[string, string]>> = {
+  uk: [
+    ['крапка з комою', ';'],
+    ['три крапки', '…'],
+    ['знак питання', '?'],
+    ['знак оклику', '!'],
+    ['двокрапка', ':'],
+    ['крапка', '.'],
+    ['кома', ','],
+    ['тире', ' —'],
+  ],
+  // v1.50: «full stop» (британське) і «period» (американське) — обидва; «semicolon» сам не зачепить «colon» (межа — пробіл)
+  en: [
+    ['exclamation point', '!'],
+    ['exclamation mark', '!'],
+    ['question mark', '?'],
+    ['full stop', '.'],
+    ['semicolon', ';'],
+    ['ellipsis', '…'],
+    ['period', '.'],
+    ['comma', ','],
+    ['colon', ':'],
+    ['dash', ' —'],
+  ],
+}
 
 /** Продиктоване → речення: розділові слова стають знаками, перша літера велика, зайві пробіли прибрано. */
-export function spokenToText(raw: string): string {
+export function spokenToText(raw: string, lang: DictationLang = 'uk'): string {
   let s = String(raw ?? '').replace(/\s+/g, ' ').trim()
-  for (const [phrase, mark] of SPOKEN_MARKS) {
+  for (const [phrase, mark] of SPOKEN_MARKS[lang]) {
     const re = new RegExp(`(^|\\s)${phrase.replace(/ /g, '\\s+')}(?=$|[\\s.,!?;:…])`, 'giu')
     s = s.replace(re, mark)
   }
@@ -80,17 +101,19 @@ export function spokenToText(raw: string): string {
     .replace(/([,.;:!?…])(?=[^\s,.;:!?…»)])/g, '$1 ')  // пробіл після знака
     .replace(/\s+/g, ' ')
     .trim()
-  return s ? s[0].toLocaleUpperCase('uk') + s.slice(1) : ''
+  return s ? s[0].toLocaleUpperCase(lang) + s.slice(1) : ''
 }
 
 /** Новий шматок диктування — до вже набраного в полі (через пробіл), без подвійних пробілів. */
-export function appendDictated(current: string, spoken: string): string {
-  const piece = spokenToText(spoken)
+export function appendDictated(current: string, spoken: string, lang: DictationLang = 'uk'): string {
+  const piece = spokenToText(spoken, lang)
   if (!piece) return current
   const base = current.replace(/\s+$/, '')
   if (!base) return piece
-  // продовження речення після коми — з малої; після кінця речення — з великої (spokenToText уже зробив)
+  // продовження речення після коми — з малої; після кінця речення — з великої (spokenToText уже зробив).
+  // Англійське «I» («I'm», «I've») — велике завжди.
   const continues = !/[.!?…]$/.test(base)
-  const next = continues ? piece[0].toLocaleLowerCase('uk') + piece.slice(1) : piece
+  const keepCapital = lang === 'en' && /^I(?![a-z])/.test(piece)
+  const next = continues && !keepCapital ? piece[0].toLocaleLowerCase(lang) + piece.slice(1) : piece
   return `${base} ${next}`
 }

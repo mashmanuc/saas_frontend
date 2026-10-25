@@ -9387,6 +9387,12 @@
     },
     "remote": {
       "dictation": {
+        "langLabel": "Dictation language",
+        "lang": {
+          "uk": "Українська",
+          "en": "English"
+        },
+        "hintEn": "Hold the mic and dictate in English. Say punctuation as words: “comma”, “full stop”, “question mark”, “exclamation mark”.",
         "button": "Dictation",
         "title": "Dictate to the board",
         "hint": "Hold the mic and dictate a sentence. Say punctuation in Ukrainian words: «кома», «крапка».",

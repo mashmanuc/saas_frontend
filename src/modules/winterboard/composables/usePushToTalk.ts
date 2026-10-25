@@ -58,10 +58,14 @@ export function usePushToTalk(opts: UsePushToTalkOptions) {
     return recognition
   }
 
-  /** Кнопку натиснули — почати слухати. Повторний press під час слухання — no-op. */
-  function press(): void {
+  /**
+   * Кнопку натиснули — почати слухати. Повторний press під час слухання — no-op.
+   * `lang` — мова саме цього натиску (v1.50: диктант англійською); без нього — мова з опцій, як було.
+   */
+  function press(lang?: string): void {
     const r = ensure()
     if (!r || listening.value) return
+    r.lang = lang || opts.lang || 'uk-UA'
     finalText = ''
     delivered = false
     try {

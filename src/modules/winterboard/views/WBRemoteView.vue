@@ -594,7 +594,22 @@
       <!-- LAW §9 v1.49 «✍️ Диктант»: голос дописує поле (не команди й не Інтегралик); учитель бачить і може виправити
            текст, «Написати на дошці» — ноутбук пише рукописом під уже написаним. Відповідь — «Пишу… / Готово / причина». -->
       <div v-if="canDictate" v-show="sheet === 'dictation'" class="wb-remote__dictation" data-testid="dictation-sheet">
-        <p class="wb-remote__note">{{ t('winterboard.remote.dictation.hint') }}</p>
+        <!-- v1.50: мова диктанту — якою телефон слухає і які розділові слова ставить знаками; пам'ятає цей телефон -->
+        <div class="wb-remote__dict-lang" role="group" :aria-label="t('winterboard.remote.dictation.langLabel')">
+          <button
+            v-for="l in DICTATION_LANGS"
+            :key="l"
+            type="button"
+            class="wb-remote__dict-lang-btn"
+            :class="{ 'wb-remote__dict-lang-btn--on': dictLang === l }"
+            :data-testid="`dictation-lang-${l}`"
+            :aria-pressed="dictLang === l"
+            @click="setDictLang(l)"
+          >
+            {{ t(`winterboard.remote.dictation.lang.${l}`) }}
+          </button>
+        </div>
+        <p class="wb-remote__note">{{ t(dictLang === 'en' ? 'winterboard.remote.dictation.hintEn' : 'winterboard.remote.dictation.hint') }}</p>
         <textarea
           v-model="dictText"
           class="wb-remote__dictation-text"
@@ -788,7 +803,9 @@ import { derivePair } from '../remote/remotePair'
 import { firstTipSeen, markFirstTipSeen, remoteEntryUrl } from '../remote/remoteEntry'
 import type { RemoteStateDetail, RemoteCap, RemoteAssistantReplyDetail, RemoteAssistantReplyStatus, RemoteHandwriteStep, RemoteObject, RemoteObjectNotice } from '../composables/useRemoteChannel'
 import { newRequestId } from '../remote/photoContract'
-import { DICTATE_TEXT_MAX_LEN, appendDictated, type RemoteDictationResult } from '../remote/dictationContract'
+import {
+  DICTATE_TEXT_MAX_LEN, DICTATION_LANGS, DICTATION_SPEECH_LANG, appendDictated, type DictationLang, type RemoteDictationResult,
+} from '../remote/dictationContract'
 import RemotePhotoPanel from '../components/remote/RemotePhotoPanel.vue'
 import RemoteBoardMirror from '../components/remote/RemoteBoardMirror.vue'
 import { createMirrorFullscreen } from '../remote/mirrorFullscreen'
@@ -981,6 +998,19 @@ const dictationResult = ref<RemoteDictationResult | null>(null)
 /** id останнього речення з цього телефона — чужі чи старі відповіді не показуємо. */
 const dictationRequestId = ref<string | null>(null)
 const dictationVoiceActive = ref(false)
+// v1.50: мова диктанту — локально на цьому телефоні (стан ноутбука не змінює)
+const DICT_LANG_KEY = 'm4sh:remote-dictation-lang'
+function loadDictLang(): DictationLang {
+  try {
+    const v = localStorage.getItem(DICT_LANG_KEY)
+    return (DICTATION_LANGS as readonly string[]).includes(v ?? '') ? v as DictationLang : 'uk'
+  } catch { return 'uk' }
+}
+const dictLang = ref<DictationLang>(loadDictLang())
+function setDictLang(l: DictationLang): void {
+  dictLang.value = l
+  try { localStorage.setItem(DICT_LANG_KEY, l) } catch { /* приватний режим — мова лише до перезавантаження */ }
+}
 /** Стан нашого останнього речення (П5 «не тиша»): пишу / готово / відмова. */
 const dictationState = computed(() => {
   const r = dictationResult.value
@@ -1556,7 +1586,7 @@ function startDictationVoice(): void {
   if (document.activeElement instanceof HTMLTextAreaElement) document.activeElement.blur()
   videoVoiceActive.value = false
   dictationVoiceActive.value = true
-  ptt.press()
+  ptt.press(DICTATION_SPEECH_LANG[dictLang.value])
 }
 /** v1.49: речення — ноутбуку; пише він, відповідь прийде полем `dictation` стану. */
 function sendDictation(): void {
@@ -1573,7 +1603,7 @@ const ptt = usePushToTalk({
     // v1.49: у вікні диктанту голос дописує поле речення — не команда й не фраза Інтегралику
     if (dictationVoiceActive.value) {
       dictationVoiceActive.value = false
-      if (sheet.value === 'dictation') dictText.value = appendDictated(dictText.value, text).slice(0, DICTATE_TEXT_MAX_LEN)
+      if (sheet.value === 'dictation') dictText.value = appendDictated(dictText.value, text, dictLang.value).slice(0, DICTATE_TEXT_MAX_LEN)
       return
     }
     lastPhrase.value = `«${text}»`
@@ -1884,6 +1914,12 @@ onBeforeUnmount(() => {
   gap: 10px;
 }
 
+.wb-remote__dict-lang { display: flex; gap: 8px; }
+.wb-remote__dict-lang-btn {
+  flex: 1; min-height: 40px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface-2); color: var(--text); font-size: 15px; font-weight: 600;
+}
+.wb-remote__dict-lang-btn--on { border-color: var(--accent); background: #1e3a8a; }
 .wb-remote__dictation-text {
   width: 100%;
   min-height: 96px;

@@ -9,7 +9,9 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { reactive, ref, defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
-import { appendDictated, parseRemoteDictation, readDictateArgs, spokenToText } from '../remote/dictationContract'
+import {
+  DICTATION_SPEECH_LANG, appendDictated, parseRemoteDictation, readDictateArgs, spokenToText,
+} from '../remote/dictationContract'
 import { DICTATION_GAP, HANDWRITE_MARGIN, PAGE_OBJECT_LIMIT, dictationArea } from '../board/handwriteSolution'
 import {
   HandwriteUnsupported, handwriteBusyId, handwriteDictation, type HandwriteDeps, type HandwriteLayoutRequest,
@@ -217,5 +219,56 @@ describe('пульт ноутбука: команда й стан', () => {
     command('board.dictate', { request_id: RID, text: '' })
     command('board.dictate', { request_id: 'x', text: 'Речення.' })
     expect(dictate).not.toHaveBeenCalled()
+  })
+})
+
+describe('v1.50: диктант англійською', () => {
+  it('розділові слова англійською стають знаками, перша літера велика', () => {
+    expect(spokenToText('hello world comma how are you question mark', 'en')).toBe('Hello world, how are you?')
+    expect(spokenToText('it is late full stop', 'en')).toBe('It is late.')
+    expect(spokenToText('it is late period', 'en')).toBe('It is late.')
+    expect(spokenToText('wait exclamation mark', 'en')).toBe('Wait!')
+    expect(spokenToText('one semicolon two colon three', 'en')).toBe('One; two: three')
+    expect(spokenToText('London dash the capital', 'en')).toBe('London — the capital')
+  })
+
+  it('слова, що лише починаються так само, не чіпає; мови не змішуються', () => {
+    expect(spokenToText('the periodic table', 'en')).toBe('The periodic table')
+    expect(spokenToText('кома', 'en')).toBe('Кома')
+    expect(spokenToText('comma', 'uk')).toBe('Comma')
+  })
+
+  it('продовження після коми — з малої, але «I» завжди велике', () => {
+    expect(appendDictated('Yesterday,', 'I went home full stop', 'en')).toBe('Yesterday, I went home.')
+    expect(appendDictated('Yesterday,', "I'm at home", 'en')).toBe("Yesterday, I'm at home")
+    expect(appendDictated('Yesterday,', 'We went', 'en')).toBe('Yesterday, we went')
+    expect(appendDictated('Hi.', 'how are you', 'en')).toBe('Hi. How are you')
+  })
+
+  it('телефон слухає британську англійську; наступний натиск без мови — знову українська', async () => {
+    let inst: any = null
+    class FakeSR {
+      lang = ''; started: string[] = []
+      onend: any; onresult: any; onerror: any
+      constructor() { inst = this }
+      start() { this.started.push(this.lang) }
+      stop() {}
+    }
+    vi.stubGlobal('webkitSpeechRecognition', FakeSR)
+    vi.resetModules()
+    try {
+      const { usePushToTalk } = await import('../composables/usePushToTalk')
+      let api!: ReturnType<typeof usePushToTalk>
+      const w = mount(defineComponent({ setup() { api = usePushToTalk({ onFinal: () => {} }); return () => h('div') } }))
+      expect(DICTATION_SPEECH_LANG.en).toBe('en-GB')
+      api.press(DICTATION_SPEECH_LANG.en)
+      inst.onend()
+      api.press()
+      expect(inst.started).toEqual(['en-GB', 'uk-UA'])
+      w.unmount()
+    } finally {
+      vi.unstubAllGlobals()
+      vi.resetModules()
+    }
   })
 })
