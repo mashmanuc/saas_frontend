@@ -9386,6 +9386,23 @@
       }
     },
     "remote": {
+      "sentence": {
+        "title": "Sentence — choose a word",
+        "hideWord": "Hide word",
+        "showWord": "Show word",
+        "hidePunct": "Hide punctuation",
+        "showPunct": "Show punctuation",
+        "restore": "Restore original",
+        "working": "Working…",
+        "done": "Done.",
+        "noConnection": "No connection to the board.",
+        "noAnswer": "No answer came. Check the connection.",
+        "reason": {
+          "blocked": "Failed: the sentence is not selected on the laptop or the board cannot be changed now.",
+          "stale": "Failed: the sentence on the board changed or is gone — choose it again.",
+          "invalid": "Failed: this action does not fit this sentence."
+        }
+      },
       "dictation": {
         "langLabel": "Dictation language",
         "center": "Centre",

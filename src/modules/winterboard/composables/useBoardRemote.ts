@@ -707,7 +707,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         if (!req) return
         let result = sentenceRequests.get(req.request_id)
         if (!result) {
-          result = opts.sentence?.apply(req) ?? { request_id: req.request_id, status: 'refused' }
+          result = opts.sentence?.apply(req) ?? { request_id: req.request_id, status: 'refused', reason: 'blocked' }
           sentenceRequests.set(req.request_id, result)
           if (sentenceRequests.size > 100) sentenceRequests.delete(sentenceRequests.keys().next().value!)
         }
