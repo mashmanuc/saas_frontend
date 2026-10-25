@@ -345,7 +345,10 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
 
   // Один запит на відкриття/зміну кімнати, не polling і не retry. Поки не
   // підтвердив сервер (або старий сервер/помилка), нових кнопок немає.
-  watch(() => [opts.sessionId.value, opts.enabled.value] as const, async ([id, enabled]) => {
+  // Лише ПІСЛЯ setup кімнати (як answerHelloWhenReady нижче): `enabled` читає значення, оголошені нижче виклику
+  // useBoardRemote (WBSoloRoom — `isSessionOwner`); `immediate` у setup падав на них (TDZ) — дошка не відкривалась
+  // (Фея 25.10, тест INV-REJOIN-3).
+  onMounted(() => watch(() => [opts.sessionId.value, opts.enabled.value] as const, async ([id, enabled]) => {
     const generation = ++availabilityGeneration
     analysisEnabled.value = false
     if (!id || !enabled || !opts.dictate || !opts.sentence?.applyAnalysis) return
@@ -357,7 +360,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     } catch (error) {
       console.warn('[WB:analysis] доступність не підтверджено', error instanceof Error ? error.name : 'request_failed')
     }
-  }, { immediate: true })
+  }, { immediate: true }))
 
   // v1.20: номер підготовчої сторінки — на момент надсилання (вставили чи видалили сторінки —
   // «Показати» все одно веде туди); текст — у стелю сервера, інакше він відкине поле цілим.

@@ -27,9 +27,11 @@ export function commitDictationAction(
     const next = applyDictationAction(current.data, action)
     if (next === current.data) return { status: 'unchanged' }
     let updated = { ...current, data: next }
-    if (!current.data.analysis && next.analysis) {
+    // Розміри об'єкта — за кожною зміною рамки (поява/зникнення смуги частин мови), а не лише за першим розбором:
+    // інакше SVG з новою рамкою розтягнувся б у старі w/h. Письмо у світових координатах не рухається.
+    const a = dictationInkBounds(current.data), b = dictationInkBounds(next)
+    if (a.x !== b.x || a.y !== b.y || a.w !== b.w || a.h !== b.h) {
       if (current.rotation) return { status: 'refused', reason: 'rotated_sentence' }
-      const a = dictationInkBounds(current.data), b = dictationInkBounds(next)
       const sx = current.w / a.w, sy = current.h / a.h
       updated = { ...updated, x: current.x + (b.x - a.x) * sx, y: current.y + (b.y - a.y) * sy, w: b.w * sx, h: b.h * sy }
       if (updated.x < 0 || updated.y < 0 || updated.x + updated.w > 1920 || updated.y + updated.h > 1080) return { status: 'refused', reason: 'no_space' }

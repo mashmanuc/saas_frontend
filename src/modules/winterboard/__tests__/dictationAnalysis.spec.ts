@@ -41,9 +41,13 @@ describe('Мовні позначки — рівно за підтверджен
       { token_id: 'w0', pos: 'conjunction' }, { token_id: 'w1', pos: 'preposition' }, { token_id: 'w2', pos: 'pronoun' },
     ]))
     expect(annotationFont(data)).toBe(24)
-    const labels = annotationLabels(data), top = Math.min(...data.layout.glyphs.map((g) => g.bbox[1]))
+    // Фея 25.10: смуга — ПІД реченням і від його першої літери (від поля), не з краю області
+    const labels = annotationLabels(data)
+    const inkBottom = Math.max(...data.layout.glyphs.map((g) => g.bbox[1] + g.bbox[3]))
+    const inkLeft = Math.min(...data.layout.glyphs.map((g) => g.bbox[0]))
+    expect(Math.min(...labels.map((l) => l.x))).toBe(inkLeft)
     for (const label of labels) {
-      expect(label.y).toBeLessThan(top)
+      expect(label.top).toBeGreaterThan(inkBottom)
       expect(label.right - label.x).toBeGreaterThan(80)
       for (const other of labels) if (other !== label) {
         expect(label.y < other.top || other.y < label.top || label.right < other.x || other.right < label.x).toBe(true)
@@ -100,13 +104,28 @@ describe('Мовні позначки — рівно за підтверджен
     store.undo(); flushPendingUpdates(); expect(store.pages[0].assets[0].data).toEqual(original.data)
     store.redo(); flushPendingUpdates(); expect((store.pages[0].assets[0].data as DictationLineData).analysis?.basis).toHaveLength(1)
   })
-  it('якщо читабельні позначки не влазять у сторінку, відмова без зсуву письма або росту полотна', () => {
-    const store = useWBStore(), original = createDictationLine('s', 40, 0, sentenceFixture()), write = vi.fn()
+  it('речення під самим верхом сторінки (перше в зошиті): основа й орфограми наносяться, письмо не рухається', () => {
+    // Фея 25.10: раніше смуги резервувались над реченням завжди — перше речення сторінки відмовляло `no_space`.
+    const store = useWBStore(), original = createDictationLine('s', 40, 0, sentenceFixture())
     store.pages = [{ id: 'p', name: '1', width: 1920, height: 1080, assets: [original], strokes: [] }]
     store.currentPageIndex = 0; store.mode = 'edit'; store.selectedIds = ['s']
+    const written: any[] = []
     expect(commitDictationAction(store, { pageId: 'p', assetId: 's' }, annotate('basis', [{ token_id: 'w0', role: 'subject' }]), {
-      canWrite: () => true, write,
-    })).toEqual({ status: 'refused', reason: 'no_space' })
+      canWrite: () => true, write: (asset) => { written.push(asset); store.pages[0].assets = [asset] },
+    })).toEqual({ status: 'changed' })
+    const after = written[0]
+    expect(after.y).toBeGreaterThanOrEqual(0)
+    // світові координати письма ті самі: зсув рамки = зсув viewBox
+    expect(after.x - dictationInkBounds(after.data).x).toBeCloseTo(original.x - dictationInkBounds(original.data).x, 6)
+    expect(after.y - dictationInkBounds(after.data).y).toBeCloseTo(original.y - dictationInkBounds(original.data).y, 6)
+  })
+  it('якщо смуга частин мови не влазить під реченням унизу сторінки, відмова без зсуву письма або росту полотна', () => {
+    const store = useWBStore(), original = createDictationLine('s', 40, 960, sentenceFixture()), write = vi.fn()
+    store.pages = [{ id: 'p', name: '1', width: 1920, height: 1080, assets: [original], strokes: [] }]
+    store.currentPageIndex = 0; store.mode = 'edit'; store.selectedIds = ['s']
+    expect(commitDictationAction(store, { pageId: 'p', assetId: 's' }, annotate('parts', [
+      { token_id: 'w0', pos: 'noun' }, { token_id: 'w1', pos: 'noun' },
+    ]), { canWrite: () => true, write })).toEqual({ status: 'refused', reason: 'no_space' })
     expect(write).not.toHaveBeenCalled(); expect(store.pages[0].width).toBe(1920); expect(store.pages[0].height).toBe(1080)
   })
   it('після приватного GET повторно звіряється живий target: зміна вибору не пише дошку', async () => {

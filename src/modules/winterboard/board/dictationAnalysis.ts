@@ -49,15 +49,27 @@ export function assertAnalysis(raw: unknown, source: DictationLineData['source']
 export const annotationFont = (data: DictationLineData) => Math.max(24, Math.min(32, data.layout.x_height))
 export const basisWidth = 3.2
 
-/** Окрема смуга «слово — частина мови» над усім реченням. По рядках джерела,
+/** Права межа смуг: як письмо зошита — поле справа 40 px від краю області (HANDWRITE_MARGIN). */
+const LABEL_RIGHT_MARGIN = 40
+
+/** Окрема смуга «слово — частина мови» ПІД реченням. По рядках джерела,
  * без стискання коротких слів і без ліній крізь frozen-письмо.
- * Смуги й рамка резервуються за всіма словами, навіть hidden/без parts.
+ * Фея 25.10 (повторний review): смуга починається від першої літери речення — від поля зошита, а не від краю
+ * сторінки (раніше x = 0 області → на «лінійці» кожне нанесення відмовляло `no_space` і лягало б на поле); стоїть під
+ * реченням — над першим реченням сторінки місця немає, а наступний диктант пишеться нижче; резерв — лише коли частини
+ * мови справді є (без них смуги немає й об'єкт не росте).
  */
 export function annotationLabels(data: DictationLineData) {
+  if (!data.analysis?.parts.length) return []
   const font = annotationFont(data), gap = 10
-  const top = Math.min(...data.layout.glyphs.map((g) => g.bbox[1]))
+  const glyphs = data.layout.glyphs
+  const start = Math.min(...glyphs.map((g) => g.bbox[0]))
+  const limit = Math.max(Math.max(...glyphs.map((g) => g.bbox[0] + g.bbox[2])), data.layout.width - LABEL_RIGHT_MARGIN)
+  const lastLine = Math.max(...glyphs.map((g) => g.line))
+  // Нижче за все письмо й за подвійну риску присудка під останнім рядком.
+  const bottom = Math.max(...glyphs.map((g) => g.bbox[1] + g.bbox[3]), data.layout.baselines[lastLine] + 9)
   const longest = Math.max(...Object.values(POS_LABELS).map((s) => s.length))
-  let row = 0, cursor = 0, previousLine = -1
+  let row = 0, cursor = start, previousLine = -1
   const labels = data.tokens.filter((t) => t.kind === 'word').flatMap((token) => {
     const segments = wordSegments(data, token.id)
     // Одне слово = один підпис, навіть коли сервер переніс його частину.
@@ -65,13 +77,13 @@ export function annotationLabels(data: DictationLineData) {
     const segment = segments[0]
     const prefix = `${token.text} — `
     const width = (Array.from(prefix).length + longest) * font * .7 + 12
-    if (cursor && (previousLine !== segment.line || cursor + width > data.layout.width)) { row++; cursor = 0 }
+    if (cursor > start && (previousLine !== segment.line || cursor + width > limit)) { row++; cursor = start }
     const x = cursor, right = x + width
     cursor = right + gap; previousLine = segment.line
     return [{ tokenId: token.id, prefix, x, right, center: x + width / 2, row, font }]
   })
   return labels.map((label) => {
-    const y = top - gap - (row - label.row) * (font + gap)
+    const y = bottom + gap + font + label.row * (font + gap)
     return { ...label, y, top: y - font }
   })
 }

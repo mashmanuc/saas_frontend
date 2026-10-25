@@ -12,11 +12,11 @@ export function dictationInkBounds(data: DictationLineData) {
     right = Math.max(right, x + w)
     bottom = Math.max(bottom, y + h, layout.baselines[glyph.line] + 2)
   }
-  // Перший аналіз резервує місце; очищення/hidden не пересувають чорнило.
+  // Розбір додає місце (смуга частин мови під реченням — лише коли вони є); hidden не пересуває чорнило.
   if (data.analysis) {
     for (const label of annotationLabels(data)) {
-      top = Math.min(top, label.top - 3); left = Math.min(left, label.x)
-      right = Math.max(right, label.right)
+      left = Math.min(left, label.x); right = Math.max(right, label.right)
+      bottom = Math.max(bottom, label.y + 6)
     }
     // Рамка орфограми й товсті подвійні риски теж усередині viewBox.
     left -= 6; right += 6; top -= 6; bottom += 9
