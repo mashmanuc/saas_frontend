@@ -74,6 +74,6 @@ describe('Речення: relay пульта без дубльованих за�
   it('без адаптера повертає відмову, не удаване виконання', async () => {
     const d = setup()
     d.command('dictation.action', request()); await settle()
-    expect(d.state().sentence_result).toEqual({ request_id: RID, status: 'refused' })
+    expect(d.state().sentence_result).toEqual({ request_id: RID, status: 'refused', reason: 'blocked' })
   })
 })

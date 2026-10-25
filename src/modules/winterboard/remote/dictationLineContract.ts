@@ -5,7 +5,12 @@ export interface RemoteSentence {
   words: Array<{ id: string; text: string; hidden: boolean }>; punct: boolean
 }
 export type SentenceRequest = DictationAction & { request_id: string; page_id: string; object_id: string }
-export interface SentenceResult { request_id: string; status: 'done' | 'refused' }
+/** Причина відмови — закритий набір (як на сервері): blocked — дошку зараз не можна змінювати або речення не
+ *  виділене на ноутбуці; stale — речення змінилося чи зникло; invalid — дія не підходить до речення. */
+export const SENTENCE_REFUSALS = ['blocked', 'stale', 'invalid'] as const
+export type SentenceRefusal = typeof SENTENCE_REFUSALS[number]
+export type SentenceResult = { request_id: string; status: 'done'; reason?: undefined }
+  | { request_id: string; status: 'refused'; reason: SentenceRefusal }
 const uuid = (v: unknown): v is string => typeof v === 'string' && v.length === 36 && /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(v)
 const revision = (v: unknown) => typeof v === 'string' && v.length === 64 && /^[a-f0-9]+$/.test(v)
 const id = (v: unknown, max: number): v is string => typeof v === 'string' && v.length > 0 && v.length <= max && !/[\u0000-\u001f\u007f-\u009f]/.test(v)
@@ -39,5 +44,15 @@ export function readSentenceRequest(v: unknown): SentenceRequest | null {
   return null
 }
 export function parseSentenceResult(v: unknown): SentenceResult | null {
-  return obj(v) && keys(v, ['request_id', 'status']) && uuid(v.request_id) && (v.status === 'done' || v.status === 'refused') ? v as unknown as SentenceResult : null
+  if (!obj(v) || !uuid(v.request_id)) return null
+  if (v.status === 'done') return keys(v, ['request_id', 'status']) ? v as unknown as SentenceResult : null
+  if (v.status !== 'refused' || !keys(v, ['request_id', 'status', 'reason'])) return null
+  return (SENTENCE_REFUSALS as readonly unknown[]).includes(v.reason) ? v as unknown as SentenceResult : null
+}
+
+/** Причина з ноутбука (commitDictationAction / DictationLineError) → закритий набір для телефона. */
+export function sentenceRefusal(reason: string): SentenceRefusal {
+  if (reason === 'blocked') return 'blocked'
+  if (reason === 'stale_target' || reason === 'stale_source' || reason === 'unknown_word') return 'stale'
+  return 'invalid'
 }

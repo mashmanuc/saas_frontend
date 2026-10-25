@@ -1,7 +1,7 @@
 import type { useWBStore } from '../board/state/boardStore'
 import { assertDictationLine, DictationLineError } from '../board/dictationLine'
 import { commitDictationAction } from '../board/commitDictationAction'
-import { parseRemoteSentence, type RemoteSentence, type SentenceRequest, type SentenceResult } from './dictationLineContract'
+import { parseRemoteSentence, sentenceRefusal, type RemoteSentence, type SentenceRequest, type SentenceResult } from './dictationLineContract'
 export interface RemoteSentenceAdapter { state: () => RemoteSentence | null; apply: (request: SentenceRequest) => SentenceResult }
 export function makeRemoteSentenceAdapter(store: ReturnType<typeof useWBStore>, sync: { mode: string; inputLocked: boolean }): RemoteSentenceAdapter {
   return {
@@ -25,7 +25,9 @@ export function makeRemoteSentenceAdapter(store: ReturnType<typeof useWBStore>, 
         canWrite: () => sync.mode === 'SYNC' && !sync.inputLocked,
         write: (asset) => store.updateAsset(asset),
       })
-      return { request_id, status: result.status === 'refused' ? 'refused' : 'done' }
+      return result.status === 'refused'
+        ? { request_id, status: 'refused', reason: sentenceRefusal(result.reason) }
+        : { request_id, status: 'done' }
     },
   }
 }
