@@ -4,9 +4,10 @@ import { createServer } from 'vite'
 import { chromium } from 'playwright'
 
 const server = await createServer({ configFile: false, envFile: false, root: process.cwd(),
+  appType: 'custom',
   cacheDir: 'test-results/dictation-native-vite',
   optimizeDeps: { entries: [], noDiscovery: true },
-  server: { host: '127.0.0.1', port: 5241, strictPort: true },
+  server: { host: '127.0.0.1', port: 5241, strictPort: true, preTransformRequests: false },
   plugins: [{ name: 'dictation-native-test', configureServer(instance) {
     instance.middlewares.use('/__dictation_test__', (_req, res) => {
       res.setHeader('Content-Type', 'text/html; charset=utf-8')

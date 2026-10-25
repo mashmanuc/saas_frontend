@@ -111,6 +111,7 @@
            v1.23 (2026-10-06): питання до обговорення — «❓ Показати/Сховати відповідь»
            для всіх питань сторінки, та сама дія, що кнопка під питанням на дошці. -->
       <RemoteSentenceControls v-if="canSentence && sentence" :sentence="sentence" :result="sentenceResult" :ready="isReady" :send="sendSentenceRequest" />
+      <RemoteSentenceAnalysis v-if="canAnalysis && sentence && boardId" :board-id="boardId" :sentence="sentence" :result="sentenceResult" :ready="isReady" :send="sendSentenceRequest" />
       <div v-if="hasCards || hasQuestions || showVideoZone || showStepRow || currentObject" class="wb-remote__context" data-testid="context">
         <!-- LAW §9 v1.34 (2026-10-19, власник: «згоден з усіма чотирма, роби»; маніфест пульта П2): пульт працює з
              ПОТОЧНИМ ОБ'ЄКТОМ — його видно («Задача 2 з 3»), ◀ ▶ перемикають, кожна кнопка шле його адресу. Кнопки — за
@@ -825,6 +826,7 @@ import { createMirrorFullscreen } from '../remote/mirrorFullscreen'
 import RemoteScenarioSheet from '../components/remote/RemoteScenarioSheet.vue'
 import RemoteObjectControls from '../components/remote/RemoteObjectControls.vue'
 import RemoteSentenceControls from '../components/remote/RemoteSentenceControls.vue'
+import RemoteSentenceAnalysis from '../components/remote/RemoteSentenceAnalysis.vue'
 import type { RemoteSentence, SentenceRequest, SentenceResult } from '../remote/dictationLineContract'
 import type { RemotePhotoResult } from '../remote/photoContract'
 import { RECORDING_SOURCE, type RemoteRecordingCmd, type RemoteRecordingInfo, type RemoteRecordingResult } from '../remote/recordingContract'
@@ -1011,6 +1013,7 @@ const canDictate = computed(() => caps.value?.includes('dictation') === true)
 // v1.51: ноутбук уміє писати посередині
 const canDictateCenter = computed(() => caps.value?.includes('dictation_center') === true)
 const canSentence = computed(() => caps.value?.includes('dictation_line_v1') === true)
+const canAnalysis = computed(() => caps.value?.includes('dictation_analysis_v1') === true)
 const sentence = ref<RemoteSentence | null>(null)
 const sentenceResult = ref<SentenceResult | null>(null)
 function sendSentenceRequest(request: SentenceRequest) { return sendCmd('dictation.action', { ...request }) }

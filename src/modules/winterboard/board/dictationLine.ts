@@ -1,4 +1,5 @@
 /** Диктант 2.0: frozen-дані з сервера, без власного tokenizer, мережі чи запису в store. */
+import { assertAnalysis, assertAnalysisItems, AnalysisError, type DictationAnalysis, type AnalysisKind, type AnalysisItem } from './dictationAnalysis'
 export interface DictationToken {
   id: string
   kind: 'word' | 'punct' | 'space'
@@ -22,6 +23,7 @@ export interface DictationStroke {
 }
 
 export interface DictationLineData {
+  analysis?: DictationAnalysis
   version: 1
   source: { text: string; lang: 'uk' | 'en'; hand: 'classic' | 'school'; revision: string }
   tokens: DictationToken[]
@@ -40,6 +42,7 @@ export interface DictationLineData {
 }
 
 export type DictationAction =
+  | { action: 'set_analysis'; source_revision: string; kind: AnalysisKind; items: AnalysisItem[] }
   | { action: 'set_word'; source_revision: string; token_id: string; hidden: boolean }
   | { action: 'set_punctuation'; source_revision: string; hidden: boolean }
   | { action: 'restore'; source_revision: string }
@@ -71,7 +74,7 @@ function index(value: unknown, max: number): value is number {
 
 /** Межа недовірених JSON-даних. Некоректне речення не малюємо частково. */
 export function assertDictationLine(value: unknown): asserts value is DictationLineData {
-  record(value, ['version', 'source', 'tokens', 'layout', 'hidden'])
+  record(value, ['version', 'source', 'tokens', 'layout', 'hidden', ...(value && typeof value === 'object' && 'analysis' in value ? ['analysis'] : [])])
   requireValue(value.version === 1)
   const source = value.source
   record(source, ['text', 'lang', 'hand', 'revision'])
@@ -163,6 +166,10 @@ export function assertDictationLine(value: unknown): asserts value is DictationL
   requireValue(words.every((id) => typeof id === 'string' && tokens.get(id)?.kind === 'word'))
   const canonical = [...tokens.values()].filter((token) => words.includes(token.id)).map((token) => token.id)
   requireValue(canonical.every((id, i) => id === words[i]))
+  if ('analysis' in value) {
+    try { assertAnalysis(value.analysis, source as unknown as DictationLineData['source'], value.tokens as DictationToken[]) }
+    catch (error) { if (!(error instanceof AnalysisError)) throw error; throw new DictationLineError('invalid_data') }
+  }
 }
 
 /** Незмінні source/layout не копіюються і не перераховуються. No-op зберігає identity. */
@@ -170,6 +177,16 @@ export function applyDictationAction(data: DictationLineData, raw: unknown): Dic
   assertDictationLine(data)
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new DictationLineError('invalid_action')
   const action = raw as Record<string, unknown>
+  if (action.action === 'set_analysis') {
+    if (Object.keys(action).length !== 4 || !['action', 'source_revision', 'kind', 'items'].every((k) => k in action)) throw new DictationLineError('invalid_action')
+    if (action.source_revision !== data.source.revision) throw new DictationLineError('stale_source')
+    try { assertAnalysisItems(action.kind, action.items, { text: data.source.text, tokens: data.tokens }) }
+    catch (error) { if (!(error instanceof AnalysisError)) throw error; throw new DictationLineError('invalid_action') }
+    const kind = action.kind as AnalysisKind
+    const analysis = data.analysis ?? { version: 1, source_revision: data.source.revision, orthograms: [], basis: [], parts: [] }
+    if (JSON.stringify(analysis[kind]) === JSON.stringify(action.items)) return data
+    return { ...data, analysis: { ...analysis, [kind]: (action.items as AnalysisItem[]).map((item) => ({ ...item })) } as DictationAnalysis }
+  }
   const expected = action.action === 'restore' ? ['action', 'source_revision']
     : action.action === 'set_punctuation' ? ['action', 'source_revision', 'hidden']
       : action.action === 'set_word' ? ['action', 'source_revision', 'token_id', 'hidden'] : []

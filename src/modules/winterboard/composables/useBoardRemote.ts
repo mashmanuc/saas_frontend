@@ -285,7 +285,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       // v1.49: ноутбук пише продиктоване рукописом — на пульті кнопка «✍️ Диктант»
       // v1.51: і посередині — перемикач «Посередині» на пульті
       ...(opts.dictate ? ['dictation', 'dictation_center'] : []),
-      ...(opts.dictate && opts.sentence ? ['dictation_line_v1'] : []),
+      ...(opts.dictate && opts.sentence ? ['dictation_line_v1', 'dictation_analysis_v1'] : []),
     ]
     if (photoResult.value) msg.photo = photoResult.value
     // v1.49: відповідь на останнє речення диктанту («Пишу… / Готово / причина» на пульті)

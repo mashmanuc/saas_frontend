@@ -1,4 +1,5 @@
 import type { DictationLineData } from './dictationLine'
+import { annotationFont } from './dictationAnalysis'
 
 /** Обвід усієї frozen-геометрії; hidden не впливає ні на bbox, ні на переноси. */
 export function dictationInkBounds(data: DictationLineData) {
@@ -11,6 +12,8 @@ export function dictationInkBounds(data: DictationLineData) {
     right = Math.max(right, x + w)
     bottom = Math.max(bottom, y + h, layout.baselines[glyph.line] + 2)
   }
-  const x = Math.max(0, left - pad), y = Math.max(0, top - pad)
-  return { x, y, w: Math.min(layout.width, right + pad) - x, h: Math.min(layout.height, bottom + pad) - y }
+  // Перший аналіз резервує місце; очищення/hidden не пересувають чорнило.
+  if (data.analysis) { top -= annotationFont(data) + 3; bottom += 4 }
+  const x = Math.max(0, left - pad), y = data.analysis ? top - pad : Math.max(0, top - pad)
+  return { x, y, w: Math.min(layout.width, right + pad) - x, h: (data.analysis ? bottom + pad : Math.min(layout.height, bottom + pad)) - y }
 }
