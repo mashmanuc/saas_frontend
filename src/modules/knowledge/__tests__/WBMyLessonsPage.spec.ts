@@ -195,6 +195,27 @@ describe('WBMyLessonsPage', () => {
     expect(card.text()).toMatch(/18 бер\. 2026 р\., \d{2}:\d{2}/)
   })
 
+  // Власник 2026-10-25: «меню ховається під плитку наступну» — піднята наведенням картка замикала меню у своєму
+  // шарі, і наступна плитка малювалась поверх. Картка з відкритим меню — над сусідніми (`ml-card--menu-open`).
+  it('картка з відкритим «⋯» чи «Поділитися» — над сусідніми', async () => {
+    vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue(MOCK_FILTERED_RESPONSE)
+    const wrapper = createWrapper()
+    await flushPromises()
+    const [first, second] = wrapper.findAll('.wb-lesson-card')
+    expect(first.classes()).not.toContain('ml-card--menu-open')
+
+    await first.find('[data-test="lesson-menu"]').trigger('click')
+    expect(first.classes()).toContain('ml-card--menu-open')
+    expect(second.classes()).not.toContain('ml-card--menu-open')
+    await first.find('[data-test="lesson-menu"]').trigger('click')
+    expect(first.classes()).not.toContain('ml-card--menu-open')
+
+    await second.find('.share-menu__btn').trigger('click')
+    expect(second.classes()).toContain('ml-card--menu-open')
+    await second.find('.share-menu__btn').trigger('click')
+    expect(second.classes()).not.toContain('ml-card--menu-open')
+  })
+
   it('shows empty state when no lessons', async () => {
     vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue({
       lessons: [], total: 0, has_more: false, offset: 0, limit: 20,
