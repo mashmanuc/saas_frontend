@@ -29,6 +29,9 @@ interface YtPlayer {
   getVolume(): number
   isMuted(): boolean
   unMute(): void
+  // v1.57 часова шкала на пульті — документовані методи IFrame Player API
+  getCurrentTime(): number
+  getDuration(): number
 }
 interface YtNamespace {
   Player: new (el: HTMLIFrameElement, opts: {
@@ -58,6 +61,8 @@ interface Entry {
 const entries = new Map<string, Entry>()
 /** Стан кожної YouTube-картки за id асета (реактивний — пульт і банер читають його). */
 export const ytPlayStates = reactive<Record<string, YtPlayState>>({})
+/** v1.57: «плеєр готовий — тривалість відома» (реактивно, щоб пульт отримав стан); саме місце — не реактивне. */
+export const ytTimeMarks = reactive<Record<string, number>>({})
 /** Причина стану `error` (для зрозумілого повідомлення на пульті). */
 export const ytPlayErrors = reactive<Record<string, YtPlayError>>({})
 /**
@@ -155,6 +160,7 @@ export function registerYouTubeFrame(id: string, frame: HTMLIFrameElement): void
         onReady: () => {
           entry.ready = true
           syncVolume(id)
+          ytTimeMarks[id] = (ytTimeMarks[id] ?? 0) + 1   // тривалість відома — пульту новий стан
           if (entry.playWhenReady) { entry.playWhenReady = false; playVideo(id) }
         },
         onStateChange: (e) => { applyPlayerState(id, e.data); syncVolume(id) },
@@ -176,6 +182,21 @@ export function unregisterYouTubeFrame(id: string, frame?: HTMLIFrameElement): v
   delete ytPlayStates[id]
   delete ytPlayErrors[id]
   delete ytVolumes[id]
+  delete ytTimeMarks[id]
+}
+
+/** v1.57: де зараз і скільки всього (секунди) у YouTube-картці; плеєр не готовий — null. */
+export function videoTime(id: string): { pos: number; dur?: number } | null {
+  const entry = entries.get(id)
+  if (!entry?.ready || !entry.player) return null
+  try {
+    const pos = Math.max(0, Number(entry.player.getCurrentTime()) || 0)
+    const dur = Number(entry.player.getDuration())
+    return Number.isFinite(dur) && dur > 0 ? { pos, dur } : { pos }
+  } catch (err) {
+    console.warn('[WB:remote] YouTube time read failed:', err)
+    return null
+  }
 }
 
 export function playVideo(id: string): boolean {
@@ -242,6 +263,7 @@ export function __resetYouTubeRemoteControlForTests(): void {
   for (const k of Object.keys(ytPlayStates)) delete ytPlayStates[k]
   for (const k of Object.keys(ytPlayErrors)) delete ytPlayErrors[k]
   for (const k of Object.keys(ytVolumes)) delete ytVolumes[k]
+  for (const k of Object.keys(ytTimeMarks)) delete ytTimeMarks[k]
   apiPromise = null
   if (tapArmed) {
     window.removeEventListener('pointerdown', onUserTap, true)

@@ -120,7 +120,12 @@
         <template v-if="currentObject">
           <div class="wb-remote__row wb-remote__objects" data-testid="object-row">
             <button v-if="objectCount > 1" type="button" class="wb-remote__mini wb-remote__mini--fine" data-testid="object-prev" :disabled="!isReady" :aria-label="t('winterboard.remote.object.prev')" @click="stepObject(-1)">◀</button>
-            <span class="wb-remote__object-label" data-testid="object-label" aria-live="polite">{{ objectLabel }}</span>
+            <!-- Маніфест П7 (v1.58): назва — вхід у «Сценарій» (список лише для вибору); окремої кнопки немає -->
+            <button v-if="objectsAll && canScenario" type="button" class="wb-remote__object-pick" data-testid="object-pick" :disabled="!isReady" :aria-label="t('winterboard.remote.object.pick')" @click="openSheet('scenario')">
+              <span class="wb-remote__object-label" data-testid="object-label" aria-live="polite">{{ objectLabel }}</span>
+              <span class="wb-remote__object-caret" aria-hidden="true">▾</span>
+            </button>
+            <span v-else class="wb-remote__object-label" data-testid="object-label" aria-live="polite">{{ objectLabel }}</span>
             <button v-if="objectCount > 1" type="button" class="wb-remote__mini wb-remote__mini--fine" data-testid="object-next" :disabled="!isReady" :aria-label="t('winterboard.remote.object.next')" @click="stepObject(1)">▶</button>
           </div>
           <p v-if="objectNotice" class="wb-remote__hint" data-testid="object-notice" role="status">{{ t(`winterboard.remote.object.notice.${objectNotice}`) }}</p>
@@ -322,22 +327,10 @@
         </div>
       </div>
 
-      <!-- E. Додати: лише те, що ця дошка вміє (caps, LAW §9 v1.12 — вид А) -->
-      <div v-if="canPhoto || canVideo" class="wb-remote__add" data-testid="add-row">
-        <button v-if="canPhoto" type="button" class="wb-remote__add-btn" data-testid="open-photo" :disabled="!isReady" @click="openSheet('photo')">
-          <span class="wb-remote__add-plus" aria-hidden="true">＋</span>
-          <span>{{ t('winterboard.remote.addPhoto') }}</span>
-          <span v-if="photoBadge" class="wb-remote__badge" :class="`wb-remote__badge--${photoBadge.tone}`" data-testid="photo-badge">{{ photoBadge.text }}</span>
-        </button>
-        <button v-if="canVideo" type="button" class="wb-remote__add-btn" data-testid="open-video" :disabled="!isReady" @click="openSheet('video')">
-          <span class="wb-remote__add-plus" aria-hidden="true">＋</span>
-          <span>{{ t('winterboard.remote.addVideo') }}</span>
-        </button>
-      </div>
-
-      <!-- LAW §9 v1.15 «📋 Сценарій» (ТЗ §2.1): рядок на всю ширину під «+ Фото / + Відео».
-           Лише за caps ∋ 'scenario' (вид А); N = 0 — вимкнена на місці, тап пояснює (вид Б). -->
-      <template v-if="canScenario">
+      <!-- LAW §9 v1.15 «📋 Сценарій» (ТЗ §2.1). Лише за caps ∋ 'scenario' (вид А); N = 0 — вимкнена на місці, тап
+           пояснює (вид Б). v1.58 (маніфест П7): з новим ноутбуком вхід у список — назва поточного об'єкта, тож кнопка
+           лишається тільки на сторінці без об'єктів (на місці назви) і для старого ноутбука. -->
+      <template v-if="canScenario && !(objectsAll && currentObject)">
         <div class="wb-remote__scenario-slot" data-testid="scenario-slot" @click="whyScenario">
           <button
             type="button"
@@ -353,18 +346,23 @@
         <p v-if="scenarioWhy" class="wb-remote__why" role="status" data-testid="scenario-why-empty">{{ scenarioWhy }}</p>
       </template>
 
-      <!-- LAW §9 v1.49 «✍️ Диктант» (власник 2026-10-24): речення голосом — ноутбук пише рукописом. Лише за caps ∋ 'dictation'. -->
-      <button
-        v-if="canDictate"
-        type="button"
-        class="wb-remote__add-btn wb-remote__scenario-btn"
-        data-testid="open-dictation"
-        :disabled="!isReady"
-        @click="openSheet('dictation')"
-      >
-        <span aria-hidden="true">✍️</span>
-        <span>{{ t('winterboard.remote.dictation.button') }}</span>
-      </button>
+      <!-- E. Додати: лише те, що ця дошка вміє (caps, LAW §9 v1.12 — вид А). v1.58: «Диктант» — у цьому ж рядку. -->
+      <div v-if="canPhoto || canVideo || canDictate" class="wb-remote__add" data-testid="add-row">
+        <button v-if="canPhoto" type="button" class="wb-remote__add-btn" data-testid="open-photo" :disabled="!isReady" @click="openSheet('photo')">
+          <span class="wb-remote__add-plus" aria-hidden="true">＋</span>
+          <span>{{ t('winterboard.remote.addPhoto') }}</span>
+          <span v-if="photoBadge" class="wb-remote__badge" :class="`wb-remote__badge--${photoBadge.tone}`" data-testid="photo-badge">{{ photoBadge.text }}</span>
+        </button>
+        <button v-if="canVideo" type="button" class="wb-remote__add-btn" data-testid="open-video" :disabled="!isReady" @click="openSheet('video')">
+          <span class="wb-remote__add-plus" aria-hidden="true">＋</span>
+          <span>{{ t('winterboard.remote.addVideo') }}</span>
+        </button>
+        <!-- LAW §9 v1.49 «✍️ Диктант» (власник 2026-10-24): речення голосом — ноутбук пише рукописом. Лише за caps ∋ 'dictation'. -->
+        <button v-if="canDictate" type="button" class="wb-remote__add-btn" data-testid="open-dictation" :disabled="!isReady" @click="openSheet('dictation')">
+          <span aria-hidden="true">✍️</span>
+          <span>{{ t('winterboard.remote.dictation.button') }}</span>
+        </button>
+      </div>
 
       <!-- LAW §9 v1.20 (власник 2026-09-29, «так»): Інтегралик ТЕКСТОМ — тихо. Розмова лише тут,
            на телефоні; ноутбук вікна не відкриває і кладе матеріал на підготовчу сторінку одразу
@@ -590,7 +588,9 @@
         :open="sheet === 'scenario'"
         :selectable="objectsAll"
         :current-id="currentObject?.id ?? null"
+        :objects="objectsAll ? objects : null"
         @send="onScenarioSend"
+        @picked="closeSheet"
       />
 
       <!-- LAW §9 v1.49 «✍️ Диктант»: голос дописує поле (не команди й не Інтегралик); учитель бачить і може виправити
@@ -1925,7 +1925,7 @@ onBeforeUnmount(() => {
 .wb-remote__mini:disabled { opacity: .4; }
 
 /* E. Додати — лише за caps */
-.wb-remote__add { display: flex; gap: 12px; }
+.wb-remote__add { display: flex; gap: 8px; }
 .wb-remote__add-btn {
   flex: 1; min-height: 56px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
   color: var(--text); font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -2084,6 +2084,16 @@ onBeforeUnmount(() => {
 /* v1.34: рядок поточного об'єкта — ◀ назва ▶, назва по центру */
 .wb-remote__objects { align-items: center; }
 .wb-remote__object-label { flex: 1; text-align: center; font-size: 15px; font-weight: 600; }
+/* v1.58 (П7): назва поточного об'єкта — кнопка, що відкриває список «Сценарію» */
+.wb-remote__object-pick {
+  flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface); color: var(--text); display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; -webkit-tap-highlight-color: transparent;
+}
+.wb-remote__object-pick:active { background: var(--surface-2); }
+.wb-remote__object-pick:disabled { opacity: .4; }
+.wb-remote__object-pick .wb-remote__object-label { flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wb-remote__object-caret { flex: none; font-size: 13px; color: #cbd5e1; }
 .wb-remote__object-title { margin: 0; text-align: center; font-size: 13px; color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wb-remote__video-pick { min-height: 44px; border-radius: 12px; background: var(--surface); color: var(--text); border: 1px solid var(--line); padding: 0 10px; font-size: 14px; }
 .wb-remote__video-blocked { margin: 0; padding: 10px 12px; border-radius: 12px; background: #b45309; color: #fff; font-weight: 600; text-align: center; }

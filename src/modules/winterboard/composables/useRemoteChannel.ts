@@ -50,6 +50,9 @@ export interface RemoteScenarioItem {
   error?: RemoteVideoError
   /** Чутна гучність 0…100; немає — плеєр ще не завантажився */
   volume?: number
+  /** v1.57: де зараз і скільки всього, секунди (лише відео/аудіо сторінки, що на екрані) */
+  pos?: number
+  dur?: number
   /** Лише для документів сторінки, що на екрані: 0 ≤ docPage < docPages */
   docPage?: number
   docPages?: number
@@ -316,6 +319,10 @@ const SCENARIO_TITLE_MAX = 200
 const SCENARIO_PAGE_INDEX_MAX = 10000
 const SCENARIO_DOC_PAGES_MAX = 10000
 const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v)
+/** v1.57: секунди часової шкали — як на сервері (`REMOTE_MEDIA_TIME_MAX`, доба). */
+const MEDIA_TIME_MAX = 24 * 3600
+const isSeconds = (v: unknown): v is number =>
+  typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= MEDIA_TIME_MAX
 
 /**
  * v1.15 «Сценарій»: `scenario` з `remote.state`. Дзеркало `_validate_remote_scenario` на
@@ -339,7 +346,7 @@ export function parseRemoteScenario(raw: any): RemoteStateDetail['scenario'] | u
     if (typeof minimized !== 'boolean') return undefined
     const item: RemoteScenarioItem = { objectId: id, kind, title: title.slice(0, SCENARIO_TITLE_MAX), pageIndex, minimized }
     // Необов'язкові поля: null = немає, як `is not None` на сервері
-    const { state, error, volume, doc_page: docPage, doc_pages: docPages } = it
+    const { state, error, volume, doc_page: docPage, doc_pages: docPages, pos, dur } = it
     if (kind === 'video' || kind === 'audio') {
       if (docPage != null || docPages != null) return undefined
       if (state != null) {
@@ -354,8 +361,17 @@ export function parseRemoteScenario(raw: any): RemoteStateDetail['scenario'] | u
         if (!isInt(volume) || volume < 0 || volume > 100) return undefined
         item.volume = volume
       }
+      // v1.57: часова шкала — тривалість > 0, місце не далі за кінець
+      if (dur != null) {
+        if (!isSeconds(dur) || dur <= 0) return undefined
+        item.dur = dur
+      }
+      if (pos != null) {
+        if (!isSeconds(pos)) return undefined
+        item.pos = item.dur != null ? Math.min(pos, item.dur) : pos
+      }
     } else {
-      if (state != null || error != null || volume != null) return undefined
+      if (state != null || error != null || volume != null || pos != null || dur != null) return undefined
       // v1.25: у картки й картинки сторінок документа немає
       if ((kind === 'card' || kind === 'image') && (docPage != null || docPages != null)) return undefined
       if (docPage != null || docPages != null) {

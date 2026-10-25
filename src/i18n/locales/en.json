@@ -9731,6 +9731,7 @@
         "ofMixed": "{kind} {n} · {i} of {total}",
         "prev": "Previous object",
         "next": "Next object",
+        "pick": "Choose an object from the list",
         "notice": {
           "gone": "This object is no longer on the page",
           "unsupported": "This button does not work for this object"
@@ -9763,6 +9764,7 @@
       "minimizeAssistant": "Minimise the Integralyk window",
       "minimizeAssistantIntegralka": "Minimise the Integralka window",
       "scenario": {
+        "timeline": "{pos} of {dur} played",
         "current": "current",
         "button": "Scenario",
         "title": "Scenario",

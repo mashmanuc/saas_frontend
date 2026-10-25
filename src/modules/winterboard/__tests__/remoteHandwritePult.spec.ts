@@ -229,7 +229,8 @@ describe("пульт v1.35: етап 2 — відео, аудіо, докуме�
 
   it('«Сценарій»: тап по назві з іншої сторінки — сторінка, потім вибір; поточний позначено (Р2)', async () => {
     const w = await mountWith({ ...NEW, currentId: 'yt' })
-    expect(w.get('[data-testid="scenario-item-yt"]').classes()).toContain('wb-scn__item--current')
+    // v1.58 (маніфест П7): пункт списку — одна кнопка вибору; позначка «поточний» на ній
+    expect(w.get('[data-testid="scenario-name-yt"]').classes()).toContain('wb-scn__item--current')
     send.mockClear()
     await w.get('[data-testid="scenario-name-snd"]').trigger('click')
     expect(cmds()).toEqual([
