@@ -34,7 +34,7 @@ import { useTutorRevealGate } from './useStudentTutor'
 import { hasHandwritableSolution, isIntegralykSolvable } from '../board/handwriteSolution'
 import { NMT_PRESENTATION_SCALE, normalizeNmtPresentationScale } from '../types/nmtTask'
 import { getNmtPresentationScale, resetNmtPresentationScales, setNmtPresentationScale } from './useNmtPresentationScale'
-import { closeMediaShow, isMediaShowType, mediaShow, openMediaShow } from '../board/mediaShow'
+import { closeMediaShow, isImageShowAsset, isShowAsset, mediaShow, openMediaShow } from '../board/mediaShow'
 import { setShowMode, showMode } from '../board/showMode'
 import { isMinimizedOnBoard } from '../board/objectStandard'
 import { currentPageKind, scenarioKind } from '../remote/remoteScenarioAdapter'
@@ -172,11 +172,13 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     if (!asset) return false
     // Власник 2026-09-28 («так»): відео — не масштаб полотна, а показ на весь екран, як
     // презентація (`board/mediaShow.ts`). Той самий програвач, лише вигляд цього екрана.
-    if (isMediaShowType(asset.type)) {
+    // v1.60: картинка — так само (вікно `WBImageShow`), і вмикає режим показу (v1.56).
+    if (isShowAsset(asset)) {
       if (store.expandedAssetId) endTaskPresentation()
       if (savedView) endObjectFocus()
       openMediaShow(assetId)
       objectFocus = assetId
+      if (isImageShowAsset(asset)) setShowMode(true)
       return true
     }
     if (!viewportFor(asset)) return false
@@ -253,8 +255,7 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     const pictures = assets.filter(isShowPicture)
       .sort((a, b) => b.w * b.h - a.w * a.h || a.y - b.y || a.x - b.x)
     const main = pictures[0]
-    if (main && zoomTo(main)) {
-      objectFocus = main.id
+    if (main && showPicture(main)) {
       showPending = false
       return true
     }
@@ -262,6 +263,21 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     showPending = assets.length === 0
     if (!showPending) zoomTo(wholePage(), 0)
     return !showPending
+  }
+
+  /**
+   * Картинку чи документ — на весь екран у режимі показу. v1.60: картинка — показом, як відео (стара в показі тане,
+   * нова з'являється — `WBImageShow`); документ — масштабом полотна (сторінки гортаються на ньому).
+   */
+  function showPicture(asset: any): boolean {
+    if (isImageShowAsset(asset)) {
+      openMediaShow(asset.id)
+      objectFocus = asset.id
+      return true
+    }
+    if (!zoomTo(asset)) return false
+    objectFocus = asset.id
+    return true
   }
 
   /** Зміна сторінки: у режимі показу — нова сторінка на весь екран; інакше — звичайний вигляд, як і було. */
@@ -293,7 +309,7 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     const page = store.pages[store.currentPageIndex]
     const asset = page?.assets.find((a) => a && a.id === objectFocus)
     if (!asset) return null
-    if (isMediaShowType(asset.type) && showId !== objectFocus) return null
+    if (isShowAsset(asset) && showId !== objectFocus) return null
     return objectFocus
   }
 
@@ -437,7 +453,7 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     }
     // v1.56: у показі інша картинка стає на весь екран, а мелодія чи відео (щоб «Грати») повного екрана не знімають
     if (showMode.active) {
-      if (asset.id !== objectFocus && isShowPicture(asset) && zoomTo(asset)) objectFocus = asset.id
+      if (asset.id !== objectFocus && isShowPicture(asset)) showPicture(asset)
       return true
     }
     if (objectFocus && objectFocus !== asset.id) endObjectFocus()

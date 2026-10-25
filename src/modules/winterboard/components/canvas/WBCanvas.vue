@@ -994,6 +994,9 @@
       />
     </div>
 
+    <!-- LAW §9 v1.60: картинка «на весь екран» — показом, як відео (вікно поверх усього, плавна зміна картинок) -->
+    <WBImageShow :asset="imageShowAsset" @close="closeMediaShow()" />
+
     <!-- Смуги прокрутки аркуша (2026-09-24): видно, що аркуш прогорнуто й куди.
          Лише там, де аркуш гортається (stageFollowsScroll — WBSoloRoom). -->
     <WBSheetScrollbars
@@ -1042,7 +1045,8 @@ import { useWBStore } from '../../board/state/boardStore'
 import { OVERLAY_PROXY_TYPES, assetCapabilities, assetStandard, isMinimizedOnBoard, isResizableMediaAsset } from '../../board/objectStandard'
 import { canShowTray, minimizedAsset, restoredAsset, trayItems } from '../../board/boardTray'
 import { coverCrop, isImageBackground } from '../../board/pageBackground'
-import { closeMediaShow, isMediaShowType, mediaShow } from '../../board/mediaShow'
+import { closeMediaShow, isImageShowAsset, isMediaShowType, mediaShow } from '../../board/mediaShow'
+import WBImageShow from './WBImageShow.vue'
 import { showMode } from '../../board/showMode'
 import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
 import { penTapSelection, topCardAt } from '../../board/penTapSelect'
@@ -4593,6 +4597,22 @@ function handleMediaResizeStart(asset: WBAsset, corner: string, e: PointerEvent)
  * Відео в показі на весь екран (власник 2026-09-28, `board/mediaShow.ts`): лише відео поточної
  * сторінки й лише незгорнуте — згорнуте мовчить і сховане (§4.1 «Сценарію»).
  */
+/**
+ * v1.60: картинка сторінки на екрані в показі (`mediaShow.id`) — її показує `WBImageShow`. Між сторінками полотно ще
+ * мить показує стару (`usePageTransition` гасить її), а показ уже перейшов на картинку нової — її тут ще немає. Тоді
+ * тримаємо попередню картинку, щоб між слайдами не проступала дошка: нова проступить крізь неї, щойно сторінка прийде.
+ * У показі відео чи показ закрито — вікна немає.
+ */
+const lastImageShow = shallowRef<WBAsset | null>(null)
+const imageShowAsset = computed<WBAsset | null>(() => {
+  const id = mediaShow.id
+  if (!id) return null
+  const asset = assets.value.find(a => a.id === id)
+  if (asset) return isImageShowAsset(asset) && !isMinimizedOnBoard(asset) ? asset : null
+  return lastImageShow.value
+})
+watch(imageShowAsset, (asset) => { lastImageShow.value = asset })
+
 function isInMediaShow(asset: WBAsset): boolean {
   return mediaShow.id === asset.id && isMediaShowType(asset.type) && !isMinimizedOnBoard(asset)
 }

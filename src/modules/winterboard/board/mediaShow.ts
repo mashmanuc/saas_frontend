@@ -22,6 +22,20 @@ export function isMediaShowType(type: string | undefined | null): boolean {
   return !!type && MEDIA_SHOW_TYPES.has(type)
 }
 
+/**
+ * LAW §9 v1.60 (власник 2026-10-25: «щоб картинка робилася сама на цілий екран, а потім зменшувалася на своє місце…
+ * як відео»): картинка з адресою файла теж відкривається показом — окремим вікном `WBImageShow` поверх усього (полотно
+ * Konva не переставиш стилем, як картку відео). Той самий `mediaShow.id`, ті самі × / Esc / «Уся сторінка».
+ */
+export function isImageShowAsset(asset: { type?: string | null; src?: unknown } | null | undefined): boolean {
+  return asset?.type === 'image' && typeof asset.src === 'string' && asset.src.length > 0
+}
+
+/** Відкривається показом (відео чи картинка), а не масштабом полотна. */
+export function isShowAsset(asset: { type?: string | null; src?: unknown } | null | undefined): boolean {
+  return isMediaShowType(asset?.type) || isImageShowAsset(asset)
+}
+
 /** id відео в показі; null — показу немає. Реактивне: WBCanvas і стан пульта читають його. */
 export const mediaShow = reactive<{ id: string | null }>({ id: null })
 
