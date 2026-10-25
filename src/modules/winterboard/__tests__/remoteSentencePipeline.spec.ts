@@ -15,7 +15,7 @@ beforeEach(() => { vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Da
 afterEach(() => { while (mounted.length) mounted.pop()!.unmount(); vi.useRealTimers() })
 const settle = () => vi.advanceTimersByTimeAsync(REMOTE_STATE_THROTTLE_MS + 10)
 
-function setup(options: { dictate?: UseBoardRemoteOptions['dictate']; sentence?: RemoteSentenceAdapter } = {}) {
+function setup(options: { dictate?: UseBoardRemoteOptions['dictate']; sentence?: RemoteSentenceAdapter; analysisAvailability?: () => Promise<boolean> } = {}) {
   const store = reactive({ currentPageIndex: 0, pageCount: 1, goToPage: vi.fn(), addPage: vi.fn() })
   const sendMessage = vi.fn()
   const enabled = ref(true)
@@ -33,10 +33,34 @@ function setup(options: { dictate?: UseBoardRemoteOptions['dictate']; sentence?:
 }
 
 describe('Речення: relay пульта без дубльованих записів', () => {
+  it('OFF/старий сервер/невдала перевірка: кнопки розбору не оголошуються; звичайний диктант лишається', async () => {
+    for (const availability of [async () => false, async () => { throw new Error('old_server') }]) {
+      const check = vi.fn(availability)
+      const d = setup({ dictate: async () => ({ status: 'written' }), analysisAvailability: check,
+        sentence: { state: sentence, apply: (r) => ({ request_id: r.request_id, status: 'done' }),
+          applyAnalysis: async (r) => ({ request_id: r.request_id, status: 'done' }) } })
+      d.command('hello'); await settle()
+      expect(d.state().caps).not.toContain('dictation_analysis_v1')
+      expect(d.state().caps).toContain('dictation_line_v1')
+      expect(check).toHaveBeenCalledOnce()
+    }
+  })
+  it('поки відповідь сервера ще в дорозі й після вимкнення host — можливості розбору немає', async () => {
+    let finish!: (enabled: boolean) => void
+    const d = setup({ dictate: async () => ({ status: 'written' }),
+      analysisAvailability: () => new Promise((resolve) => { finish = resolve }),
+      sentence: { state: sentence, apply: (r) => ({ request_id: r.request_id, status: 'done' }),
+        applyAnalysis: async (r) => ({ request_id: r.request_id, status: 'done' }) } })
+    d.command('hello'); await settle()
+    expect(d.state().caps).not.toContain('dictation_analysis_v1')
+    d.enabled.value = false; await settle(); finish(true); await settle()
+    d.enabled.value = true; await settle(); d.command('hello'); await settle()
+    expect(d.state().caps).not.toContain('dictation_analysis_v1')
+  })
   it('підтверджений аналіз: у WS лише UUID; pending і завершений запит не дублюються', async () => {
     let finish!: (result: { request_id: string; status: 'done' }) => void
     const applyAnalysis = vi.fn(() => new Promise<{ request_id: string; status: 'done' }>((resolve) => { finish = resolve }))
-    const d = setup({ dictate: async () => ({ status: 'written' }), sentence: { state: sentence,
+    const d = setup({ dictate: async () => ({ status: 'written' }), analysisAvailability: async () => true, sentence: { state: sentence,
       apply: (req) => ({ request_id: req.request_id, status: 'done' }), applyAnalysis } })
     const args = { request_id: RID, page_id: 'p', object_id: 's', source_revision: 'a'.repeat(64),
       action: 'apply_analysis', proposal_id: '2b4e28ba-2fa1-41d2-883f-0016d3cca427' }

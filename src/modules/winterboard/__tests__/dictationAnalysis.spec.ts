@@ -8,12 +8,12 @@ import { commitDictationAction } from '../board/commitDictationAction'
 import { createDictationLine } from '../board/createDictationLine'
 import { useWBStore } from '../board/state/boardStore'
 import { flushPendingUpdates } from '../board/state/assetUpdateBatcher'
-import { sentenceFixture } from './fixtures/dictationLineFixture'
+import { sentenceFixture, fixtureWithTokens } from './fixtures/dictationLineFixture'
 import { makeRemoteSentenceAdapter } from '../remote/remoteSentenceAdapter'
 import RemoteSentenceAnalysis from '../components/remote/RemoteSentenceAnalysis.vue'
 import type { AnalysisDraft, AnalysisTarget } from '../api/dictationAnalysis'
 import { readAnalysisDraft } from '../api/dictationAnalysis'
-import type { AnalysisItem } from '../board/dictationAnalysis'
+import { annotationFont, annotationLabels, type AnalysisItem } from '../board/dictationAnalysis'
 import type { SentenceRequest } from '../remote/dictationLineContract'
 const revision = 'a'.repeat(64)
 const proposalId = '2b4e28ba-2fa1-41d2-883f-0016d3cca427'
@@ -22,6 +22,40 @@ const annotate = (kind: 'basis' | 'parts' | 'orthograms', items: unknown[]) => (
 beforeEach(() => { flushPendingUpdates(); setActivePinia(createPinia()) })
 
 describe('Мовні позначки — рівно за підтвердженим набором, без нового письма', () => {
+  it('24px навіть на лінійці: короткі слова не стискають підпис, смуги не перекривають текст або одна одну', () => {
+    const original = fixtureWithTokens('І в\nМи', [
+      { id: 'w0', kind: 'word', text: 'І', start: 0, end: 1 },
+      { id: 's0', kind: 'space', text: ' ', start: 1, end: 2 },
+      { id: 'w1', kind: 'word', text: 'в', start: 2, end: 3 },
+      { id: 's1', kind: 'space', text: '\n', start: 3, end: 4 },
+      { id: 'w2', kind: 'word', text: 'Ми', start: 4, end: 6 },
+    ])
+    original.layout.x_height = 16
+    for (const glyph of original.layout.glyphs) if (glyph.token === 'w2') {
+      glyph.line = 1; glyph.bbox[0] -= 40; glyph.bbox[1] += 32
+    }
+    for (const stroke of original.layout.strokes) if (original.layout.glyphs[stroke.glyph].token === 'w2') {
+      stroke.p = stroke.p.map(([x, y]) => [x - 40, y + 32])
+    }
+    const data = applyDictationAction(original, annotate('parts', [
+      { token_id: 'w0', pos: 'conjunction' }, { token_id: 'w1', pos: 'preposition' }, { token_id: 'w2', pos: 'pronoun' },
+    ]))
+    expect(annotationFont(data)).toBe(24)
+    const labels = annotationLabels(data), top = Math.min(...data.layout.glyphs.map((g) => g.bbox[1]))
+    for (const label of labels) {
+      expect(label.y).toBeLessThan(top)
+      expect(label.right - label.x).toBeGreaterThan(80)
+      for (const other of labels) if (other !== label) {
+        expect(label.y < other.top || other.y < label.top || label.right < other.x || other.right < label.x).toBe(true)
+      }
+    }
+    const svg = dictationLineSvg(data)
+    expect(svg).not.toContain('textLength'); expect(svg).not.toContain('lengthAdjust')
+    expect(svg).toContain('І — спол.'); expect(svg).toContain('Ми — займ.')
+    expect(data.layout).toBe(original.layout)
+    const b = dictationInkBounds(data)
+    for (const label of labels) expect(label.top).toBeGreaterThanOrEqual(b.y)
+  })
   it('три шари незалежні, джерело/геометрія ті самі; правила не стають HTML', () => {
     const original = sentenceFixture()
     let data = applyDictationAction(original, annotate('orthograms', [{ start: 1, end: 2, rule: '<script>Чужий текст</script>' }]))
@@ -51,7 +85,7 @@ describe('Мовні позначки — рівно за підтверджен
     expect(JSON.stringify(data)).toBe(before)
   })
   it('перший шар: один update, літери не зсуваються, undo/redo повертають bbox і позначки', () => {
-    const store = useWBStore(), original = createDictationLine('s', 40, 40, sentenceFixture())
+    const store = useWBStore(), original = createDictationLine('s', 40, 160, sentenceFixture())
     store.pages = [{ id: 'p', name: '1', width: 1920, height: 1080, assets: [original], strokes: [] }]
     store.currentPageIndex = 0; store.mode = 'edit'; store.selectedIds = ['s']
     const ops: string[] = []; store.onOperation((op) => ops.push(op.op_type))
@@ -65,6 +99,15 @@ describe('Мовні позначки — рівно за підтверджен
     expect(store.pages[0]).toMatchObject({ width: 1920, height: 1080 })
     store.undo(); flushPendingUpdates(); expect(store.pages[0].assets[0].data).toEqual(original.data)
     store.redo(); flushPendingUpdates(); expect((store.pages[0].assets[0].data as DictationLineData).analysis?.basis).toHaveLength(1)
+  })
+  it('якщо читабельні позначки не влазять у сторінку, відмова без зсуву письма або росту полотна', () => {
+    const store = useWBStore(), original = createDictationLine('s', 40, 0, sentenceFixture()), write = vi.fn()
+    store.pages = [{ id: 'p', name: '1', width: 1920, height: 1080, assets: [original], strokes: [] }]
+    store.currentPageIndex = 0; store.mode = 'edit'; store.selectedIds = ['s']
+    expect(commitDictationAction(store, { pageId: 'p', assetId: 's' }, annotate('basis', [{ token_id: 'w0', role: 'subject' }]), {
+      canWrite: () => true, write,
+    })).toEqual({ status: 'refused', reason: 'no_space' })
+    expect(write).not.toHaveBeenCalled(); expect(store.pages[0].width).toBe(1920); expect(store.pages[0].height).toBe(1080)
   })
   it('після приватного GET повторно звіряється живий target: зміна вибору не пише дошку', async () => {
     const store = useWBStore()

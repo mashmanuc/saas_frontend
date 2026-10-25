@@ -45,7 +45,36 @@ export function assertAnalysis(raw: unknown, source: DictationLineData['source']
   requireValue(keys(v, ['version', 'source_revision', ...ANALYSIS_KINDS]) && v.version === 1 && v.source_revision === source.revision)
   for (const kind of ANALYSIS_KINDS) assertAnalysisItems(kind, v[kind], { text: source.text, tokens })
 }
-export const annotationFont = (data: DictationLineData) => Math.max(6, Math.min(14, data.layout.x_height * .4))
+// Пікселі дошки: на 68% мінімум 16px, а не 4–7px. Ніколи не стискати до літери.
+export const annotationFont = (data: DictationLineData) => Math.max(24, Math.min(32, data.layout.x_height))
+export const basisWidth = 3.2
+
+/** Окрема смуга «слово — частина мови» над усім реченням. По рядках джерела,
+ * без стискання коротких слів і без ліній крізь frozen-письмо.
+ * Смуги й рамка резервуються за всіма словами, навіть hidden/без parts.
+ */
+export function annotationLabels(data: DictationLineData) {
+  const font = annotationFont(data), gap = 10
+  const top = Math.min(...data.layout.glyphs.map((g) => g.bbox[1]))
+  const longest = Math.max(...Object.values(POS_LABELS).map((s) => s.length))
+  let row = 0, cursor = 0, previousLine = -1
+  const labels = data.tokens.filter((t) => t.kind === 'word').flatMap((token) => {
+    const segments = wordSegments(data, token.id)
+    // Одне слово = один підпис, навіть коли сервер переніс його частину.
+    if (!segments.length) return []
+    const segment = segments[0]
+    const prefix = `${token.text} — `
+    const width = (Array.from(prefix).length + longest) * font * .7 + 12
+    if (cursor && (previousLine !== segment.line || cursor + width > data.layout.width)) { row++; cursor = 0 }
+    const x = cursor, right = x + width
+    cursor = right + gap; previousLine = segment.line
+    return [{ tokenId: token.id, prefix, x, right, center: x + width / 2, row, font }]
+  })
+  return labels.map((label) => {
+    const y = top - gap - (row - label.row) * (font + gap)
+    return { ...label, y, top: y - font }
+  })
+}
 
 /** Один фрагмент на рядок; не з'єднувати підкреслення крізь перенос. */
 export function wordSegments(data: DictationLineData, tokenId: string) {

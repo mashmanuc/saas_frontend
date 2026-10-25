@@ -57,6 +57,7 @@ import type { RemoteViewAdapter } from './useRemoteViewAdapter'
 import { setShowMode } from '../board/showMode'
 import type { RemoteSentenceAdapter } from '../remote/remoteSentenceAdapter'
 import { readSentenceRequest, type SentenceResult } from '../remote/dictationLineContract'
+import { analysisAvailable } from '../api/dictationAnalysis'
 import { floatingObstacles } from '../board/floatingObstacles'
 
 export interface BoardRemoteStore {
@@ -69,6 +70,8 @@ export interface BoardRemoteStore {
 }
 
 export interface UseBoardRemoteOptions {
+  /** Read-only серверне підтвердження rollout; ін'єкція лише для локальних тестів. */
+  analysisAvailability?: () => Promise<boolean>
   sentence?: RemoteSentenceAdapter
   sessionId: Ref<string | null>
   store: BoardRemoteStore
@@ -241,6 +244,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
   const pendingAnalysisRequests = new Set<string>()
   const analysisIdentities = new Map<string, string>()
   let disposed = false
+  const analysisEnabled = ref(false)
+  let availabilityGeneration = 0
   onUnmounted(() => { disposed = true })
   const dictationRequests = new Map<string, RemoteDictationResult>()
   /** v1.20: остання відповідь Інтегралика на запит із пульта — іде в кожен remote.state */
@@ -291,7 +296,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       // v1.51: і посередині — перемикач «Посередині» на пульті
       ...(opts.dictate ? ['dictation', 'dictation_center'] : []),
       ...(opts.dictate && opts.sentence ? ['dictation_line_v1'] : []),
-      ...(opts.dictate && opts.sentence?.applyAnalysis ? ['dictation_analysis_v1'] : []),
+      ...(analysisEnabled.value && opts.dictate && opts.sentence?.applyAnalysis ? ['dictation_analysis_v1'] : []),
     ]
     if (photoResult.value) msg.photo = photoResult.value
     // v1.49: відповідь на останнє речення диктанту («Пишу… / Готово / причина» на пульті)
@@ -337,6 +342,22 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       if (remoteConnected.value && opts.enabled.value) sendState()
     })
   }
+
+  // Один запит на відкриття/зміну кімнати, не polling і не retry. Поки не
+  // підтвердив сервер (або старий сервер/помилка), нових кнопок немає.
+  watch(() => [opts.sessionId.value, opts.enabled.value] as const, async ([id, enabled]) => {
+    const generation = ++availabilityGeneration
+    analysisEnabled.value = false
+    if (!id || !enabled || !opts.dictate || !opts.sentence?.applyAnalysis) return
+    try {
+      const available = await (opts.analysisAvailability ?? analysisAvailable)()
+      if (disposed || generation !== availabilityGeneration || !opts.enabled.value) return
+      analysisEnabled.value = available === true
+      if (remoteConnected.value) sendState()
+    } catch (error) {
+      console.warn('[WB:analysis] доступність не підтверджено', error instanceof Error ? error.name : 'request_failed')
+    }
+  }, { immediate: true })
 
   // v1.20: номер підготовчої сторінки — на момент надсилання (вставили чи видалили сторінки —
   // «Показати» все одно веде туди); текст — у стелю сервера, інакше він відкине поле цілим.

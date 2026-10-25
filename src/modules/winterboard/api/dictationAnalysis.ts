@@ -6,6 +6,11 @@ export interface AnalysisTarget { board_id: string; page_id: string; object_id: 
 export interface AnalysisDraft { source_revision: string; kind: AnalysisKind; text: string; tokens: DictationToken[]; items: AnalysisItem[] }
 export type ApprovedAnalysis = AnalysisTarget & { items: AnalysisItem[] }
 const isUuid = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value)
+export async function analysisAvailable(): Promise<boolean> {
+  const raw = await apiClient.get('/v1/intents/dictation-analysis/availability/') as unknown as { enabled: boolean }
+  if (!raw || Object.keys(raw).join() !== 'enabled' || typeof raw.enabled !== 'boolean') throw new AnalysisError()
+  return raw.enabled
+}
 export async function approveAnalysis(target: AnalysisTarget, items: AnalysisItem[], signal: AbortSignal): Promise<string> {
   const raw = await apiClient.post('/v1/intents/dictation-analysis/', { ...target, phase: 'approve', items }, { signal }) as unknown as { proposal_id: string }
   if (!raw || Object.keys(raw).join() !== 'proposal_id' || !isUuid(raw.proposal_id)) throw new AnalysisError()

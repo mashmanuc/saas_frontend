@@ -4,6 +4,7 @@ import type { WBAsset } from '../types/winterboard'
 import { flushPendingUpdates } from './state/assetUpdateBatcher'
 import { applyDictationAction, assertDictationLine, DictationLineError } from './dictationLine'
 import { dictationInkBounds } from './dictationInkBounds'
+import { SERVER_PAYLOAD_LIMIT_BYTES, serverPayloadBytes } from '../services/opsPayloadSize'
 
 type Store = Pick<ReturnType<typeof useWBStore>, 'mode' | 'pages' | 'currentPageIndex' | 'selectedIds'>
 type Result = { status: 'changed' | 'unchanged' } | { status: 'refused'; reason: string }
@@ -33,7 +34,7 @@ export function commitDictationAction(
       updated = { ...updated, x: current.x + (b.x - a.x) * sx, y: current.y + (b.y - a.y) * sy, w: b.w * sx, h: b.h * sy }
       if (updated.x < 0 || updated.y < 0 || updated.x + updated.w > 1920 || updated.y + updated.h > 1080) return { status: 'refused', reason: 'no_space' }
     }
-    if (new TextEncoder().encode(JSON.stringify({ asset: updated })).length > 64 * 1024 - 1024) return { status: 'refused', reason: 'payload_too_large' }
+    if (serverPayloadBytes({ asset: updated }) > SERVER_PAYLOAD_LIMIT_BYTES - 1024) return { status: 'refused', reason: 'payload_too_large' }
     host.write(updated)
     flushPendingUpdates()
     const saved = store.pages[store.currentPageIndex]?.assets.find((asset) => asset.id === target.assetId)
