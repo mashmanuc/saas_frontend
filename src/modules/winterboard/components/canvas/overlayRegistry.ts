@@ -22,6 +22,7 @@
 
 import type { Component } from 'vue'
 import type { EntityRef, WBAsset, WBTeachingAction } from '../../types/winterboard'
+import type { DictationAction } from '../../board/dictationLine'
 
 import { assetCapabilities, isFullscreenAsset } from '../../board/objectStandard'
 import { isKonspektCard } from '../../composables/cardZoom'
@@ -42,6 +43,7 @@ import NmtTaskRenderer from '../board/objects/NmtTaskRenderer.vue'
 import TheoryCardRenderer from '../board/objects/TheoryCardRenderer.vue'
 import HistoryCardRenderer from '../board/objects/HistoryCardRenderer.vue'
 import DiscussionQuestionRenderer from '../board/objects/DiscussionQuestionRenderer.vue'
+import DictationLineRenderer from '../board/objects/DictationLineRenderer.vue'
 import TimelineCardRenderer from '../board/objects/TimelineCardRenderer.vue'
 import MapCardRenderer from '../board/objects/MapCardRenderer.vue'
 import VisualCapsuleAssetRenderer from '../board/objects/VisualCapsuleAssetRenderer.vue'
@@ -99,6 +101,10 @@ export function canWriteAutoFit(boardMode: string, isTutor: boolean): boolean {
 }
 
 export interface OverlayCtx {
+  /** Знімок сторінки для прив'язки дискретного наміру, не довільно «поточна» при виконанні. */
+  currentPageId?: string
+  onDictationAction?: (pageId: string, assetId: string, action: DictationAction) => void
+  dictationError?: (assetId: string) => string
   /** wbStore.selectedIds.includes(id) */
   isSelected: (id: string) => boolean
   /** currentTool === 'select' && wbStore.mode === 'edit' */
@@ -289,6 +295,22 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
     testidPrefix: 'number-line-overlay',
     buildProps: stdProps,
     buildEvents: stdEvents,
+  },
+
+  dictation_line: {
+    component: DictationLineRenderer,
+    wrapperClass: 'wb-dictation-line-overlay',
+    dataAttr: 'data-dictation-line-id',
+    testidPrefix: 'dictation-line-overlay',
+    buildProps: (asset, ctx) => ({ ...stdProps(asset, ctx),
+      interactive: ctx.interactive && ctx.isTutor === true && Boolean(ctx.onDictationAction),
+      actionError: ctx.dictationError?.(asset.id) ?? '',
+    }),
+    buildEvents: (asset, ctx) => ({
+      'dictation-action': (action: DictationAction) => {
+        if (ctx.currentPageId) ctx.onDictationAction?.(ctx.currentPageId, asset.id, action)
+      },
+    }),
   },
 
   // «Наочна сцена» (2026-10-20): вікно з готовою сценою (public/scenes). Лише реєстровий шлях.

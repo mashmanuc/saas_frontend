@@ -21,10 +21,12 @@
  * proxy під ним catch-ить drag/select; внутрішні interactive елементи renderer-а
  * самі вмикають pointer-events:auto.
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { EntityRef, MapCardData, WBAsset, WBMapMarker, WBTeachingAction } from '../../types/winterboard'
 import { useWBStore } from '../../board/state/boardStore'
+import { commitDictationAction } from '../../board/commitDictationAction'
+import type { DictationAction } from '../../board/dictationLine'
 import { topmostForeignOverlayAssetId } from '../../utils/overlayTopHit'
 import { detectCardPreset } from '../../utils/detectCardPreset'
 import { linkedEvidenceUpdate } from '../../board/evidenceLinkage'
@@ -86,6 +88,15 @@ const emit = defineEmits<{
 }>()
 
 const wbStore = useWBStore()
+const dictationErrors = ref<Record<string, string>>({})
+function onDictationAction(pageId: string, assetId: string, action: DictationAction) {
+  const result = commitDictationAction(wbStore, { pageId, assetId }, action, {
+    canWrite: () => props.isTutor === true && props.tool === 'select',
+    write: (asset) => emit('asset-update', asset),
+  })
+  dictationErrors.value = { ...dictationErrors.value, [assetId]: result.status === 'refused'
+    ? 'Дію не виконано: речення або права змінилися. Виберіть речення знову.' : '' }
+}
 
 // Board-expand state — SSOT у wbStore.expandedAssetId (2026-08-16). До того жив
 // тут приватним ref: розгортання авто-виділяє об'єкт → WBSelectionToolbar
@@ -157,6 +168,9 @@ function loadTeachingActions(entityRef: EntityRef, variant?: string): Promise<WB
 }
 
 const ctx = computed<OverlayCtx>(() => ({
+  currentPageId: wbStore.pages[wbStore.currentPageIndex]?.id,
+  onDictationAction,
+  dictationError: (id: string) => dictationErrors.value[id] ?? '',
   isSelected: (id: string) => wbStore.selectedIds.includes(id),
   interactive: props.tool === 'select' && wbStore.mode === 'edit',
   // Вимір дозволено всім (операцій не породжує); писати авто-висоту —
@@ -551,6 +565,14 @@ function onWrapperPointerDownCapture(item: RenderItem, ev: PointerEvent) {
   z-index: 4;
   border-radius: 16px;
   overflow: hidden;
+  pointer-events: none;
+}
+
+/* Речення: координати задає штатний wrapperStyle; панель вчителя поза чорнилом. */
+.wb-dictation-line-overlay {
+  position: absolute;
+  z-index: 4;
+  overflow: visible;
   pointer-events: none;
 }
 

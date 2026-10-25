@@ -21,6 +21,8 @@ const KONVA_PROXY_TYPES_CANONICAL = new Set([
   'history_card',
   // 2026-10-06: питання до обговорення — така сама overlay-картка з проксі.
   'discussion_question',
+  // 25.10: новий рукописний об'єкт, не автоконверсія старих штрихів.
+  'dictation_line',
   // 2026-10-12, Б-184: числова пряма.
   'number_line',
   // 2026-10-20: «Наочна сцена».

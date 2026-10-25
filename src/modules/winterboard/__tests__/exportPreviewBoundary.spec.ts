@@ -20,6 +20,7 @@ import { resolve } from 'node:path'
 const ROOT = resolve(__dirname, '..')
 
 const RENDERERS = [
+  'components/board/objects/DictationLineRenderer.vue',
   'components/board/objects/TrigCircleRenderer.vue',
   'components/board/objects/TrigSolverRenderer.vue',
   'components/board/objects/GraphCalculatorRenderer.vue',

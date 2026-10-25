@@ -237,6 +237,8 @@ export interface WBAsset {
      *  прихованою відповіддю; учитель відкриває її після обговорення (власник:
      *  «так, показувати відповідь після обговорення»). Як «Відповідь» у nmt_task. */
     | 'discussion_question'
+    /** Диктант 2.0: незмінні рукописні glyphs і незалежний hidden-стан. */
+    | 'dictation_line'
     /** TimelineCard (H2, 2026-09-18) — універсальна шкала подій із доказовими
      *  джерелами. Один тип на ВСІ шкали: окремий компонент під конкретну
      *  шкалу заборонений ТЗ (§6.2). */
@@ -374,6 +376,7 @@ export interface WBAsset {
     | TheoryCardData
     | HistoryCardData
     | DiscussionQuestionData
+    | import('../board/dictationLine').DictationLineData
     | TimelineCardData
     | MapCardData
     | MashSceneData

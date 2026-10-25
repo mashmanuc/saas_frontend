@@ -327,10 +327,13 @@ async function snapshotSvg(
     const offscreen = createCanvas(w, h)
     const ctx = offscreen.getContext('2d')
     if (!ctx) return null
-    // Білий фон, бо PNG експорт із прозорим тлом може дати дивне виглядати при composite.
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, w, h)
-    ctx.drawImage(img, 0, 0, w, h)
+    // Старі SVG — як раніше, на білому. Явно прозоре чорнило (диктант поверх
+    // зошитних ліній) зберігає alpha: білий прямокутник не закриває фон дошки.
+    if (svg.getAttribute('data-export-background') !== 'transparent') {
+      ;(ctx as CanvasRenderingContext2D).fillStyle = '#ffffff'
+      ;(ctx as CanvasRenderingContext2D).fillRect(0, 0, w, h)
+    }
+    ;(ctx as CanvasRenderingContext2D).drawImage(img, 0, 0, w, h)
 
     return await canvasOrOffscreenToBlob(offscreen, w, h, signal)
   } catch (err) {
