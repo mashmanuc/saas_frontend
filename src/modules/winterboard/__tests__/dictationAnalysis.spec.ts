@@ -12,6 +12,7 @@ import { sentenceFixture } from './fixtures/dictationLineFixture'
 import { makeRemoteSentenceAdapter } from '../remote/remoteSentenceAdapter'
 import RemoteSentenceAnalysis from '../components/remote/RemoteSentenceAnalysis.vue'
 import type { AnalysisDraft, AnalysisTarget } from '../api/dictationAnalysis'
+import { readAnalysisDraft } from '../api/dictationAnalysis'
 import type { AnalysisItem } from '../board/dictationAnalysis'
 import type { SentenceRequest } from '../remote/dictationLineContract'
 const revision = 'a'.repeat(64)
@@ -84,6 +85,11 @@ describe('Приватна чернетка на пульті: вчитель в
   const state = () => ({ page_id: 'p', object_id: 's', source_revision: revision, words: [{ id: 'w0', text: 'Мама', hidden: false }, { id: 'w1', text: 'мама', hidden: false }], punct: false })
   const draft = (): AnalysisDraft => ({ text: sentenceFixture().source.text, tokens: sentenceFixture().tokens.filter((t) => t.kind === 'word'), source_revision: revision,
     kind: 'basis', items: [{ token_id: 'w0', role: 'subject' }] })
+  it('приватний перегляд зберігає оголошений LF і не пускає інші керівні знаки', () => {
+    const target: AnalysisTarget = { board_id: 'b', page_id: 'p', object_id: 's', source_revision: revision, kind: 'basis' }
+    expect(readAnalysisDraft({ ...draft(), text: 'Мама,\nмама.' }, target).text).toBe('Мама,\nмама.')
+    expect(() => readAnalysisDraft({ ...draft(), text: 'Мама,\tмама.' }, target)).toThrow()
+  })
   it('прибирання шару не запускає новий платний розбір', async () => {
     const send = vi.fn((_r: SentenceRequest) => true), request = vi.fn(async () => draft()), approve = vi.fn(approveExample)
     const w = mount(RemoteSentenceAnalysis, { props: { boardId: 'b', sentence: state(), ready: true, result: null, send, request, approve } })

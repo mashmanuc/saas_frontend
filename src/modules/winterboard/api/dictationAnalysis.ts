@@ -23,7 +23,7 @@ export function readAnalysisDraft(raw: unknown, target: AnalysisTarget): Analysi
   if (!v || typeof v !== 'object' || Object.keys(v).sort().join() !== ['source_revision', 'kind', 'text', 'tokens', 'items'].sort().join()
     || v.source_revision !== target.source_revision || v.kind !== target.kind || !ANALYSIS_KINDS.includes(v.kind)
     || typeof v.text !== 'string' || !v.text.trim() || Array.from(v.text).length > 300
-    || /[\u0000-\u001f\u007f-\u009f]/u.test(v.text) || !Array.isArray(v.tokens) || v.tokens.length > 300) throw new AnalysisError()
+    || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/u.test(v.text) || !Array.isArray(v.tokens) || v.tokens.length > 300) throw new AnalysisError()
   const chars = Array.from(v.text), seen = new Set<string>(); let end = 0
   for (const t of v.tokens) {
     if (!t || Object.keys(t).sort().join() !== ['id', 'kind', 'text', 'start', 'end'].sort().join()
