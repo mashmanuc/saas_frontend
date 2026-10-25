@@ -34,6 +34,25 @@
         >{{ t('winterboard.remote.scenario.open') }}</button>
       </header>
 
+      <!-- Маніфест П7 (v1.58, власник 25.10: «завалений кнопками… дублюються»): з новим ноутбуком список — лише вибір.
+           Кнопки об'єкта — тільки під поточним об'єктом на головному екрані; дотик до назви — поточний, список закрито. -->
+      <template v-if="selectable">
+        <button
+          v-for="(e, i) in g.entries"
+          :key="e.objectId"
+          type="button"
+          class="wb-scn__item wb-scn__name wb-scn__name--link wb-scn__pick"
+          :class="{ 'wb-scn__item--dim': !g.current, 'wb-scn__item--alt': i % 2 === 1, 'wb-scn__item--current': e.objectId === currentId }"
+          :data-testid="`scenario-name-${e.objectId}`"
+          :disabled="!ready"
+          @click="pick(g, e.objectId)"
+        >
+          <span class="wb-scn__icon" aria-hidden="true">{{ e.icon }}</span>
+          <span class="wb-scn__title">{{ e.label }}</span>
+          <span v-if="e.objectId === currentId" class="wb-scn__current" data-testid="scenario-current">{{ t('winterboard.remote.scenario.current') }}</span>
+        </button>
+      </template>
+      <template v-else>
       <article
         v-for="(it, i) in g.items"
         :key="it.objectId"
@@ -41,13 +60,11 @@
         :class="{ 'wb-scn__item--dim': !g.current, 'wb-scn__item--alt': i % 2 === 1, 'wb-scn__item--current': selectable && it.objectId === currentId }"
         :data-testid="`scenario-item-${it.objectId}`"
       >
-        <!-- Сторінка не на екрані: лише значок і назва; тап по назві = «Відкрити».
-             v1.35 (етап 2): ноутбук уміє поточний об'єкт для всіх видів — тап по назві відкриває сторінку і робить
-             цей об'єкт поточним (на головному екрані — його кнопки); на сторінці, що на екрані, — лише обирає. -->
-        <button v-if="!g.current || selectable" type="button" class="wb-scn__name wb-scn__name--link" :data-testid="`scenario-name-${it.objectId}`" :disabled="!ready" @click="pick(g, it)">
+        <!-- Старий ноутбук (без `objects`): сторінка не на екрані — лише значок і назва; тап по назві = «Відкрити»;
+             на сторінці, що на екрані, — кнопки об'єкта тут, бо головний екран їх не має. -->
+        <button v-if="!g.current" type="button" class="wb-scn__name wb-scn__name--link" :data-testid="`scenario-name-${it.objectId}`" :disabled="!ready" @click="pick(g, it.objectId)">
           <span class="wb-scn__icon" aria-hidden="true">{{ ICONS[it.kind] }}</span>
           <span class="wb-scn__title">{{ labelOf(it) }}</span>
-          <span v-if="selectable && it.objectId === currentId" class="wb-scn__current" data-testid="scenario-current">{{ t('winterboard.remote.scenario.current') }}</span>
         </button>
         <p v-else class="wb-scn__name">
           <span class="wb-scn__icon" aria-hidden="true">{{ ICONS[it.kind] }}</span>
@@ -58,6 +75,7 @@
           <RemoteObjectControls :item="it" :focus-id="focusId" :ready="ready" @send="send" />
         </template>
       </article>
+      </template>
     </section>
   </div>
 </template>
@@ -71,7 +89,9 @@
  */
 import { computed, nextTick, watch, type ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { RemoteScenarioItem, RemoteScenarioKind, RemoteStateDetail } from '../../composables/useRemoteChannel'
+import type {
+  RemoteObject, RemoteObjectKind, RemoteScenarioItem, RemoteScenarioKind, RemoteStateDetail,
+} from '../../composables/useRemoteChannel'
 import RemoteObjectControls from './RemoteObjectControls.vue'
 
 const props = defineProps<{
@@ -84,26 +104,45 @@ const props = defineProps<{
   selectable?: boolean
   /** v1.35: поточний об'єкт пульта — позначено в списку. */
   currentId?: string | null
+  /** v1.58 (П7): об'єкти сторінки, що на екрані (перемикач поточного об'єкта) — у списку всі, і задачі, і вирізки. */
+  objects?: RemoteObject[] | null
 }>()
-const emit = defineEmits<{ send: [cmd: string, args: Record<string, unknown>] }>()
+const emit = defineEmits<{ send: [cmd: string, args: Record<string, unknown>]; picked: [] }>()
 const { t } = useI18n()
 
 const ICONS: Record<RemoteScenarioKind, string> = {
   video: '🎬', audio: '🎵', presentation: '📊', pdf: '📄', document: '📄', card: '📘', image: '🖼',
 }
+const OBJECT_ICONS: Record<RemoteObjectKind, string> = { ...ICONS, task: '📝', cut: '✂️' }
 
 const focusId = computed(() => props.scenario?.focusId ?? null)
 
-/** Групи за сторінками в порядку сторінок; порядок усередині — як прислав ноутбук (y, x). */
+interface Entry { objectId: string; icon: string; label: string }
+/**
+ * Групи за сторінками в порядку сторінок; порядок усередині — як прислав ноутбук (y, x). `entries` — для вибору
+ * (v1.58): сторінка на екрані — з перемикача (усі об'єкти), інші — пункти «Сценарію».
+ */
 const groups = computed(() => {
-  const out: Array<{ pageIndex: number; current: boolean; items: RemoteScenarioItem[] }> = []
-  for (const it of props.scenario?.items ?? []) {
-    let g = out.find((x) => x.pageIndex === it.pageIndex)
+  const out: Array<{ pageIndex: number; current: boolean; items: RemoteScenarioItem[]; entries: Entry[] }> = []
+  const groupOf = (pageIndex: number) => {
+    let g = out.find((x) => x.pageIndex === pageIndex)
     if (!g) {
-      g = { pageIndex: it.pageIndex, current: it.pageIndex === props.pageIndex, items: [] }
+      g = { pageIndex, current: pageIndex === props.pageIndex, items: [], entries: [] }
       out.push(g)
     }
+    return g
+  }
+  for (const it of props.scenario?.items ?? []) {
+    const g = groupOf(it.pageIndex)
     g.items.push(it)
+    g.entries.push({ objectId: it.objectId, icon: ICONS[it.kind], label: labelOf(it) })
+  }
+  if (props.selectable && props.pageIndex !== null && props.objects?.length) {
+    const g = groupOf(props.pageIndex)
+    g.entries = props.objects.map((o) => {
+      const title = props.scenario?.items.find((it) => it.objectId === o.id)?.title.trim()
+      return { objectId: o.id, icon: OBJECT_ICONS[o.kind] ?? '•', label: title || `${t(`winterboard.remote.object.kind.${o.kind}`)} ${o.n}` }
+    })
   }
   return out.sort((a, b) => a.pageIndex - b.pageIndex)
 })
@@ -131,11 +170,13 @@ function openPage(index: number): void {
 /**
  * Тап по назві. Без 'objects' — як до v1.35: «Відкрити» сторінку. З ним (Р2 етапу 2) — сторінка, потім вибір:
  * ноутбук виконує по черзі, а правило «лише об'єкт поточної сторінки» (v1.34) не змінюється.
+ * v1.58 (П7): після вибору список закривається — кнопки обраного вже на головному екрані.
  */
-function pick(g: { pageIndex: number; current: boolean }, it: RemoteScenarioItem): void {
+function pick(g: { pageIndex: number; current: boolean }, objectId: string): void {
   if (!props.selectable) { openPage(g.pageIndex); return }
   if (!g.current) openPage(g.pageIndex)
-  send('object.select', { object_id: it.objectId })
+  send('object.select', { object_id: objectId })
+  emit('picked')
 }
 
 // ── Відкриття аркуша: прокрутити до сторінки «на екрані» ──
@@ -196,5 +237,8 @@ watch(() => props.open, async (open) => {
 /* Стан і кнопки об'єкта — у `RemoteObjectControls.vue` (v1.35: той самий блок на головному екрані). */
 /* v1.35: поточний об'єкт пульта — світла рамка й позначка біля назви */
 .wb-scn__item--current { box-shadow: inset 0 0 0 2px #5eead4; }
+/* v1.58 (П7): пункт списку — одна кнопка вибору на всю ширину, без кнопок об'єкта під нею */
+.wb-scn__pick { flex-direction: row; justify-content: flex-start; min-height: 52px; padding: 10px 12px; text-align: left; }
+.wb-scn__pick:disabled { opacity: .5; }
 .wb-scn__current { flex: none; margin-left: auto; padding: 2px 8px; border-radius: 8px; background: #0f766e; color: #fff; font-size: 12px; font-weight: 700; }
 </style>
