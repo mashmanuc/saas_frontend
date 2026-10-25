@@ -643,6 +643,7 @@ import { useDeviceMode } from '../composables/useDeviceMode'
 import { useNoHoverLabels } from '../composables/useNoHoverLabels'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
+import { makeRemoteSentenceAdapter } from '../remote/remoteSentenceAdapter'
 import { handwriteAllWithFeedback, handwriteDictation, handwriteStepState, hasStepTarget, nextStepWithFeedback, remoteHandwriteWithFeedback } from '../composables/useHandwriteSolution'
 import { canSeeImageReading } from '@/modules/intent/imageReadingAccess'
 import { imageReadingTarget } from '../board/imageReadingTarget'
@@ -1281,7 +1282,8 @@ const boardRemote = useBoardRemote({
     return { ...handwriteStepState(page as any), target }
   },
   // LAW §9 v1.49 «✍️ Диктант»: речення з пульта — рукописом під уже написаним на поточній сторінці
-  dictate: (text: string, align?: 'left' | 'center') => handwriteDictation(text, undefined, { align }),
+  sentence: makeRemoteSentenceAdapter(store, opsSync),
+  dictate: (text: string, align?: 'left' | 'center', lang?: 'uk' | 'en') => handwriteDictation(text, undefined, { align, lang }),
 })
 
 const followMode = useFollowMode({

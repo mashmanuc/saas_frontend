@@ -68,7 +68,7 @@ const canEdit = computed(() => props.interactive && props.isSelected && !props.a
 const svg = computed(() => data.value ? dictationLineSvg(data.value) : '')
 const words = computed(() => data.value?.tokens.filter((token) => token.kind === 'word') ?? [])
 const selectedHidden = computed(() => Boolean(selectedWord.value && data.value?.hidden.words.includes(selectedWord.value)))
-watch(() => [props.asset.id, data.value?.source.revision], () => { selectedWord.value = null })
+watch(() => `${props.asset.id}:${data.value?.source.revision}`, () => { selectedWord.value = null })
 
 function selectWord(id: string) {
   if (canEdit.value && words.value.some((token) => token.id === id)) selectedWord.value = id

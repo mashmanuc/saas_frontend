@@ -219,6 +219,8 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
   function kindOf(asset: any): RemoteObjectKind | null {
     if (!asset) return null
     if (asset.type === TASK_ASSET_TYPE) return 'task'
+    // Речення можна вибрати з пульта і без права на платний AI.
+    if (asset.type === 'dictation_line') return 'card'
     // v1.35: є «Сценарій» — усі його види сторінки, що на екрані (ті самі, що в його списку).
     if (opts.allKinds?.() === true) {
       const kind = scenarioKind(asset) ?? currentPageKind(asset)

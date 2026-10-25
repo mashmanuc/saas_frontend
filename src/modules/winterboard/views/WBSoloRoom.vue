@@ -1317,6 +1317,7 @@ import { useNoHoverLabels } from '../composables/useNoHoverLabels'
 import { shouldRefitAfterRotate } from '../board/rotateFit'
 import { useProjectorMode } from '../composables/useProjectorMode'
 import { useBoardRemote } from '../composables/useBoardRemote'
+import { makeRemoteSentenceAdapter } from '../remote/remoteSentenceAdapter'
 import { handwriteAllWithFeedback, handwriteDictation, handwriteStepState, hasStepTarget, nextStepWithFeedback, remoteHandwriteWithFeedback } from '../composables/useHandwriteSolution'
 import { canSeeImageReading } from '@/modules/intent/imageReadingAccess'
 import { useProfileStore } from '@/modules/profile/store/profileStore'
@@ -2065,7 +2066,8 @@ const boardRemote = useBoardRemote({
     return { ...handwriteStepState(page as any), target }
   },
   // LAW §9 v1.49 «✍️ Диктант»: речення з пульта — рукописом під уже написаним на поточній сторінці
-  dictate: (text: string, align?: 'left' | 'center') => handwriteDictation(text, undefined, { align }),
+  sentence: makeRemoteSentenceAdapter(store, opsSync),
+  dictate: (text: string, align?: 'left' | 'center', lang?: 'uk' | 'en') => handwriteDictation(text, undefined, { align, lang }),
   // Відео з пульта (V1 2026-09-26): лише відео ПОТОЧНОЇ сторінки
   media: {
     list: () => (store.currentPage?.assets ?? [])

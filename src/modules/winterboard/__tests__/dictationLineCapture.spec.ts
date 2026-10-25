@@ -40,7 +40,8 @@ describe('SVG capture — alpha нового чорнила без зміни с
     const element = root(true)
     const before = element.innerHTML
     const result = await snapshotElement(element, new AbortController().signal)
-    expect(result).toMatchObject({ width: 400, height: 120 })
+    // Знімок — обвід frozen-чорнила, а не вся вільна область запиту.
+    expect(result).toMatchObject({ width: 111, height: 31 })
     expect(context.drawImage).toHaveBeenCalledOnce()
     expect(context.fillRect).not.toHaveBeenCalled()
     expect(element.innerHTML).toBe(before)
@@ -49,7 +50,7 @@ describe('SVG capture — alpha нового чорнила без зміни с
   it('старий SVG без opt-in, як і раніше, отримує білий фон', async () => {
     const { context } = nativeMocks()
     await snapshotElement(root(false), new AbortController().signal)
-    expect(context.fillRect).toHaveBeenCalledWith(0, 0, 400, 120)
+    expect(context.fillRect).toHaveBeenCalledWith(0, 0, 111, 31)
     expect(context.fillStyle).toBe('#ffffff')
     expect(context.drawImage).toHaveBeenCalledOnce()
   })

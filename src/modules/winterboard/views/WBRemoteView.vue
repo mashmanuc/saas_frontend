@@ -110,6 +110,7 @@
            Відео поточної сторінки — ▶/⏸.
            v1.23 (2026-10-06): питання до обговорення — «❓ Показати/Сховати відповідь»
            для всіх питань сторінки, та сама дія, що кнопка під питанням на дошці. -->
+      <RemoteSentenceControls v-if="canSentence && sentence" :sentence="sentence" :result="sentenceResult" :ready="isReady" :send="sendSentenceRequest" />
       <div v-if="hasCards || hasQuestions || showVideoZone || showStepRow || currentObject" class="wb-remote__context" data-testid="context">
         <!-- LAW §9 v1.34 (2026-10-19, власник: «згоден з усіма чотирма, роби»; маніфест пульта П2): пульт працює з
              ПОТОЧНИМ ОБ'ЄКТОМ — його видно («Задача 2 з 3»), ◀ ▶ перемикають, кожна кнопка шле його адресу. Кнопки — за
@@ -823,6 +824,8 @@ import RemoteBoardMirror from '../components/remote/RemoteBoardMirror.vue'
 import { createMirrorFullscreen } from '../remote/mirrorFullscreen'
 import RemoteScenarioSheet from '../components/remote/RemoteScenarioSheet.vue'
 import RemoteObjectControls from '../components/remote/RemoteObjectControls.vue'
+import RemoteSentenceControls from '../components/remote/RemoteSentenceControls.vue'
+import type { RemoteSentence, SentenceRequest, SentenceResult } from '../remote/dictationLineContract'
 import type { RemotePhotoResult } from '../remote/photoContract'
 import { RECORDING_SOURCE, type RemoteRecordingCmd, type RemoteRecordingInfo, type RemoteRecordingResult } from '../remote/recordingContract'
 
@@ -1007,6 +1010,10 @@ const canScenario = computed(() => caps.value?.includes('scenario') === true)
 const canDictate = computed(() => caps.value?.includes('dictation') === true)
 // v1.51: ноутбук уміє писати посередині
 const canDictateCenter = computed(() => caps.value?.includes('dictation_center') === true)
+const canSentence = computed(() => caps.value?.includes('dictation_line_v1') === true)
+const sentence = ref<RemoteSentence | null>(null)
+const sentenceResult = ref<SentenceResult | null>(null)
+function sendSentenceRequest(request: SentenceRequest) { return sendCmd('dictation.action', { ...request }) }
 const dictCenter = ref(false)
 const dictText = ref('')
 const dictationResult = ref<RemoteDictationResult | null>(null)
@@ -1318,6 +1325,8 @@ const channel = useRemoteChannel({
     videos.value = s.videos ?? []
     photoResult.value = s.photo ?? null
     dictationResult.value = s.dictation ?? null
+    sentence.value = s.sentence ?? null
+    sentenceResult.value = s.sentence_result ?? null
     caps.value = s.caps ?? null
     scenario.value = s.scenario ?? null
     boardBusy.value = s.busy === 'saving_template'
@@ -1495,7 +1504,7 @@ function vibrate(ms: number) {
 }
 
 type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.fit' | 'view.page' | 'view.zoom' | 'view.scroll' | 'card.reveal'
-  | 'board.dictate'
+  | 'board.dictate' | 'dictation.action'
   | 'subject.set' | 'subject.auto' | 'language.set' | 'language.auto' | 'assistant.minimize'
   | 'video.add' | 'video.play' | 'video.pause'
   | 'photo.add' | 'photo.background' | 'photo.background_clear'
@@ -1610,6 +1619,7 @@ function sendDictation(): void {
   const requestId = newRequestId()
   dictationRequestId.value = requestId
   const args: Record<string, unknown> = { request_id: requestId, text }
+  if (canSentence.value) args.lang = dictLang.value
   if (dictCenter.value && canDictateCenter.value) args.align = 'center'
   if (!sendCmd('board.dictate', args)) dictationRequestId.value = null
 }

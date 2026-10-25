@@ -37,6 +37,7 @@ import {
   unfinishedSession,
 } from '../board/handwriteSteps'
 import type { WBStroke } from '../types/winterboard'
+import { dictationFromLayout } from '../board/dictationFromLayout'
 
 export interface HandwriteLayoutRequest {
   text: string; width: number; height: number; mode: 'steps' | 'full'; answer: string
@@ -85,6 +86,7 @@ export interface HandwriteStore {
   addPageUndoable: (opts?: { afterCurrent?: boolean; inheritLook?: boolean }) => string
   addAsset: (asset: any, pageId: string, opts?: { skipHistory?: boolean }) => void
   deleteAsset: (id: string, opts?: { skipHistory?: boolean }) => void
+  selectItems?: (ids: string[]) => void
   /** Висота, яку показує полотно на поточній сторінці (добірка задач буває вищою за аркуш). */
   currentPageCanvasHeight?: number
   /** Висота звичайного аркуша — її має нова сторінка. */
@@ -758,7 +760,7 @@ export const DICTATION_HAND: HandwriteHand = 'school'
  * «Скасувати». Місце — під усім, що вже є на поточній сторінці (`dictationArea`).
  */
 export async function handwriteDictation(
-  text: string, depsIn?: HandwriteDeps, opts: { align?: DictateAlign } = {},
+  text: string, depsIn?: HandwriteDeps, opts: { align?: DictateAlign; lang?: 'uk' | 'en' } = {},
 ): Promise<DictationResult> {
   const refuse = (reason: DictationReason): DictationResult => ({ status: 'refused', reason })
   if (active || handwriteBusyId.value !== null) return refuse('busy')
@@ -799,6 +801,21 @@ export async function handwriteDictation(
     }
     if (!layout.fits) return refuse('no_space')
     if (!writable() || store.pages[store.currentPageIndex]?.id !== page.id) return refuse('blocked')
+    if (opts.lang === 'uk' || opts.lang === 'en') {
+      if (page.strokes.length + page.assets.length >= PAGE_OBJECT_LIMIT) return refuse('no_space')
+      try {
+        const asset = dictationFromLayout(layout, { id: `dictation-${crypto.randomUUID()}`, text, lang: opts.lang,
+          align, x: area.x, y: area.y, width: req.width, height: req.height })
+        // Одна цілісна дія; старий шлях без lang нижче не змінюється.
+        store.addAsset(asset, page.id)
+        if (!store.pages[store.currentPageIndex]?.assets.some((a) => a.id === asset.id)) return refuse('blocked')
+        store.selectItems?.([asset.id])
+        return { status: 'written' }
+      } catch (err) {
+        console.warn('[WB:dictation] sentence creation refused', err)
+        return refuse('error')
+      }
+    }
     // Сторінка вміщує щонайбільше PAGE_OBJECT_LIMIT штрихів і об'єктів — зайве сховище мовчки відкидає, і на дошці
     // лишилось би обрізане речення («…діду», стенд 24.10) під «Готово» на телефоні. Не влазить ціле — «немає місця».
     if (page.strokes.length + page.assets.length + layout.strokes.length > PAGE_OBJECT_LIMIT) return refuse('no_space')

@@ -149,7 +149,8 @@ export function assertDictationLine(value: unknown): asserts value is DictationL
     const [x, y, w, h] = glyph.bbox
     for (const point of stroke.p as unknown[]) {
       requireValue(Array.isArray(point) && point.length === 2)
-      requireValue(num(point[0], x, x + w) && num(point[1], y, y + h))
+      // Сервер округлює x0 та ширину незалежно від точок до0.1px.
+      requireValue(num(point[0], x - 0.11, x + w + 0.11) && num(point[1], y - 0.11, y + h + 0.11))
     }
     inked.add(stroke.glyph as number)
   }
