@@ -1,7 +1,6 @@
 <template>
   <div
     class="audio-object"
-    :style="{ width: obj.w + 'px' }"
   >
     <div class="audio-object__header">
       <span class="audio-object__icon">🎵</span>
@@ -80,12 +79,15 @@ function formatDuration(seconds: number): string {
 </script>
 
 <style scoped>
+/* LAW §9 v1.60 (власник 25.10: «забагато займає області плеєр… візуально менше, а при виділенні більше»): картка —
+   рівно на ширину своєї рамки на полотні (`wb-media-overlay` = w × масштаб), а не завжди w пікселів екрана. */
 .audio-object {
+  width: 100%;
+  box-sizing: border-box;
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   overflow: hidden;
-  min-width: 240px;
 }
 .audio-object__header {
   display: flex;

@@ -121,6 +121,17 @@ describe('INV-SCN-1 · список сценарію', () => {
     expect(b.minimized).toBe(true)
   })
 
+  it('v1.59: мелодія чи відео з файлу без назви — назва файла (без префікса сховища й розширення); YouTube — ні', () => {
+    const { adapter } = scenarioSetup([[
+      asset('m', 'audio_player', 0, 0, { src: 'https://images.m4sh.org/content/uploads/220/0b14f74a_%D0%9C%D0%B5%D0%BB%D0%BE%D0%B4%D1%96%D1%8F%20%E2%80%94%20%D0%9E%D0%BA%D1%81%D0%B0%D0%BD%D0%B0.mp3' }),
+      asset('v', 'video_player', 0, 10, { title: '  ', src: '/media/content/uploads/90/00be07c3_Lesya_Ukrainka_1911.mp4?x=1' }),
+      asset('t', 'video_player', 0, 20, { title: 'Своя назва', src: '/media/a/1234abcd_file.mp4' }),
+      asset('y', 'youtube_player', 0, 30, { src: 'https://www.youtube.com/watch?v=EaN-JbyA348' }),
+    ]])
+    const titles = Object.fromEntries(adapter.state().items.map((i) => [i.object_id, i.title]))
+    expect(titles).toEqual({ m: 'Мелодія — Оксана', v: 'Lesya Ukrainka 1911', t: 'Своя назва', y: '' })
+  })
+
   it(`не більше ${SCENARIO_ITEMS_MAX}; id довший за 64 — поза списком (сервер відкинув би все поле)`, () => {
     const many = Array.from({ length: 60 }, (_, i) => asset(`v-${i}`, 'video_player', 0, i))
     const { adapter } = scenarioSetup([[asset('x'.repeat(65), 'video_player', 0, -1), ...many]])
@@ -329,13 +340,15 @@ describe('INV-SCN-5 · «На весь екран» — полотно цьог�
     expect(applied[0][0]).toBe(5)
   })
 
-  it('«Уся сторінка» / зміна сторінки: вигляд до ПЕРШОГО показу, фокус знято', () => {
+  it('«Уся сторінка» / зміна сторінки (v1.59): уся сторінка вписана в екран і по центру, фокус знято', () => {
     const { store, view, applied } = viewStore({ zoom: 0.8, scrollX: 12, scrollY: 34 })
     view.focusObject('doc-1')
-    view.focusObject('dot')          // другий показ не перезаписує запам'ятоване
+    view.focusObject('dot')
     view.resetFocus()
-    expect(applied[applied.length - 1]).toEqual([0.8, 12, 34])
-    expect(store.zoom).toBe(0.8)
+    // аркуш 2000×1500 у полі 1000×600, уся сторінка — без відступу: масштаб за висотою, аркуш посередині
+    const z = Math.min(1000 / 2000, 600 / 1500)
+    expect(applied[applied.length - 1]).toEqual([z, 0 - (1000 - 2000 * z) / 2, 0 - (600 - 1500 * z) / 2])
+    expect(store.zoom).toBe(z)
     expect(view.objectFocusId()).toBeNull()
     applied.length = 0
     view.resetFocus()                // нічого запам'ятованого — вигляд не чіпаємо
