@@ -35,6 +35,7 @@ import { hasHandwritableSolution, isIntegralykSolvable } from '../board/handwrit
 import { NMT_PRESENTATION_SCALE, normalizeNmtPresentationScale } from '../types/nmtTask'
 import { getNmtPresentationScale, resetNmtPresentationScales, setNmtPresentationScale } from './useNmtPresentationScale'
 import { closeMediaShow, isMediaShowType, mediaShow, openMediaShow } from '../board/mediaShow'
+import { setShowMode, showMode } from '../board/showMode'
 import { isMinimizedOnBoard } from '../board/objectStandard'
 import { currentPageKind, scenarioKind } from '../remote/remoteScenarioAdapter'
 import {
@@ -178,26 +179,92 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
       objectFocus = assetId
       return true
     }
-    if (store.stageFollowsScroll === false) return false
-    if (!(asset.w > 0) || !(asset.h > 0)) return false
-    const vp = opts.viewportSize?.() ?? { width: store.containerWidth, height: store.containerHeight }
-    if (!vp || !(vp.width > 0) || !(vp.height > 0)) return false
+    if (!viewportFor(asset)) return false
     if (store.expandedAssetId) endTaskPresentation()
+    zoomTo(asset)
+    objectFocus = assetId
+    // v1.56: картинка чи документ на весь екран — режим показу, що переживає зміну сторінки (`board/showMode.ts`)
+    setShowMode(true)
+    return true
+  }
+
+  /**
+   * Полотно так, щоб прямокутник аркуша (об'єкт чи вся сторінка) зайняв видиму частину з відступом 24 px.
+   * Вигляд до першого показу запам'ятовується — його повертає «Уся сторінка». Показ відео закривається.
+   */
+  function viewportFor(rect: { w: number; h: number }): { width: number; height: number } | null {
+    if (store.stageFollowsScroll === false) return null
+    if (!(rect.w > 0) || !(rect.h > 0)) return null
+    const vp = opts.viewportSize?.() ?? { width: store.containerWidth, height: store.containerHeight }
+    return vp && vp.width > 0 && vp.height > 0 ? vp : null
+  }
+
+  function zoomTo(rect: { x: number; y: number; w: number; h: number }): boolean {
+    const vp = viewportFor(rect)
+    if (!vp) return false
     if (!savedView) savedView = { zoom: store.zoom, scrollX: store.scrollX, scrollY: store.scrollY }
     const m = FOCUS_MARGIN_PX
-    const fit = Math.min((vp.width - 2 * m) / asset.w, (vp.height - 2 * m) / asset.h)
+    const fit = Math.min((vp.width - 2 * m) / rect.w, (vp.height - 2 * m) / rect.h)
     const zoom = Math.max(FOCUS_ZOOM_MIN, Math.min(FOCUS_ZOOM_MAX, fit))
     // Де стоїть аркуш при цьому масштабі (boardStore.stageOrigin): центр поля або 0.
     const centerX = store.containerWidth > 0 ? Math.max(0, (store.containerWidth - store.pageWidth * zoom) / 2) : 0
     const centerY = store.containerHeight > 0 ? Math.max(0, (store.containerHeight - store.pageHeight * zoom) / 2) : 0
-    // Об'єкт — посередині видимої частини: center − scroll + p·zoom = target.
-    const targetX = (vp.width - asset.w * zoom) / 2
-    const targetY = (vp.height - asset.h * zoom) / 2
+    // Прямокутник — посередині видимої частини: center − scroll + p·zoom = target.
+    const targetX = (vp.width - rect.w * zoom) / 2
+    const targetY = (vp.height - rect.h * zoom) / 2
     // Показ відео (якщо був) закриваємо: показ один за раз
     closeMediaShow()
-    applyView(zoom, centerX + asset.x * zoom - targetX, centerY + asset.y * zoom - targetY)
-    objectFocus = assetId
+    applyView(zoom, centerX + rect.x * zoom - targetX, centerY + rect.y * zoom - targetY)
     return true
+  }
+
+  /** v1.56: у показі на весь екран іде картинка чи документ (не програвач, не картка, не задача). */
+  function isShowPicture(asset: any): boolean {
+    // Вид — як у «Сценарії», без права Інтегралика: показ не залежить від ✍ (`kindOf` без «Сценарію» його вимагає)
+    const kind = asset?.type === 'image' ? 'image' : (scenarioKind(asset) ?? currentPageKind(asset))
+    return (kind === 'image' || kind === 'pdf' || kind === 'presentation' || kind === 'document')
+      && !isMinimizedOnBoard(asset) && asset.w > 0 && asset.h > 0
+  }
+
+  /**
+   * v1.56 режим показу: нова сторінка — одразу на весь екран її головна картинка (найбільша; рівні — та, що
+   * вище й лівіше), без картинки — уся сторінка. true — вигляд застосовано; false — сторінка ще порожня
+   * (об'єкти догружаються), тоді `retryShow` повторить, щойно вони з'являться.
+   */
+  let showPending = false
+  function showCurrentPage(): boolean {
+    const page = store.pages[store.currentPageIndex]
+    const assets = (page?.assets ?? []).filter(Boolean)
+    const pictures = assets.filter(isShowPicture)
+      .sort((a, b) => b.w * b.h - a.w * a.h || a.y - b.y || a.x - b.x)
+    const main = pictures[0]
+    if (main && zoomTo(main)) {
+      objectFocus = main.id
+      showPending = false
+      return true
+    }
+    objectFocus = null
+    showPending = assets.length === 0
+    if (!showPending) zoomTo({ x: 0, y: 0, w: store.pageWidth, h: store.pageHeight })
+    return !showPending
+  }
+
+  /** Зміна сторінки: у режимі показу — нова сторінка на весь екран; інакше — звичайний вигляд, як і було. */
+  function pageChanged(): void {
+    if (!showMode.active) return resetFocus()
+    endTaskPresentation()
+    notice = null
+    showCurrentPage()
+  }
+
+  /** Скільки об'єктів на поточній сторінці (реактивно) — за ним `useBoardRemote` кличе `retryShow`. */
+  function pageAssetCount(): number {
+    return store.pages[store.currentPageIndex]?.assets?.length ?? 0
+  }
+
+  /** Об'єкти сторінки догрузились після переходу — показати її в режимі показу. */
+  function retryShow(): void {
+    if (showMode.active && showPending) showCurrentPage()
   }
 
   /**
@@ -352,6 +419,11 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     if (presentingTask && asset.id !== store.expandedAssetId) {
       if (kindOf(asset) === 'task') present(asset)
       else endTaskPresentation()
+    }
+    // v1.56: у показі інша картинка стає на весь екран, а мелодія чи відео (щоб «Грати») повного екрана не знімають
+    if (showMode.active) {
+      if (asset.id !== objectFocus && isShowPicture(asset) && zoomTo(asset)) objectFocus = asset.id
+      return true
     }
     if (objectFocus && objectFocus !== asset.id) endObjectFocus()
     return true
@@ -562,10 +634,14 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     endTaskPresentation()
     if (savedView || objectFocus) endObjectFocus()
     notice = null
+    // v1.56: «Уся сторінка» (і все, що знімає показ явно) — кінець режиму показу
+    showPending = false
+    setShowMode(false)
   }
 
   return {
     fitTask, changeTextScale, scrollBy, reveal, summary, resetFocus, taskCards, focusObject, objectFocusId,
+    pageChanged, retryShow, pageAssetCount,
     listsAllKinds, adoptObject,
     handwriteTarget,
     questionCards, revealQuestions, questionsSummary,

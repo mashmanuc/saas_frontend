@@ -206,8 +206,9 @@
 
       <!-- UI layer (transformer + selection) -->
       <v-layer ref="uiLayerRef">
+        <!-- LAW §9 v1.56: у режимі показу рамки виділення на проєкторі немає (виділення лишається — пульт за ним) -->
         <v-transformer
-          v-if="selectedNode"
+          v-if="selectedNode && !showMode.active"
           ref="transformerRef"
           :config="transformerConfig"
         />
@@ -996,7 +997,7 @@
     <!-- Смуги прокрутки аркуша (2026-09-24): видно, що аркуш прогорнуто й куди.
          Лише там, де аркуш гортається (stageFollowsScroll — WBSoloRoom). -->
     <WBSheetScrollbars
-      v-if="wbStore.stageFollowsScroll"
+      v-if="wbStore.stageFollowsScroll && !showMode.active"
       :scroll-x="wbStore.scrollX"
       :scroll-y="wbStore.scrollY"
       :content-w="props.width * props.zoom"
@@ -1042,6 +1043,7 @@ import { OVERLAY_PROXY_TYPES, assetCapabilities, assetStandard, isMinimizedOnBoa
 import { canShowTray, minimizedAsset, restoredAsset, trayItems } from '../../board/boardTray'
 import { coverCrop, isImageBackground } from '../../board/pageBackground'
 import { closeMediaShow, isMediaShowType, mediaShow } from '../../board/mediaShow'
+import { showMode } from '../../board/showMode'
 import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
 import { penTapSelection, topCardAt } from '../../board/penTapSelect'
 import { handwriteBusyId, solveWithFeedback } from '../../composables/useHandwriteSolution'
@@ -1759,6 +1761,8 @@ const windowControlsTarget = computed<WBAsset | null>(() => {
   if (!asset || isMinimizedOnBoard(asset)) return null
   // У показі на весь екран у відео лише «×» показу: «— ×» картки (× там — видалення) не малюємо
   if (isInMediaShow(asset)) return null
+  // LAW §9 v1.56: у режимі показу чорного меню на проєкторі немає (а з ним і одноразової підказки до нього)
+  if (showMode.active) return null
   return hasWindowActions(cardWindowActions(asset, windowViewer.value)) ? asset : null
 })
 
@@ -2989,7 +2993,8 @@ const selectionRectConfig = computed(() => {
 // v5 A1: Selection indicator configs — WOW design: solid glow border around each selected item
 const selectionIndicators = computed(() => {
   const ids = new Set(wbStore.selectedIds)
-  if (ids.size === 0) return []
+  // LAW §9 v1.56: у режимі показу рамки навколо картинки на проєкторі немає (виділення лишається — пульт за ним)
+  if (ids.size === 0 || showMode.active) return []
 
   const page = wbStore.currentPage
   if (!page) return []

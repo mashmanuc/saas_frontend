@@ -54,6 +54,7 @@ import type { RemoteScenarioAdapter } from '../remote/remoteScenarioAdapter'
 import type { RemoteRecordingAdapter } from '../remote/remoteRecordingAdapter'
 import { readRecordingRequest, type RemoteRecordingResult } from '../remote/recordingContract'
 import type { RemoteViewAdapter } from './useRemoteViewAdapter'
+import { setShowMode } from '../board/showMode'
 import type { RemoteSentenceAdapter } from '../remote/remoteSentenceAdapter'
 import { readSentenceRequest, type SentenceResult } from '../remote/dictationLineContract'
 import { floatingObstacles } from '../board/floatingObstacles'
@@ -440,7 +441,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
   watch(
     () => [opts.store.currentPageIndex, opts.store.pageCount] as const,
     ([idx], [prevIdx]) => {
-      if (idx !== prevIdx) opts.view?.resetFocus()
+      // v1.56: у режимі показу нова сторінка — одразу на весь екран; без нього — звичайний вигляд, як і було
+      if (idx !== prevIdx) opts.view?.pageChanged()
       if (remoteConnected.value && opts.enabled.value) sendState()
     },
   )
@@ -456,6 +458,12 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     () => {
       if (remoteConnected.value && opts.enabled.value) sendState()
     },
+  )
+
+  // v1.56: режим показу перейшов на сторінку, чиї об'єкти ще догружаються — показати її, щойно вони з'являться
+  watch(
+    () => opts.view?.pageAssetCount() ?? 0,
+    (n) => { if (n > 0) opts.view?.retryShow() },
   )
 
   // v1.6: палітра Інтегралика повідомила новий стан предмета/мови цієї дошки
@@ -865,6 +873,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
     window.removeEventListener(ASSISTANT_STATE_EVENT, onAssistantState)
     window.removeEventListener(ASSISTANT_REPLY_EVENT, onAssistantReply)
     if (stateTimer) clearTimeout(stateTimer)
+    // v1.56: режим показу — лише цієї кімнати; вийшли з дошки — Інтегралик і рамки деінде знову видно
+    setShowMode(false)
   })
 
   return { pairCode, clientId, remoteUrl, remoteConnected, lastRemoteSeenAt, ignoredCount, sendState, assistantState, photoResult, assistantReply, recordingResult }

@@ -2130,6 +2130,15 @@ onBeforeUnmount(() => {
 })
 </script>
 
+<style>
+/* LAW §9 v1.56: режим показу на дошці (`winterboard/board/showMode.ts` ставить клас на <body>) — на проєкторі
+   кружечка помічника й його підказок немає; вікно, відкрите вчителем, лишається. */
+body.wb-show-mode .cmdp-fab-wrap,
+body.wb-show-mode .cmdp-tip {
+  display: none !important;
+}
+</style>
+
 <style scoped>
 /* Плаваючий «Інтегралик»: напівпрозорий, під зоною дзвіночка; z нижче за оверлей (60). */
 .cmdp-fab-wrap { position: fixed; top: 74px; right: 18px; z-index: 55; width: 64px; height: 64px; } /* = FAB_SIZE */
