@@ -610,6 +610,18 @@
           </button>
         </div>
         <p class="wb-remote__note">{{ t(dictLang === 'en' ? 'winterboard.remote.dictation.hintEn' : 'winterboard.remote.dictation.hint') }}</p>
+        <!-- v1.51: «Посередині» — як число й «Класна робота» в зошиті; лише одне речення, після «Готово» скидається -->
+        <button
+          v-if="canDictateCenter"
+          type="button"
+          class="wb-remote__dict-lang-btn wb-remote__dict-center"
+          :class="{ 'wb-remote__dict-lang-btn--on': dictCenter }"
+          data-testid="dictation-center"
+          :aria-pressed="dictCenter"
+          @click="dictCenter = !dictCenter"
+        >
+          {{ t('winterboard.remote.dictation.center') }}
+        </button>
         <textarea
           v-model="dictText"
           class="wb-remote__dictation-text"
@@ -993,6 +1005,9 @@ const canVideo = computed(() => !caps.value || caps.value.includes('video'))
 const canScenario = computed(() => caps.value?.includes('scenario') === true)
 // LAW §9 v1.49 «✍️ Диктант»: лише коли ноутбук оголосив, що вміє писати продиктоване рукописом
 const canDictate = computed(() => caps.value?.includes('dictation') === true)
+// v1.51: ноутбук уміє писати посередині
+const canDictateCenter = computed(() => caps.value?.includes('dictation_center') === true)
+const dictCenter = ref(false)
 const dictText = ref('')
 const dictationResult = ref<RemoteDictationResult | null>(null)
 /** id останнього речення з цього телефона — чужі чи старі відповіді не показуємо. */
@@ -1025,8 +1040,8 @@ const dictationLine = computed(() => {
   if (st === 'done') return t('winterboard.remote.dictation.done')
   return t(`winterboard.remote.dictation.reason.${dictationResult.value?.reason ?? 'error'}`)
 })
-// Речення написане — поле чисте для наступного (текст уже на дошці)
-watch(dictationState, (st, prev) => { if (st === 'done' && prev !== 'done') dictText.value = '' })
+// Речення написане — поле чисте для наступного (текст уже на дошці), «Посередині» — знову вимкнено
+watch(dictationState, (st, prev) => { if (st === 'done' && prev !== 'done') { dictText.value = ''; dictCenter.value = false } })
 const scenario = ref<RemoteStateDetail['scenario'] | null>(null)
 const scenarioCount = computed(() => scenario.value?.items.length ?? 0)
 const scenarioWhy = ref('')
@@ -1594,7 +1609,9 @@ function sendDictation(): void {
   if (!text) return
   const requestId = newRequestId()
   dictationRequestId.value = requestId
-  if (!sendCmd('board.dictate', { request_id: requestId, text })) dictationRequestId.value = null
+  const args: Record<string, unknown> = { request_id: requestId, text }
+  if (dictCenter.value && canDictateCenter.value) args.align = 'center'
+  if (!sendCmd('board.dictate', args)) dictationRequestId.value = null
 }
 
 const ptt = usePushToTalk({
@@ -1920,6 +1937,7 @@ onBeforeUnmount(() => {
   background: var(--surface-2); color: var(--text); font-size: 15px; font-weight: 600;
 }
 .wb-remote__dict-lang-btn--on { border-color: var(--accent); background: #1e3a8a; }
+.wb-remote__dict-center { flex: none; width: 100%; }
 .wb-remote__dictation-text {
   width: 100%;
   min-height: 96px;

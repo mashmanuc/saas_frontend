@@ -27,9 +27,10 @@ import { i18n } from '@/i18n'
 import { notifyError, notifyInfo, notifyWarning } from '@/utils/notify'
 import { tAssistantGlobal } from '@/modules/intent/assistantLook'
 import {
-  HANDWRITE_GAP, HANDWRITE_INK, HANDWRITE_MARGIN, HANDWRITE_MIN_W, LAYOUT_MAX_H, PAGE_OBJECT_LIMIT, answerTextOf,
-  dictationArea, hasHandwritableSolution, isIntegralykSolvable, occupiedRects, wholePageArea, writingAreasNear,
-  type Rect,
+  HANDWRITE_GAP, HANDWRITE_INK, HANDWRITE_MARGIN, HANDWRITE_MIN_W, LAYOUT_MAX_H, LAYOUT_MAX_W, PAGE_OBJECT_LIMIT,
+  answerTextOf,
+  dictationArea, hasHandwritableSolution, isIntegralykSolvable, notebookRuling, occupiedRects, wholePageArea,
+  writingAreasNear, type Rect,
 } from '../board/handwriteSolution'
 import {
   STEP_SCALES, originalOfCopy, placeStep, sessionOf, shortHash, stepCopyId, stepGap, stepSessions, stepStrokeId,
@@ -45,7 +46,14 @@ export interface HandwriteLayoutRequest {
   scale?: number
   /** v1.49: почерк — закритий набір сервера (`apps/handwriting` `HANDS`); без поля — 'classic', як було. */
   hand?: HandwriteHand
+  /** v1.51: лінії зошита (координати області) — рядки сідають на них; відповідь — layout v1. */
+  ruling?: { first_baseline: number; pitch: number; x_height: number; left: number; right: number; align: DictateAlign; slant?: number }
+  /** v1.51: layout v1 без зошита (біла дошка) — рівне письмо, координати від кута області. */
+  tokens?: boolean
+  /** v1.51: вирівнювання рядків у layout v1 без зошита. */
+  align?: DictateAlign
 }
+export type DictateAlign = 'left' | 'center'
 export type HandwriteHand = 'classic' | 'school'
 export type HandwriteLayout =
   | { fits: true; scale: number; size: number; w: number; h: number; duration_ms: number; strokes: Array<{ p: number[][]; t: number }>; steps?: string[] }
@@ -749,7 +757,9 @@ export const DICTATION_HAND: HandwriteHand = 'school'
  * (`/solution/`, `mode: 'full'`, без «Відповідь:»), клієнт кладе штатні `stroke_add` у темпі руки одним кроком
  * «Скасувати». Місце — під усім, що вже є на поточній сторінці (`dictationArea`).
  */
-export async function handwriteDictation(text: string, depsIn?: HandwriteDeps): Promise<DictationResult> {
+export async function handwriteDictation(
+  text: string, depsIn?: HandwriteDeps, opts: { align?: DictateAlign } = {},
+): Promise<DictationResult> {
   const refuse = (reason: DictationReason): DictationResult => ({ status: 'refused', reason })
   if (active || handwriteBusyId.value !== null) return refuse('busy')
   const deps = depsIn ?? await defaultDeps()
@@ -758,13 +768,30 @@ export async function handwriteDictation(text: string, depsIn?: HandwriteDeps): 
   const page = store.pages[store.currentPageIndex]
   const writable = () => store.mode === 'edit' && sync.mode === 'SYNC' && !sync.inputLocked && store.workspaceId === boardId
   if (!page || !boardId || !writable()) return refuse('blocked')
-  const area = dictationArea(page, page.width ?? 1920, store.currentPageCanvasHeight ?? page.height ?? 1080)
-  if (!area) return refuse('no_space')
+  const pageW = page.width ?? 1920
+  const pageH = store.currentPageCanvasHeight ?? page.height ?? 1080
+  const align: DictateAlign = opts.align === 'center' ? 'center' : 'left'
+  // v1.51: на фоні «в лінійку» / «в косу» — рядки на лінії зошита; область — смуга сторінки від запасу над першою
+  // лінією (сервер приймає ≤ 1920×1080), числа лінійки — у координатах цієї смуги. Інакше — як v1.49, але рівно.
+  const ruling = notebookRuling(page as any, pageW)
+  let area: Rect | null
+  let req: HandwriteLayoutRequest
+  if (ruling) {
+    const top = Math.max(0, Math.floor(ruling.first_baseline - 3 * ruling.x_height))
+    area = { x: 0, y: top, w: Math.min(pageW, LAYOUT_MAX_W), h: Math.min(LAYOUT_MAX_H, pageH - top) }
+    if (area.h < ruling.pitch) return refuse('no_space')
+    req = { text, width: area.w, height: area.h, mode: 'full', answer: '', hand: DICTATION_HAND,
+      ruling: { ...ruling, first_baseline: ruling.first_baseline - top, align } }
+  } else {
+    area = dictationArea(page, pageW, pageH)
+    if (!area) return refuse('no_space')
+    req = { text, width: area.w, height: area.h, mode: 'full', answer: '', hand: DICTATION_HAND, tokens: true, align }
+  }
   handwriteBusyId.value = DICTATION_BUSY_ID
   try {
     let layout: HandwriteLayout
     try {
-      layout = await deps.fetchLayout({ text, width: area.w, height: area.h, mode: 'full', answer: '', hand: DICTATION_HAND })
+      layout = await deps.fetchLayout(req)
     } catch (err) {
       if (err instanceof HandwriteUnsupported) return refuse('unsupported')
       console.warn('[WB:dictation] layout failed:', err)

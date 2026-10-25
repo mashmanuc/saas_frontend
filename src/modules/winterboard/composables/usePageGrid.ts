@@ -107,7 +107,7 @@ export const SLANTED_STEP_PX = SLANTED_ROW_PX + 2 * SLANTED_HALF_PX
 export const SLANTED_TILE_H = 10 * SLANTED_STEP_PX
 export const SLANTED_TILE_W = 308
 export const SLANTED_PER_TILE = 3
-const SLANTED_TOP_PX = 12
+export const SLANTED_TOP_PX = 12
 
 function drawNotebookTile(
   canvas: HTMLCanvasElement,

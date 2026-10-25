@@ -40,16 +40,22 @@ export function parseRemoteDictation(raw: unknown): RemoteDictationResult | unde
   return out
 }
 
+/** v1.51: вирівнювання речення — закритий набір, як на сервері. */
+export type DictateAlign = 'left' | 'center'
+
 /** Аргументи `board.dictate` на ноутбуці: закритий набір, ті самі межі, що на сервері; інше — null. */
-export function readDictateArgs(args: unknown): { requestId: string; text: string } | null {
+export function readDictateArgs(args: unknown): { requestId: string; text: string; align: DictateAlign } | null {
   if (!args || typeof args !== 'object' || Array.isArray(args)) return null
   const a = args as Record<string, unknown>
-  if (Object.keys(a).length !== 2 || typeof a.request_id !== 'string' || typeof a.text !== 'string') return null
+  const keys = Object.keys(a)
+  if (keys.some((k) => k !== 'request_id' && k !== 'text' && k !== 'align')) return null
+  if (typeof a.request_id !== 'string' || typeof a.text !== 'string') return null
+  if (a.align !== undefined && a.align !== 'left' && a.align !== 'center') return null
   if (!REQUEST_ID_RE.test(a.request_id)) return null
   const text = a.text.trim()
   // eslint-disable-next-line no-control-regex
   if (!text || text.length > DICTATE_TEXT_MAX_LEN || /[\u0000-\u001f]/.test(text)) return null
-  return { requestId: a.request_id, text }
+  return { requestId: a.request_id, text, align: a.align === 'center' ? 'center' : 'left' }
 }
 
 /** v1.50: мова диктанту — якою телефон слухає голос і які розділові слова ставить знаками. */

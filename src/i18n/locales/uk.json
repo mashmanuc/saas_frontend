@@ -9103,6 +9103,7 @@
     "remote": {
       "dictation": {
         "langLabel": "Мова диктанту",
+        "center": "Посередині",
         "lang": {
           "uk": "Українська",
           "en": "English"
