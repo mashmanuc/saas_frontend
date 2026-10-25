@@ -116,7 +116,7 @@ export interface UseBoardRemoteOptions {
    * v1.49 «✍️ Диктант»: написати речення рукописом під уже написаним (`handwriteDictation`). Є колбек — `caps`
    * отримує 'dictation' і пульт показує кнопку; без нього (класна кімната) команда отримує `refused: error`.
    */
-  dictate?: (text: string) => Promise<{ status: 'written' } | { status: 'stopped' } | { status: 'refused'; reason: DictationReason }>
+  dictate?: (text: string, align?: 'left' | 'center') => Promise<{ status: 'written' } | { status: 'stopped' } | { status: 'refused'; reason: DictationReason }>
 }
 
 /** v1.18: чому ноутбук тимчасово не пише в дошку (закритий набір, як на сервері). */
@@ -277,7 +277,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       // v1.35: у `objects` — усі види «Сценарію» (етап 2): телефон ховає «випадайку» відео, тап у «Сценарії» обирає
       ...(opts.scenario && opts.view?.listsAllKinds?.() ? ['objects'] : []),
       // v1.49: ноутбук пише продиктоване рукописом — на пульті кнопка «✍️ Диктант»
-      ...(opts.dictate ? ['dictation'] : []),
+      // v1.51: і посередині — перемикач «Посередині» на пульті
+      ...(opts.dictate ? ['dictation', 'dictation_center'] : []),
     ]
     if (photoResult.value) msg.photo = photoResult.value
     // v1.49: відповідь на останнє речення диктанту («Пишу… / Готово / причина» на пульті)
@@ -696,7 +697,7 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         }
         dictationResult.value = { request_id: req.requestId, status: 'writing' }
         sendState()
-        opts.dictate(req.text).then(
+        opts.dictate(req.text, req.align).then(
           (r) => {
             dictationResult.value = r.status === 'written'
               ? { request_id: req.requestId, status: 'done' }

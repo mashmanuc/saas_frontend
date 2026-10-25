@@ -12,7 +12,7 @@ import { mount } from '@vue/test-utils'
 import {
   DICTATION_SPEECH_LANG, appendDictated, parseRemoteDictation, readDictateArgs, spokenToText,
 } from '../remote/dictationContract'
-import { DICTATION_GAP, HANDWRITE_MARGIN, PAGE_OBJECT_LIMIT, dictationArea } from '../board/handwriteSolution'
+import { DICTATION_GAP, HANDWRITE_MARGIN, PAGE_OBJECT_LIMIT, dictationArea, notebookRuling } from '../board/handwriteSolution'
 import {
   HandwriteUnsupported, handwriteBusyId, handwriteDictation, type HandwriteDeps, type HandwriteLayoutRequest,
 } from '../composables/useHandwriteSolution'
@@ -55,7 +55,9 @@ describe('телефон: продиктоване → речення', () => {
   })
 
   it('аргументи команди на ноутбуці — закритий набір і межі, як на сервері', () => {
-    expect(readDictateArgs({ request_id: RID, text: '  Речення.  ' })).toEqual({ requestId: RID, text: 'Речення.' })
+    expect(readDictateArgs({ request_id: RID, text: '  Речення.  ' })).toEqual({ requestId: RID, text: 'Речення.', align: 'left' })
+    expect(readDictateArgs({ request_id: RID, text: 'Класна робота', align: 'center' })?.align).toBe('center')
+    expect(readDictateArgs({ request_id: RID, text: 'Речення.', align: 'right' })).toBeNull()
     for (const bad of [
       { request_id: RID }, { request_id: RID, text: '' }, { request_id: RID, text: 'а'.repeat(301) },
       { request_id: RID, text: 'рядок\nдругий' }, { request_id: 'x', text: 'Речення.' },
@@ -183,9 +185,10 @@ describe('пульт ноутбука: команда й стан', () => {
     command('hello')
     await settle()
     expect(states().slice(-1)[0].caps).toContain('dictation')
+    expect(states().slice(-1)[0].caps).toContain('dictation_center')
     command('board.dictate', { request_id: RID, text: 'Речення.' })
     await settle()
-    expect(dictate).toHaveBeenCalledWith('Речення.')
+    expect(dictate).toHaveBeenCalledWith('Речення.', 'left')
     expect(states().slice(-1)[0].dictation).toEqual({ request_id: RID, status: 'writing' })
     resolve({ status: 'written' })
     await settle()
@@ -270,5 +273,51 @@ describe('v1.50: диктант англійською', () => {
       vi.unstubAllGlobals()
       vi.resetModules()
     }
+  })
+})
+
+describe('v1.51: диктант як у зошиті', () => {
+  const ruled = { enabled: true, style: 'ruled', size: 32 }
+  const slanted = { enabled: true, style: 'slanted', size: 40 }
+
+  it('лінії — з тих самих чисел, що фон: лінійка (мала = ½ кроку), коса (робочий рядок, нахил похилих)', () => {
+    expect(notebookRuling({ assets: [], strokes: [], grid: ruled }, 1920))
+      .toEqual({ first_baseline: 64, pitch: 32, x_height: 16, left: 100, right: 1880 })
+    const sl = notebookRuling({ assets: [], strokes: [], grid: slanted }, 1920)!
+    expect(sl).toMatchObject({ first_baseline: 78, pitch: 66, x_height: 16, left: 100, right: 1880 })
+    expect(sl.slant).toBeCloseTo(308 / 660, 5)
+    expect(notebookRuling({ assets: [], strokes: [], grid: { enabled: true, style: 'small-grid', size: 20 } }, 1920)).toBeNull()
+    expect(notebookRuling({ assets: [], strokes: [] }, 1920)).toBeNull()
+  })
+
+  it('наступне речення — на наступній же лінії під написаним; під картинкою — з запасом для великих', () => {
+    // рядок на лінії 64 з хвостиками до 73: наступна лінія — 96 (не через одну)
+    const page = { assets: [], strokes: [{ points: [{ x: 100, y: 40 }, { x: 900, y: 72 }], size: 2 }], grid: ruled }
+    expect(notebookRuling(page, 1920)!.first_baseline).toBe(96)
+    // картинка до y = 300: великі літери (2 × 16) не налазять → 300 + 8 + 32 = 340 → лінія 352
+    const pic = { assets: [{ x: 100, y: 100, w: 400, h: 200 }], strokes: [], grid: ruled }
+    expect(notebookRuling(pic, 1920)!.first_baseline).toBe(352)
+  })
+
+  it('на зошитовому фоні сервер отримує лінії (у координатах смуги) і «посередині»; без фону — рівне письмо', async () => {
+    const d = makeDeps()
+    ;(d.page as any).grid = ruled
+    const done = handwriteDictation('Класна робота', d.deps, { align: 'center' })
+    await flush(); d.runAll()
+    expect(await done).toEqual({ status: 'written' })
+    const req = (d.deps.fetchLayout as any).mock.calls[0][0]
+    expect(req.ruling).toEqual({ first_baseline: 64 - 16, pitch: 32, x_height: 16, left: 100, right: 1880, align: 'center' })
+    expect(req.tokens).toBeUndefined()
+    const written = d.page.strokes.filter((s: any) => String(s.id).startsWith('dict-'))
+    expect(Math.min(...written.flatMap((s: any) => s.points.map((p: any) => p.y)))).toBe(16)   // смуга від y = 16
+    const plain = makeDeps()
+    const done2 = handwriteDictation('Речення.', plain.deps)
+    await flush(); plain.runAll()
+    await done2
+    expect((plain.deps.fetchLayout as any).mock.calls[0][0]).toMatchObject({ tokens: true, align: 'left', hand: 'school' })
+  })
+
+  it('ноутбук оголошує «посередині» і передає вирівнювання; телефон розуміє нову можливість', () => {
+    expect(parseRemoteCaps(['dictation', 'dictation_center'])).toEqual(['dictation', 'dictation_center'])
   })
 })

@@ -9,6 +9,10 @@
  * `useHandwriteSolution` штатними `stroke_add`.
  */
 import { isSafeBackgroundUrl } from './pageBackground'
+import {
+  NOTEBOOK_MARGIN_PX, SLANTED_HALF_PX, SLANTED_ROW_PX, SLANTED_STEP_PX, SLANTED_TILE_H, SLANTED_TILE_W,
+  SLANTED_TOP_PX, hasNotebookMargin,
+} from '../composables/usePageGrid'
 import { isHomeworkCardData } from './homeworkCard'
 
 export interface Rect { x: number; y: number; w: number; h: number }
@@ -177,6 +181,55 @@ export function dictationArea(page: PageLike | null | undefined, pageW: number, 
     h: Math.min(pageH - HANDWRITE_MARGIN - y, LAYOUT_MAX_H),
   }
   return area.w >= HANDWRITE_MIN_W && area.h >= HANDWRITE_MIN_H ? area : null
+}
+
+/** Лінії зошита для сервера письма (`ruling`, LAW §9 v1.51) — у координатах сторінки. */
+export interface NotebookRuling {
+  first_baseline: number
+  pitch: number
+  x_height: number
+  left: number
+  right: number
+  slant?: number
+}
+/** Від червоного поля до першої літери, px сторінки. */
+export const NOTEBOOK_TEXT_GAP = 12
+/** Велика літера шкільного почерку ≈ дві малі: стільки місця треба над базовою лінією. */
+const NOTEBOOK_CAP_RATIO = 2
+/** Перша лінія чистої сторінки — не впритул до краю. */
+const NOTEBOOK_TOP = 24
+
+/**
+ * LAW §9 v1.51 «диктант як у зошиті» (власник 2026-10-25: «дати можливість попадати в лінійки… більший розмір,
+ * нахил під похилі»). Фон «в лінійку» чи «в косу» на сторінці — лінії, на які сідають рядки речення; інакше null.
+ * Усі числа — з тих самих сталих, що малюють фон (`usePageGrid.ts`): лінійка — лінії `y = size·k`, мала літера =
+ * ½ кроку; коса — базова `B = верх + 2·пів + рядок + крок·k`, мала літера = робочий рядок, нахил — як у похилих
+ * ліній плитки (ширина/висота). Перша лінія — та, над якою великі літери не налізуть на вже написане.
+ */
+export function notebookRuling(page: PageLike & { grid?: { enabled: boolean; style: string; size: number } } | null | undefined,
+  pageW: number): NotebookRuling | null {
+  const grid = page?.grid
+  if (!grid || !hasNotebookMargin(grid as any)) return null
+  const slanted = grid.style === 'slanted'
+  const pitch = slanted ? SLANTED_STEP_PX : grid.size
+  const xHeight = slanted ? SLANTED_ROW_PX : grid.size / 2
+  const base0 = slanted ? SLANTED_TOP_PX + 2 * SLANTED_HALF_PX + SLANTED_ROW_PX : grid.size
+  const cap = NOTEBOOK_CAP_RATIO * xHeight
+  // Під написаним пером — наступна ж лінія, як у зошиті (великі можуть заходити в хвостики рядка над ними);
+  // під об'єктом (картинка, картка) — повний запас для великих літер, щоб не налізти на нього.
+  const bottomOf = (rects: Rect[]) => rects.reduce((m, r) => Math.max(m, r.y + r.h), -Infinity)
+  const ink = bottomOf(occupiedRects({ assets: [], strokes: page?.strokes ?? [] }))
+  const objects = bottomOf(occupiedRects({ assets: page?.assets ?? [], strokes: [] }))
+  const need = Math.max(NOTEBOOK_TOP + cap, ink + 0.25 * pitch, objects + 0.25 * pitch + cap)
+  const k = Math.max(0, Math.ceil((need - base0) / pitch))
+  return {
+    first_baseline: base0 + k * pitch,
+    pitch,
+    x_height: xHeight,
+    left: NOTEBOOK_MARGIN_PX + NOTEBOOK_TEXT_GAP,
+    right: Math.min(pageW, LAYOUT_MAX_W) - HANDWRITE_MARGIN,
+    ...(slanted ? { slant: SLANTED_TILE_W / SLANTED_TILE_H } : {}),
+  }
 }
 
 /** Уся сторінка без полів — для нової сторінки (не більша за `LAYOUT_MAX_*`). */

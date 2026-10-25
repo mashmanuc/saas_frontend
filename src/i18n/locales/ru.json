@@ -10180,6 +10180,7 @@
     "remote": {
       "dictation": {
         "langLabel": "Язык диктанта",
+        "center": "По центру",
         "lang": {
           "uk": "Українська",
           "en": "English"

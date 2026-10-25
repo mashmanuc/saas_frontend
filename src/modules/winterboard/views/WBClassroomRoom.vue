@@ -1281,7 +1281,7 @@ const boardRemote = useBoardRemote({
     return { ...handwriteStepState(page as any), target }
   },
   // LAW §9 v1.49 «✍️ Диктант»: речення з пульта — рукописом під уже написаним на поточній сторінці
-  dictate: (text: string) => handwriteDictation(text),
+  dictate: (text: string, align?: 'left' | 'center') => handwriteDictation(text, undefined, { align }),
 })
 
 const followMode = useFollowMode({

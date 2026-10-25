@@ -9388,6 +9388,7 @@
     "remote": {
       "dictation": {
         "langLabel": "Dictation language",
+        "center": "Centre",
         "lang": {
           "uk": "Українська",
           "en": "English"
