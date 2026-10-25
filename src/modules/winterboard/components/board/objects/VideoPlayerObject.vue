@@ -48,6 +48,7 @@ import type { WBVideoAsset } from '../../../types/mediaObjects'
 import type { VideoSyncState } from '../../../composables/useMediaSync'
 import { isMinimizedOnBoard } from '../../../board/objectStandard'
 import { registerMediaElement, unregisterMediaElement } from '../../../board/htmlMediaRemoteControl'
+import { fadeOutDetached } from '../../../board/mediaFadeOut'
 
 const props = defineProps<{
   obj: WBVideoAsset
@@ -108,6 +109,8 @@ watch(
 )
 onBeforeUnmount(() => {
   if (videoEl.value) unregisterMediaElement(props.obj.id, videoEl.value)
+  // LAW §9 v1.61: сторінку перемкнули, а звук грав — стихає за 2 с, а не обривається (board/mediaFadeOut.ts)
+  fadeOutDetached(videoEl.value)
 })
 
 watch(() => syncState.value.position, (pos) => {

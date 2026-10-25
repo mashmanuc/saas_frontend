@@ -34,6 +34,7 @@ import { useI18n } from 'vue-i18n'
 import type { WBAudioAsset } from '../../../types/mediaObjects'
 import { isMinimizedOnBoard } from '../../../board/objectStandard'
 import { registerMediaElement, unregisterMediaElement } from '../../../board/htmlMediaRemoteControl'
+import { fadeOutDetached } from '../../../board/mediaFadeOut'
 
 const props = defineProps<{
   obj: WBAudioAsset
@@ -69,6 +70,8 @@ watch(
 )
 onBeforeUnmount(() => {
   if (audioEl.value) unregisterMediaElement(props.obj.id, audioEl.value)
+  // LAW §9 v1.61: сторінку перемкнули, а звук грав — стихає за 2 с, а не обривається (board/mediaFadeOut.ts)
+  fadeOutDetached(audioEl.value)
 })
 
 function formatDuration(seconds: number): string {
