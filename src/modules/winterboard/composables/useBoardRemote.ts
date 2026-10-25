@@ -237,6 +237,10 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
   const dictationResult = ref<RemoteDictationResult | null>(null)
   const sentenceResult = ref<SentenceResult | null>(null)
   const sentenceRequests = new Map<string, SentenceResult>()
+  const pendingAnalysisRequests = new Set<string>()
+  const analysisIdentities = new Map<string, string>()
+  let disposed = false
+  onUnmounted(() => { disposed = true })
   const dictationRequests = new Map<string, RemoteDictationResult>()
   /** v1.20: остання відповідь Інтегралика на запит із пульта — іде в кожен remote.state */
   const assistantReply = ref<RemoteAssistantReply | null>(null)
@@ -285,7 +289,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       // v1.49: ноутбук пише продиктоване рукописом — на пульті кнопка «✍️ Диктант»
       // v1.51: і посередині — перемикач «Посередині» на пульті
       ...(opts.dictate ? ['dictation', 'dictation_center'] : []),
-      ...(opts.dictate && opts.sentence ? ['dictation_line_v1', 'dictation_analysis_v1'] : []),
+      ...(opts.dictate && opts.sentence ? ['dictation_line_v1'] : []),
+      ...(opts.dictate && opts.sentence?.applyAnalysis ? ['dictation_analysis_v1'] : []),
     ]
     if (photoResult.value) msg.photo = photoResult.value
     // v1.49: відповідь на останнє речення диктанту («Пишу… / Готово / причина» на пульті)
@@ -705,9 +710,44 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       case 'dictation.action': {
         const req = readSentenceRequest(d.args)
         if (!req) return
+        if (req.action === 'apply_analysis') {
+          const identity = JSON.stringify([req.proposal_id, req.page_id, req.object_id, req.source_revision])
+          const previous = analysisIdentities.get(req.request_id)
+          if ((previous && previous !== identity) || (!previous && sentenceRequests.has(req.request_id))) {
+            sentenceResult.value = { request_id: req.request_id, status: 'refused', reason: 'invalid' }; sendState(); return
+          }
+          analysisIdentities.set(req.request_id, identity)
+          if (analysisIdentities.size > 104) {
+            const old = [...analysisIdentities.keys()].find((id) => !pendingAnalysisRequests.has(id))
+            if (old) analysisIdentities.delete(old)
+          }
+        }
         let result = sentenceRequests.get(req.request_id)
+        if (req.action === 'apply_analysis' && !result) {
+          if (pendingAnalysisRequests.has(req.request_id)) return
+          if (pendingAnalysisRequests.size >= 4) {
+            sentenceResult.value = { request_id: req.request_id, status: 'refused', reason: 'blocked' }; sendState(); return
+          }
+          pendingAnalysisRequests.add(req.request_id)
+          const session = opts.sessionId.value
+          const task = opts.sentence?.applyAnalysis?.(req, () => !disposed && opts.enabled.value && opts.sessionId.value === session)
+            ?? Promise.resolve({ request_id: req.request_id, status: 'refused' as const, reason: 'blocked' as const })
+          task.then((answer) => {
+            sentenceRequests.set(req.request_id, answer); sentenceResult.value = answer
+          }, (error) => {
+            console.warn('[WB:analysis] підтверджений розбір недоступний', error instanceof Error ? error.name : 'request_failed')
+            const answer = { request_id: req.request_id, status: 'refused' as const, reason: 'blocked' as const }
+            sentenceRequests.set(req.request_id, answer); sentenceResult.value = answer
+          }).finally(() => {
+            pendingAnalysisRequests.delete(req.request_id)
+            if (sentenceRequests.size > 100) sentenceRequests.delete(sentenceRequests.keys().next().value!)
+            sendState()
+          })
+          return
+        }
         if (!result) {
-          result = opts.sentence?.apply(req) ?? { request_id: req.request_id, status: 'refused', reason: 'blocked' }
+          result = req.action === 'apply_analysis' ? { request_id: req.request_id, status: 'refused', reason: 'blocked' }
+            : opts.sentence?.apply(req) ?? { request_id: req.request_id, status: 'refused', reason: 'blocked' }
           sentenceRequests.set(req.request_id, result)
           if (sentenceRequests.size > 100) sentenceRequests.delete(sentenceRequests.keys().next().value!)
         }

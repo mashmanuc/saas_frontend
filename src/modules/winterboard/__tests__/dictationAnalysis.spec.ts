@@ -9,10 +9,14 @@ import { createDictationLine } from '../board/createDictationLine'
 import { useWBStore } from '../board/state/boardStore'
 import { flushPendingUpdates } from '../board/state/assetUpdateBatcher'
 import { sentenceFixture } from './fixtures/dictationLineFixture'
+import { makeRemoteSentenceAdapter } from '../remote/remoteSentenceAdapter'
 import RemoteSentenceAnalysis from '../components/remote/RemoteSentenceAnalysis.vue'
-import type { AnalysisDraft } from '../api/dictationAnalysis'
+import type { AnalysisDraft, AnalysisTarget } from '../api/dictationAnalysis'
+import type { AnalysisItem } from '../board/dictationAnalysis'
 import type { SentenceRequest } from '../remote/dictationLineContract'
 const revision = 'a'.repeat(64)
+const proposalId = '2b4e28ba-2fa1-41d2-883f-0016d3cca427'
+const approveExample = async (_target: AnalysisTarget, _items: AnalysisItem[], _signal: AbortSignal) => proposalId
 const annotate = (kind: 'basis' | 'parts' | 'orthograms', items: unknown[]) => ({ action: 'set_analysis', source_revision: revision, kind, items })
 beforeEach(() => { flushPendingUpdates(); setActivePinia(createPinia()) })
 
@@ -61,6 +65,19 @@ describe('Мовні позначки — рівно за підтверджен
     store.undo(); flushPendingUpdates(); expect(store.pages[0].assets[0].data).toEqual(original.data)
     store.redo(); flushPendingUpdates(); expect((store.pages[0].assets[0].data as DictationLineData).analysis?.basis).toHaveLength(1)
   })
+  it('після приватного GET повторно звіряється живий target: зміна вибору не пише дошку', async () => {
+    const store = useWBStore()
+    store.workspaceId = 'b'; store.pages = [{ id: 'p', name: '1', assets: [createDictationLine('s', 40, 40, sentenceFixture())], strokes: [] }]
+    store.currentPageIndex = 0; store.mode = 'edit'; store.selectedIds = ['s']
+    let finish!: (value: import('../api/dictationAnalysis').ApprovedAnalysis) => void
+    const load = vi.fn(() => new Promise<import('../api/dictationAnalysis').ApprovedAnalysis>((resolve) => { finish = resolve }))
+    const adapter = makeRemoteSentenceAdapter(store, { mode: 'SYNC', inputLocked: false }, load)
+    const pending = adapter.applyAnalysis!({ action: 'apply_analysis', request_id: proposalId, proposal_id: proposalId, page_id: 'p', object_id: 's', source_revision: revision })
+    store.selectedIds = []
+    finish({ board_id: 'b', page_id: 'p', object_id: 's', source_revision: revision, kind: 'basis', items: [{ token_id: 'w0', role: 'subject' }] })
+    expect(await pending).toMatchObject({ status: 'refused', reason: 'stale' })
+    expect(store.undoStack).toHaveLength(0)
+  })
 })
 
 describe('Приватна чернетка на пульті: вчитель вирішує, що показувати', () => {
@@ -68,21 +85,27 @@ describe('Приватна чернетка на пульті: вчитель в
   const draft = (): AnalysisDraft => ({ text: sentenceFixture().source.text, tokens: sentenceFixture().tokens.filter((t) => t.kind === 'word'), source_revision: revision,
     kind: 'basis', items: [{ token_id: 'w0', role: 'subject' }] })
   it('прибирання шару не запускає новий платний розбір', async () => {
-    const send = vi.fn((_r: SentenceRequest) => true), request = vi.fn(async () => draft())
-    const w = mount(RemoteSentenceAnalysis, { props: { boardId: 'b', sentence: state(), ready: true, result: null, send, request } })
+    const send = vi.fn((_r: SentenceRequest) => true), request = vi.fn(async () => draft()), approve = vi.fn(approveExample)
+    const w = mount(RemoteSentenceAnalysis, { props: { boardId: 'b', sentence: state(), ready: true, result: null, send, request, approve } })
     await w.get('[data-clear-kind="basis"]').trigger('click')
+    await flushPromises()
     expect(request).not.toHaveBeenCalled()
-    expect(send.mock.calls[0][0]).toMatchObject({ action: 'set_analysis', kind: 'basis', items: [] })
+    expect(approve.mock.calls[0][1]).toEqual([])
+    expect(send.mock.calls[0][0]).toMatchObject({ action: 'apply_analysis', proposal_id: proposalId })
     w.unmount()
   })
   it('перегляд/виправлення не відправляють ops, confirm посилає лише виправлене', async () => {
-    const send = vi.fn((_r: SentenceRequest) => true), request = vi.fn(async () => draft())
-    const w = mount(RemoteSentenceAnalysis, { props: { boardId: 'b', sentence: state(), ready: true, result: null, send, request } })
+    const send = vi.fn((_r: SentenceRequest) => true), request = vi.fn(async () => draft()), approve = vi.fn(approveExample)
+    const w = mount(RemoteSentenceAnalysis, { props: { boardId: 'b', sentence: state(), ready: true, result: null, send, request, approve } })
     await w.get('[data-analysis-kind="basis"]').trigger('click'); await flushPromises()
     expect(w.find('[data-testid="analysis-review"]').exists()).toBe(true); expect(send).not.toHaveBeenCalled()
     await w.findAll('select')[0].setValue('predicate')
     await w.get('form').trigger('submit')
-    expect(send.mock.calls[0][0]).toMatchObject({ action: 'set_analysis', kind: 'basis', items: [{ token_id: 'w0', role: 'predicate' }] })
+    await flushPromises()
+    expect(approve.mock.calls[0][0].kind).toBe('basis')
+    expect(approve.mock.calls[0][1]).toEqual([{ token_id: 'w0', role: 'predicate' }])
+    expect(send.mock.calls[0][0]).toMatchObject({ action: 'apply_analysis', proposal_id: proposalId })
+    expect(send.mock.calls[0][0]).not.toHaveProperty('items')
     await w.setProps({ result: { request_id: send.mock.calls[0][0].request_id, status: 'done' } })
     expect(w.text()).toContain('Позначки застосовано')
     w.unmount()

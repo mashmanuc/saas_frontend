@@ -33,6 +33,25 @@ function setup(options: { dictate?: UseBoardRemoteOptions['dictate']; sentence?:
 }
 
 describe('Речення: relay пульта без дубльованих записів', () => {
+  it('підтверджений аналіз: у WS лише UUID; pending і завершений запит не дублюються', async () => {
+    let finish!: (result: { request_id: string; status: 'done' }) => void
+    const applyAnalysis = vi.fn(() => new Promise<{ request_id: string; status: 'done' }>((resolve) => { finish = resolve }))
+    const d = setup({ dictate: async () => ({ status: 'written' }), sentence: { state: sentence,
+      apply: (req) => ({ request_id: req.request_id, status: 'done' }), applyAnalysis } })
+    const args = { request_id: RID, page_id: 'p', object_id: 's', source_revision: 'a'.repeat(64),
+      action: 'apply_analysis', proposal_id: '2b4e28ba-2fa1-41d2-883f-0016d3cca427' }
+    expect(new TextEncoder().encode(JSON.stringify(args)).length).toBeLessThan(2048)
+    d.command('dictation.action', args); d.command('dictation.action', args); await settle()
+    expect(applyAnalysis).toHaveBeenCalledOnce()
+    finish({ request_id: RID, status: 'done' }); await settle()
+    expect(d.state().sentence_result).toEqual({ request_id: RID, status: 'done' })
+    d.command('dictation.action', args); await settle()
+    expect(applyAnalysis).toHaveBeenCalledOnce()
+    expect(d.state().caps).toContain('dictation_analysis_v1')
+    d.command('dictation.action', { ...args, proposal_id: '3b4e28ba-2fa1-41d2-883f-0016d3cca427' }); await settle()
+    expect(d.state().sentence_result).toEqual({ request_id: RID, status: 'refused', reason: 'invalid' })
+    expect(applyAnalysis).toHaveBeenCalledOnce()
+  })
   it('cap лише з адаптером і диктантом, snapshot без геометрії; повтор request_id виконується один раз', async () => {
     const apply = vi.fn<RemoteSentenceAdapter['apply']>((req) => ({ request_id: req.request_id, status: 'done' }))
     const adapter = { state: sentence, apply }

@@ -4,6 +4,20 @@ import { ANALYSIS_KINDS, assertAnalysisItems, AnalysisError, type AnalysisKind, 
 import type { DictationToken } from '../board/dictationLine'
 export interface AnalysisTarget { board_id: string; page_id: string; object_id: string; source_revision: string; kind: AnalysisKind }
 export interface AnalysisDraft { source_revision: string; kind: AnalysisKind; text: string; tokens: DictationToken[]; items: AnalysisItem[] }
+export type ApprovedAnalysis = AnalysisTarget & { items: AnalysisItem[] }
+const isUuid = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value)
+export async function approveAnalysis(target: AnalysisTarget, items: AnalysisItem[], signal: AbortSignal): Promise<string> {
+  const raw = await apiClient.post('/v1/intents/dictation-analysis/', { ...target, phase: 'approve', items }, { signal }) as unknown as { proposal_id: string }
+  if (!raw || Object.keys(raw).join() !== 'proposal_id' || !isUuid(raw.proposal_id)) throw new AnalysisError()
+  return raw.proposal_id
+}
+export async function loadApprovedAnalysis(proposalId: string): Promise<ApprovedAnalysis> {
+  if (!isUuid(proposalId)) throw new AnalysisError()
+  const raw = await apiClient.get(`/v1/intents/dictation-analysis/proposals/${proposalId}/`) as unknown as ApprovedAnalysis
+  if (!raw || Object.keys(raw).sort().join() !== ['board_id', 'page_id', 'object_id', 'source_revision', 'kind', 'items'].sort().join()) throw new AnalysisError()
+  assertAnalysisItems(raw.kind, raw.items)
+  return raw
+}
 export function readAnalysisDraft(raw: unknown, target: AnalysisTarget): AnalysisDraft {
   const v = raw as AnalysisDraft
   if (!v || typeof v !== 'object' || Object.keys(v).sort().join() !== ['source_revision', 'kind', 'text', 'tokens', 'items'].sort().join()

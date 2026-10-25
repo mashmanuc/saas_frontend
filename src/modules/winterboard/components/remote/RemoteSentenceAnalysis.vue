@@ -35,7 +35,7 @@
       </div>
       <div class="language-analysis__buttons">
         <button type="submit" data-testid="analysis-confirm" :disabled="!ready || !!pending">Показати на дошці</button>
-        <button type="button" data-testid="analysis-cancel" @click="cancel">Скасувати</button>
+        <button type="button" data-testid="analysis-cancel" :disabled="!!pending" @click="cancel">Скасувати</button>
         <button type="button" data-testid="analysis-clear" :disabled="!ready || !!pending" @click="submit([])">Прибрати цей шар</button>
       </div>
     </form>
@@ -45,11 +45,12 @@
 </template>
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { requestAnalysis, readAnalysisDraft, type AnalysisDraft, type AnalysisTarget } from '../../api/dictationAnalysis'
+import { requestAnalysis, readAnalysisDraft, approveAnalysis, type AnalysisDraft, type AnalysisTarget } from '../../api/dictationAnalysis'
 import { assertAnalysisItems, type AnalysisKind, type AnalysisItem, type Orthogram, type Basis, type Part, type Pos } from '../../board/dictationAnalysis'
 import type { RemoteSentence, SentenceRequest, SentenceResult } from '../../remote/dictationLineContract'
 const props = defineProps<{ boardId: string; sentence: RemoteSentence; result: SentenceResult | null; ready: boolean;
-  send: (request: SentenceRequest) => boolean; request?: (target: AnalysisTarget, signal: AbortSignal) => Promise<AnalysisDraft> }>()
+  send: (request: SentenceRequest) => boolean; request?: (target: AnalysisTarget, signal: AbortSignal) => Promise<AnalysisDraft>;
+  approve?: (target: AnalysisTarget, items: AnalysisItem[], signal: AbortSignal) => Promise<string> }>()
 const titles = { orthograms: 'Орфограми', basis: 'Підмет і присудок', parts: 'Частини мови' }
 const partNames: Record<Pos, string> = { noun: 'Іменник', adjective: 'Прикметник', numeral: 'Числівник', pronoun: 'Займенник',
   verb: 'Дієслово', adverb: 'Прислівник', preposition: 'Прийменник', conjunction: 'Сполучник', particle: 'Частка', interjection: 'Вигук', unclassified: 'Не визначено' }
@@ -103,11 +104,24 @@ function confirm() {
   catch { notice.value = 'Перевірте діапазони, правила й позначки слів.'; return }
   submit(draft.value.items)
 }
-function submit(items: AnalysisItem[], kind = draft.value?.kind) {
+async function submit(items: AnalysisItem[], kind = draft.value?.kind) {
   if (!props.ready || pending.value || !kind || (draft.value && draft.value.source_revision !== props.sentence.source_revision)) return
-  const request: SentenceRequest = { action: 'set_analysis', kind, items: JSON.parse(JSON.stringify(items)),
-    source_revision: props.sentence.source_revision, page_id: props.sentence.page_id, object_id: props.sentence.object_id, request_id: crypto.randomUUID() }
-  pending.value = request.request_id
+  const requestId = crypto.randomUUID(), current = generation, bound = address()
+  const target = { board_id: props.boardId, page_id: props.sentence.page_id, object_id: props.sentence.object_id, source_revision: props.sentence.source_revision, kind }
+  pending.value = requestId; controller = new AbortController()
+  notice.value = 'Передаємо підтверджений розбір…'
+  let proposalId: string
+  try { proposalId = await (props.approve ?? approveAnalysis)(target, JSON.parse(JSON.stringify(items)), controller.signal) }
+  catch (error) {
+    if (generation === current) {
+      console.warn('[WB:analysis] підтвердження не передано', error instanceof Error ? error.name : 'request_failed')
+      pending.value = null; notice.value = 'Не вдалося передати розбір. Дошку не змінено.'
+    }
+    return
+  }
+  if (generation !== current || address() !== bound || !props.ready) { if (pending.value === requestId) pending.value = null; return }
+  const request: SentenceRequest = { action: 'apply_analysis', proposal_id: proposalId,
+    source_revision: target.source_revision, page_id: target.page_id, object_id: target.object_id, request_id: requestId }
   if (!props.send(request)) { pending.value = null; notice.value = 'Немає зв’язку з дошкою.'; return }
   notice.value = 'Чекаємо підтвердження дошки…'
   // Лише повідомлення, без повторної відправки.
@@ -116,10 +130,10 @@ function submit(items: AnalysisItem[], kind = draft.value?.kind) {
 onUnmounted(() => { cancel(); clearTimer() })
 </script>
 <style scoped>
-.language-analysis { padding: 12px; margin: 10px 0; border: 1px solid #8ecbb8; border-radius: 10px; background: #fff; color: #164e43; }
+.language-analysis { padding: 12px; margin: 10px 0; border: 1px solid var(--line, #334155); border-radius: 10px; background: var(--surface, #1e293b); color: var(--text, #f8fafc); }
 .language-analysis__buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .language-analysis__text { white-space: pre-wrap; font-size: 17px; }
 .language-analysis__row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 9px 0; padding-bottom: 8px; border-bottom: 1px solid #cbd5e1; }
-button, select, input { min-height: 42px; padding: 6px; border: 1px solid #94a3b8; border-radius: 6px; background: #f0fdf4; color: #065f46; max-width: 100%; }
+button, select, input { min-height: 42px; padding: 6px; border: 1px solid var(--line, #334155); border-radius: 6px; background: var(--surface-2, #334155); color: var(--text, #f8fafc); max-width: 100%; }
 input[type=number] { width: 65px; } button:disabled { opacity: .5; } q { font-weight: bold; }
 </style>

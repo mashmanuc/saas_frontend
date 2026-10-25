@@ -1,10 +1,11 @@
 import type { DictationAction } from '../board/dictationLine'
-import { assertAnalysisItems, AnalysisError } from '../board/dictationAnalysis'
 export interface RemoteSentence {
   page_id: string; object_id: string; source_revision: string
   words: Array<{ id: string; text: string; hidden: boolean }>; punct: boolean
 }
-export type SentenceRequest = DictationAction & { request_id: string; page_id: string; object_id: string }
+export type MechanicalSentenceRequest = Exclude<DictationAction, { action: 'set_analysis' }> & { request_id: string; page_id: string; object_id: string }
+export interface ApprovedAnalysisRequest { action: 'apply_analysis'; proposal_id: string; request_id: string; page_id: string; object_id: string; source_revision: string }
+export type SentenceRequest = MechanicalSentenceRequest | ApprovedAnalysisRequest
 /** Причина відмови — закритий набір (як на сервері): blocked — дошку зараз не можна змінювати або речення не
  *  виділене на ноутбуці; stale — речення змінилося чи зникло; invalid — дія не підходить до речення. */
 export const SENTENCE_REFUSALS = ['blocked', 'stale', 'invalid'] as const
@@ -32,11 +33,7 @@ export function parseRemoteSentence(v: unknown): RemoteSentence | null {
 export function readSentenceRequest(v: unknown): SentenceRequest | null {
   if (!obj(v) || !uuid(v.request_id) || !id(v.page_id, 100) || !id(v.object_id, 128) || !revision(v.source_revision)) return null
   const base = ['request_id', 'page_id', 'object_id', 'source_revision', 'action']
-  if (v.action === 'set_analysis' && keys(v, [...base, 'kind', 'items'])) {
-    try { assertAnalysisItems(v.kind, v.items) }
-    catch (error) { if (!(error instanceof AnalysisError)) throw error; return null }
-    return v as SentenceRequest
-  }
+  if (v.action === 'apply_analysis') return keys(v, [...base, 'proposal_id']) && uuid(v.proposal_id) ? v as unknown as ApprovedAnalysisRequest : null
   if (v.action === 'restore') return keys(v, base) ? v as SentenceRequest : null
   if (typeof v.hidden !== 'boolean') return null
   if (v.action === 'set_punctuation') return keys(v, [...base, 'hidden']) ? v as SentenceRequest : null

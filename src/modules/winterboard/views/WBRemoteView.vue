@@ -802,7 +802,7 @@
  * подвійний тап або загублене повідомлення не зсуває на дві сторінки.
  * Канал lossy — загублену команду вчитель тисне ще раз (без retry).
  */
-import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, shallowRef, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { loadAssistantSettings, useAssistantT } from '@/modules/intent/assistantLook'
 import { useAuthStore } from '@/modules/auth/store/authStore'
@@ -1015,7 +1015,7 @@ const canDictateCenter = computed(() => caps.value?.includes('dictation_center')
 const canSentence = computed(() => caps.value?.includes('dictation_line_v1') === true)
 const canAnalysis = computed(() => caps.value?.includes('dictation_analysis_v1') === true)
 const sentence = ref<RemoteSentence | null>(null)
-const sentenceResult = ref<SentenceResult | null>(null)
+const sentenceResult = shallowRef<SentenceResult | null>(null)
 function sendSentenceRequest(request: SentenceRequest) { return sendCmd('dictation.action', { ...request }) }
 const dictCenter = ref(false)
 const dictText = ref('')

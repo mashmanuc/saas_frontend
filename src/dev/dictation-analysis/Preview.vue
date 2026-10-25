@@ -18,20 +18,21 @@
       <aside>
         <h2>Пульт учителя</h2>
         <RemoteSentenceControls :sentence="sentence" :result="result" :ready="true" :send="send" />
-        <RemoteSentenceAnalysis board-id="synthetic-preview" :sentence="sentence" :result="result" :ready="true" :send="send" :request="manualExample" />
+        <RemoteSentenceAnalysis board-id="synthetic-preview" :sentence="sentence" :result="result" :ready="true" :send="send" :request="manualExample" :approve="manualApprove" />
       </aside>
     </div>
   </main>
 </template>
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { useWBStore } from '../../modules/winterboard/board/state/boardStore'
 import { createDictationLine } from '../../modules/winterboard/board/createDictationLine'
 import { assertDictationLine } from '../../modules/winterboard/board/dictationLine'
 import { flushPendingUpdates } from '../../modules/winterboard/board/state/assetUpdateBatcher'
 import { makeRemoteSentenceAdapter } from '../../modules/winterboard/remote/remoteSentenceAdapter'
 import type { SentenceRequest, SentenceResult } from '../../modules/winterboard/remote/dictationLineContract'
-import type { AnalysisDraft, AnalysisTarget } from '../../modules/winterboard/api/dictationAnalysis'
+import type { AnalysisDraft, AnalysisTarget, ApprovedAnalysis } from '../../modules/winterboard/api/dictationAnalysis'
+import type { AnalysisItem } from '../../modules/winterboard/board/dictationAnalysis'
 import DictationLineRenderer from '../../modules/winterboard/components/board/objects/DictationLineRenderer.vue'
 import RemoteSentenceControls from '../../modules/winterboard/components/remote/RemoteSentenceControls.vue'
 import RemoteSentenceAnalysis from '../../modules/winterboard/components/remote/RemoteSentenceAnalysis.vue'
@@ -41,12 +42,25 @@ const store = useWBStore()
 store.workspaceId = 'synthetic-preview'; store.mode = 'edit'
 store.pages = [{ id: 'p', name: 'Приклад', width: 1920, height: 1080, assets: [createDictationLine('s', 40, 70, fixture)], strokes: [] }]
 store.currentPageIndex = 0; store.selectedIds = ['s']
-const ops = ref<string[]>([]), result = ref<SentenceResult | null>(null)
+const ops = ref<string[]>([]), result = shallowRef<SentenceResult | null>(null)
 store.onOperation((op) => ops.value.push(op.op_type))
-const adapter = makeRemoteSentenceAdapter(store, { mode: 'SYNC', inputLocked: false })
+const approved = new Map<string, ApprovedAnalysis>()
+const adapter = makeRemoteSentenceAdapter(store, { mode: 'SYNC', inputLocked: false }, async (id) => {
+  if (!approved.has(id)) throw new Error('Немає ручного прикладу')
+  return JSON.parse(JSON.stringify(approved.get(id)))
+})
 const sentence = computed(() => adapter.state()!)
 const asset = computed(() => store.pages[0].assets[0])
-function send(request: SentenceRequest) { result.value = adapter.apply(request); return true }
+function send(request: SentenceRequest) {
+  if (request.action === 'apply_analysis') adapter.applyAnalysis!(request).then((answer) => { result.value = answer })
+  else result.value = adapter.apply(request)
+  return true
+}
+async function manualApprove(target: AnalysisTarget, items: AnalysisItem[]) {
+  const id = crypto.randomUUID()
+  approved.set(id, JSON.parse(JSON.stringify({ ...target, items })))
+  return id
+}
 function undo() { store.undo(); flushPendingUpdates() }
 function redo() { store.redo(); flushPendingUpdates() }
 async function manualExample(target: AnalysisTarget): Promise<AnalysisDraft> {
@@ -62,6 +76,7 @@ async function manualExample(target: AnalysisTarget): Promise<AnalysisDraft> {
 main { max-width: 1480px; margin: auto; padding: 22px; } h1 { font-size: 25px; } h2 { font-size: 19px; }
 .warning { padding: 13px; border-radius: 8px; background: #fff5d6; color: #754b0c; }
 .layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(350px, 1fr); gap: 22px; }
+aside { --surface: #fff; --surface-2: #f0fdf4; --text: #164e43; --line: #8ecbb8; --muted: #47675c; }
 .board { position: relative; height: 330px; overflow: auto; background: repeating-linear-gradient(white 0px,white 39px,#a8cdd9 40px,white 41px); border: 1px solid #8ecbb8; border-radius: 8px; }
 .board::before { content: ''; position: absolute; left: 28px; top: 0; bottom: 0; border-left: 1px solid #e7a6a6; }
 button { padding: 9px; margin: 5px 5px 0 0; border-radius: 6px; border: 1px solid #80b8a6; background: white; color: #164e43; }
