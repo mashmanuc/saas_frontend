@@ -42,10 +42,10 @@ const TEACHER = { isTutor: true, mode: 'edit' }
 
 // ─── INV-PRES-1 · 22 типи ──────────────────────────────────────────────────
 
-describe('INV-PRES-1 · можливості подання всіх 28 типів', () => {
+describe('INV-PRES-1 · можливості подання всіх 33 типів', () => {
   const TEXT = ['theory_card', 'history_card', 'nmt_task', 'timeline_card', 'map_card', 'discussion_question']
 
-  it('рівно 28 типів; текстові — height + teacher-shared; решта — none/none; усі — з панеллю', () => {
+  it('рівно 33 типи; текстові — height + teacher-shared; решта — none/none; інструменти — без панелі', () => {
     // 22 → 24: H2–H3 додали шкалу й карту (свідоме розширення).
     // 24 → 25: довідкова картка історичної сутності. Вона текстова — та
     // сама сім'я, що theory_card: авто-висота від вмісту й спільний
@@ -56,7 +56,10 @@ describe('INV-PRES-1 · можливості подання всіх 28 типі
     // 27 → 28: «Наочна сцена» (2026-10-20). Не текстова — вікно фіксованого розміру зі сценою.
     // 28 → 29: екранна лінійка (2026-10-22). Креслярський інструмент, не вікно — без верхньої панелі.
     // 29 → 32: транспортир, косинець і циркуль (2026-10-22, «інші подібно до лінійки») — так само без панелі.
-    expect(STANDARD_ASSET_TYPES).toHaveLength(32)
+    // 32 → 33: «Речення» (Диктант 2.0). Заморожене чорнило, без авто-висоти й перерозкладки.
+    expect(STANDARD_ASSET_TYPES).toHaveLength(33)
+    expect(STANDARD_ASSET_TYPES).toContain('dictation_line')
+    expect(assetCapabilities('dictation_line')).toMatchObject({ contentFit: 'none', textScale: 'none', windowChrome: true })
     const instruments = ['ruler', 'protractor', 'set_square', 'compass']
     for (const type of STANDARD_ASSET_TYPES) {
       const c = assetCapabilities(type)
