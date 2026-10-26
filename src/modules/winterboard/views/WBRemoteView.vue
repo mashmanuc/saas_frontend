@@ -111,7 +111,8 @@
            v1.23 (2026-10-06): питання до обговорення — «❓ Показати/Сховати відповідь»
            для всіх питань сторінки, та сама дія, що кнопка під питанням на дошці. -->
       <RemoteSentenceControls v-if="canSentence && sentence" :sentence="sentence" :result="sentenceResult" :ready="isReady" :send="sendSentenceRequest" />
-      <RemoteSentenceAnalysis v-if="canAnalysis && sentence && boardId" :board-id="boardId" :sentence="sentence" :result="sentenceResult" :ready="isReady" :send="sendSentenceRequest" />
+      <RemoteSentenceAnalysis v-if="canAnalysis && sentence && boardId" :board-id="boardId" :sentence="sentence" :result="sentenceResult" :ready="isReady" :send="sendSentenceRequest"
+        :dictate="canDictate ? dictateTranslation : undefined" :dictation-status="dictationLine" />
       <div v-if="hasCards || hasQuestions || showVideoZone || showStepRow || currentObject" class="wb-remote__context" data-testid="context">
         <!-- LAW §9 v1.34 (2026-10-19, власник: «згоден з усіма чотирма, роби»; маніфест пульта П2): пульт працює з
              ПОТОЧНИМ ОБ'ЄКТОМ — його видно («Задача 2 з 3»), ◀ ▶ перемикають, кожна кнопка шле його адресу. Кнопки — за
@@ -1023,6 +1024,8 @@ const dictText = ref('')
 const dictationResult = ref<RemoteDictationResult | null>(null)
 /** id останнього речення з цього телефона — чужі чи старі відповіді не показуємо. */
 const dictationRequestId = ref<string | null>(null)
+/** Речення, надіслане з вікна диктанту: лише його «Готово» чистить поле й «Посередині» (не переклад з розбору, v1.62). */
+let sheetDictationId: string | null = null
 const dictationVoiceActive = ref(false)
 // v1.50: мова диктанту — локально на цьому телефоні (стан ноутбука не змінює)
 const DICT_LANG_KEY = 'm4sh:remote-dictation-lang'
@@ -1070,7 +1073,9 @@ const dictationLine = computed(() => {
   return t(`winterboard.remote.dictation.reason.${dictationResult.value?.reason ?? 'error'}`)
 })
 // Речення написане — поле чисте для наступного (текст уже на дошці), «Посередині» — знову вимкнено
-watch(dictationState, (st, prev) => { if (st === 'done' && prev !== 'done') { dictText.value = ''; dictCenter.value = false } })
+watch(dictationState, (st, prev) => {
+  if (st === 'done' && prev !== 'done' && dictationRequestId.value === sheetDictationId) { dictText.value = ''; dictCenter.value = false }
+})
 const scenario = ref<RemoteStateDetail['scenario'] | null>(null)
 const scenarioCount = computed(() => scenario.value?.items.length ?? 0)
 const scenarioWhy = ref('')
@@ -1638,16 +1643,28 @@ function startDictationVoice(): void {
 }
 /** v1.49: речення — ноутбуку; пише він, відповідь прийде полем `dictation` стану. */
 function sendDictation(): void {
-  const text = normalizeDictation(dictText.value)
-  if (!text) return
+  sheetDictationId = dictateText(dictText.value, dictLang.value, dictCenter.value)
+}
+/**
+ * Один шлях `board.dictate` для вікна диктанту й «Перекладу» з мовного розбору (v1.62): той самий текст для сервера,
+ * той самий стан «Пишу… / Готово / причина» і та сама межа 8 с без відповіді. → id запиту або null (не надіслано).
+ */
+function dictateText(raw: string, lang: DictationLang, center = false): string | null {
+  const text = normalizeDictation(raw)
+  if (!text) return null
   const requestId = newRequestId()
   dictationRequestId.value = requestId
   const args: Record<string, unknown> = { request_id: requestId, text }
-  if (canSentence.value) args.lang = dictLang.value
-  if (dictCenter.value && canDictateCenter.value) args.align = 'center'
-  if (!sendCmd('board.dictate', args)) { dictationRequestId.value = null; return }
+  if (canSentence.value) args.lang = lang
+  if (center && canDictateCenter.value) args.align = 'center'
+  if (!sendCmd('board.dictate', args)) { dictationRequestId.value = null; return null }
   if (dictationAckTimer) clearTimeout(dictationAckTimer)
   dictationAckTimer = setTimeout(giveUpDictation, DICTATION_ACK_TIMEOUT_MS)
+  return requestId
+}
+/** v1.62: «Переклад» з мовного розбору пише звичайним диктантом мовою перекладу. */
+function dictateTranslation(text: string, lang: 'uk' | 'en'): boolean {
+  return dictateText(text, lang) !== null
 }
 
 const ptt = usePushToTalk({

@@ -6,6 +6,23 @@ export interface AnalysisTarget { board_id: string; page_id: string; object_id: 
 export interface AnalysisDraft { source_revision: string; kind: AnalysisKind; text: string; tokens: DictationToken[]; items: AnalysisItem[] }
 export type ApprovedAnalysis = AnalysisTarget & { items: AnalysisItem[] }
 const isUuid = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value)
+/** LAW §9 v1.62 «Переклад»: чернетка тексту іншою мовою диктанту; пише її звичайний диктант, а не розбір. */
+export interface TranslationDraft { source_revision: string; text: string; translation: string; lang: 'uk' | 'en' }
+export type TranslationTarget = Omit<AnalysisTarget, 'kind'>
+export function readTranslationDraft(raw: unknown, target: TranslationTarget): TranslationDraft {
+  const v = raw as Record<string, unknown> | null
+  if (!v || typeof v !== 'object' || Object.keys(v).sort().join() !== ['kind', 'lang', 'source_revision', 'text', 'translation'].sort().join()
+    || v.kind !== 'translation' || v.source_revision !== target.source_revision || (v.lang !== 'uk' && v.lang !== 'en')
+    || typeof v.text !== 'string' || typeof v.translation !== 'string' || !v.translation.trim()
+    || Array.from(v.translation).length > 300
+    // eslint-disable-next-line no-control-regex
+    || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/u.test(v.translation)) throw new AnalysisError()
+  return { source_revision: v.source_revision as string, text: v.text, translation: v.translation, lang: v.lang }
+}
+export async function requestTranslation(target: TranslationTarget, signal: AbortSignal): Promise<TranslationDraft> {
+  const response = await apiClient.post('/v1/intents/dictation-analysis/', { ...target, kind: 'translation' }, { signal, timeout: 55000 })
+  return readTranslationDraft(response, target)
+}
 export async function analysisAvailable(): Promise<boolean> {
   const raw = await apiClient.get('/v1/intents/dictation-analysis/availability/') as unknown as { enabled: boolean }
   if (!raw || Object.keys(raw).join() !== 'enabled' || typeof raw.enabled !== 'boolean') throw new AnalysisError()

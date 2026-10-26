@@ -309,6 +309,9 @@ describe('v1.51: диктант як у зошиті', () => {
     // картинка до y = 300: великі літери (2 × 16) не налазять → 300 + 8 + 32 = 340 → лінія 352
     const pic = { assets: [{ x: 100, y: 100, w: 400, h: 200 }], strokes: [], grid: ruled }
     expect(notebookRuling(pic, 1920)!.first_baseline).toBe(352)
+    // 26.10: «Речення» диктанту — письмо, не картинка: рамка по чорнилу (лінія 64, хвостики до ~76) → наступна лінія 96
+    const sentence = { assets: [{ type: 'dictation_line', x: 99, y: 30, w: 600, h: 46 }], strokes: [], grid: ruled }
+    expect(notebookRuling(sentence as any, 1920)!.first_baseline).toBe(96)
   })
 
   it('на зошитовому фоні сервер отримує лінії (у координатах смуги) і «посередині»; без фону — рівне письмо', async () => {

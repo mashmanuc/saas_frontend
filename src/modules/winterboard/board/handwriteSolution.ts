@@ -218,8 +218,12 @@ export function notebookRuling(page: PageLike & { grid?: { enabled: boolean; sty
   // Під написаним пером — наступна ж лінія, як у зошиті (великі можуть заходити в хвостики рядка над ними);
   // під об'єктом (картинка, картка) — повний запас для великих літер, щоб не налізти на нього.
   const bottomOf = (rects: Rect[]) => rects.reduce((m, r) => Math.max(m, r.y + r.h), -Infinity)
-  const ink = bottomOf(occupiedRects({ assets: [], strokes: page?.strokes ?? [] }))
-  const objects = bottomOf(occupiedRects({ assets: page?.assets ?? [], strokes: [] }))
+  // «Речення» диктанту (v1.52) — це письмо, а не картинка: його рамка вже щільна по чорнилу, тож під ним — наступна ж
+  // лінія. Раніше воно рахувалось об'єктом і кожен наступний диктант чи переклад пропускав лінію (стенд 26.10).
+  const assets = page?.assets ?? []
+  const sentences = assets.filter((a) => (a as { type?: string })?.type === 'dictation_line')
+  const ink = bottomOf(occupiedRects({ assets: sentences, strokes: page?.strokes ?? [] }))
+  const objects = bottomOf(occupiedRects({ assets: assets.filter((a) => !sentences.includes(a)), strokes: [] }))
   const need = Math.max(NOTEBOOK_TOP + cap, ink + 0.25 * pitch, objects + 0.25 * pitch + cap)
   const k = Math.max(0, Math.ceil((need - base0) / pitch))
   return {

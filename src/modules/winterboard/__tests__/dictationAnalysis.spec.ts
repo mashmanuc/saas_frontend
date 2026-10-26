@@ -116,8 +116,9 @@ describe('Мовні позначки — рівно за підтверджен
     const after = written[0]
     expect(after.y).toBeGreaterThanOrEqual(0)
     // світові координати письма ті самі: зсув рамки = зсув viewBox
-    expect(after.x - dictationInkBounds(after.data).x).toBeCloseTo(original.x - dictationInkBounds(original.data).x, 6)
-    expect(after.y - dictationInkBounds(after.data).y).toBeCloseTo(original.y - dictationInkBounds(original.data).y, 6)
+    const bounds = (asset: { data?: unknown }) => dictationInkBounds(asset.data as DictationLineData)
+    expect(after.x - bounds(after).x).toBeCloseTo(original.x - bounds(original).x, 6)
+    expect(after.y - bounds(after).y).toBeCloseTo(original.y - bounds(original).y, 6)
   })
   it('якщо смуга частин мови не влазить під реченням унизу сторінки, відмова без зсуву письма або росту полотна', () => {
     const store = useWBStore(), original = createDictationLine('s', 40, 960, sentenceFixture()), write = vi.fn()

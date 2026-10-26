@@ -3,6 +3,8 @@
     <strong>Мовний розбір</strong>
     <div class="language-analysis__buttons">
       <button v-for="(title, kind) in titles" :key="kind" :data-analysis-kind="kind" :disabled="!ready || busy || !!pending" @click="prepare(kind)">{{ title }}</button>
+      <!-- LAW §9 v1.62 «Переклад» (власник 2026-10-26): чернетка тексту іншою мовою; пише її звичайний диктант -->
+      <button v-if="dictate" data-analysis-kind="translation" :disabled="!ready || busy || !!pending" @click="prepareTranslation">Переклад</button>
     </div>
     <details>
       <summary>Прибрати позначки без нового аналізу</summary>
@@ -39,18 +41,37 @@
         <button type="button" data-testid="analysis-clear" :disabled="!ready || !!pending" @click="submit([])">Прибрати цей шар</button>
       </div>
     </form>
+    <form v-if="translation" data-testid="translation-review" @submit.prevent="writeTranslation">
+      <strong>Переклад {{ translation.lang === 'en' ? 'англійською' : 'українською' }} — перевірте перед показом класу</strong>
+      <p class="language-analysis__text">{{ translation.text }}</p>
+      <textarea v-model="translationText" data-testid="translation-text" class="language-analysis__translation" rows="3" maxlength="300" aria-label="Переклад" />
+      <p>Це пропозиція Інтегралика. Виправте, якщо треба, — на дошку піде саме цей текст, наступним рядком.</p>
+      <div class="language-analysis__buttons">
+        <button type="submit" data-testid="translation-write" :disabled="!ready || !translationText.trim()">Написати на дошці</button>
+        <button type="button" data-testid="translation-cancel" @click="cancel">Скасувати</button>
+      </div>
+    </form>
+    <p v-if="translationSent && dictationStatus" role="status" data-testid="translation-status">{{ dictationStatus }}</p>
     <button v-if="busy" type="button" @click="cancel">Скасувати очікування</button>
     <p v-if="notice" role="status">{{ notice }}</p>
   </section>
 </template>
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { requestAnalysis, readAnalysisDraft, approveAnalysis, type AnalysisDraft, type AnalysisTarget } from '../../api/dictationAnalysis'
+import {
+  requestAnalysis, readAnalysisDraft, approveAnalysis, requestTranslation,
+  type AnalysisDraft, type AnalysisTarget, type TranslationDraft, type TranslationTarget,
+} from '../../api/dictationAnalysis'
 import { assertAnalysisItems, type AnalysisKind, type AnalysisItem, type Orthogram, type Basis, type Part, type Pos } from '../../board/dictationAnalysis'
 import type { RemoteSentence, SentenceRequest, SentenceResult } from '../../remote/dictationLineContract'
 const props = defineProps<{ boardId: string; sentence: RemoteSentence; result: SentenceResult | null; ready: boolean;
   send: (request: SentenceRequest) => boolean; request?: (target: AnalysisTarget, signal: AbortSignal) => Promise<AnalysisDraft>;
-  approve?: (target: AnalysisTarget, items: AnalysisItem[], signal: AbortSignal) => Promise<string> }>()
+  approve?: (target: AnalysisTarget, items: AnalysisItem[], signal: AbortSignal) => Promise<string>;
+  /** v1.62: звичайний диктант пульта (`board.dictate`) — так переклад лягає на дошку; немає — кнопки «Переклад» немає. */
+  dictate?: (text: string, lang: 'uk' | 'en') => boolean
+  /** Рядок стану диктанту з пульта («Пишу… / Готово / причина») — після «Написати на дошці». */
+  dictationStatus?: string
+  translate?: (target: TranslationTarget, signal: AbortSignal) => Promise<TranslationDraft> }>()
 const titles = { orthograms: 'Орфограми', basis: 'Підмет і присудок', parts: 'Частини мови' }
 const partNames: Record<Pos, string> = { noun: 'Іменник', adjective: 'Прикметник', numeral: 'Числівник', pronoun: 'Займенник',
   verb: 'Дієслово', adverb: 'Прислівник', preposition: 'Прийменник', conjunction: 'Сполучник', particle: 'Частка', interjection: 'Вигук', unclassified: 'Не визначено' }
@@ -61,7 +82,36 @@ const parts = computed(() => (draft.value?.items ?? []) as Part[])
 let generation = 0, controller: AbortController | null = null, timer: ReturnType<typeof setTimeout> | null = null
 const address = () => `${props.boardId}:${props.sentence.page_id}:${props.sentence.object_id}:${props.sentence.source_revision}`
 function clearTimer() { if (timer) clearTimeout(timer); timer = null }
-function cancel() { generation++; controller?.abort(); controller = null; busy.value = false; draft.value = null; notice.value = '' }
+const translation = ref<TranslationDraft | null>(null), translationText = ref(''), translationSent = ref(false)
+function cancel() {
+  generation++; controller?.abort(); controller = null; busy.value = false; draft.value = null; notice.value = ''
+  translation.value = null
+}
+/** v1.62: переклад — лише чернетка тексту; на дошку його пише звичайний диктант (наступним рядком, тим самим почерком). */
+async function prepareTranslation() {
+  if (!props.ready || busy.value || pending.value || !props.dictate) return
+  const current = ++generation, target = address()
+  controller = new AbortController(); busy.value = true; draft.value = null; translation.value = null
+  notice.value = ''; translationSent.value = false
+  const request = { board_id: props.boardId, page_id: props.sentence.page_id, object_id: props.sentence.object_id, source_revision: props.sentence.source_revision }
+  try {
+    const response = await (props.translate ?? requestTranslation)(request, controller.signal)
+    if (generation !== current || address() !== target) return
+    translation.value = response
+    translationText.value = response.translation
+  } catch (error) {
+    if (generation === current) {
+      console.warn('[WB:analysis] переклад не отримано', error instanceof Error ? error.name : 'request_failed')
+      notice.value = 'Переклад недоступний або не пройшов перевірку. Дошку не змінено.'
+    }
+  } finally { if (generation === current) busy.value = false }
+}
+function writeTranslation() {
+  const draftNow = translation.value
+  if (!draftNow || !props.ready || !translationText.value.trim() || !props.dictate) return
+  if (!props.dictate(translationText.value, draftNow.lang)) { notice.value = 'Немає зв’язку з дошкою.'; return }
+  translation.value = null; notice.value = ''; translationSent.value = true
+}
 watch(address, () => { cancel(); pending.value = null; clearTimer() })
 watch(() => props.result, (r) => {
   if (!r || r.request_id !== pending.value) return
@@ -73,6 +123,7 @@ async function prepare(kind: AnalysisKind) {
   if (!props.ready || busy.value || pending.value) return
   const current = ++generation, target = address()
   controller = new AbortController(); busy.value = true; draft.value = null; notice.value = ''
+  translation.value = null; translationSent.value = false
   const request = { board_id: props.boardId, page_id: props.sentence.page_id, object_id: props.sentence.object_id, source_revision: props.sentence.source_revision, kind }
   try {
     const response = await (props.request ?? requestAnalysis)(request, controller.signal)
@@ -133,7 +184,8 @@ onUnmounted(() => { cancel(); clearTimer() })
 .language-analysis { padding: 12px; margin: 10px 0; border: 1px solid var(--line, #334155); border-radius: 10px; background: var(--surface, #1e293b); color: var(--text, #f8fafc); }
 .language-analysis__buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .language-analysis__text { white-space: pre-wrap; font-size: 17px; }
+.language-analysis__translation { width: 100%; font-size: 17px; line-height: 1.4; resize: vertical; }
 .language-analysis__row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 9px 0; padding-bottom: 8px; border-bottom: 1px solid #cbd5e1; }
-button, select, input { min-height: 42px; padding: 6px; border: 1px solid var(--line, #334155); border-radius: 6px; background: var(--surface-2, #334155); color: var(--text, #f8fafc); max-width: 100%; }
+button, select, input, textarea { min-height: 42px; padding: 6px; border: 1px solid var(--line, #334155); border-radius: 6px; background: var(--surface-2, #334155); color: var(--text, #f8fafc); max-width: 100%; }
 input[type=number] { width: 65px; } button:disabled { opacity: .5; } q { font-weight: bold; }
 </style>
