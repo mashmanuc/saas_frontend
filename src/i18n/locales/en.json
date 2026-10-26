@@ -9697,7 +9697,7 @@
         "gone": "This lesson no longer exists. The list was refreshed.",
         "failed": "Couldn't start the lesson. Try again.",
         "loadFailed": "Couldn't load lessons. Tap “Refresh”.",
-        "empty": "There are no lessons in the Lesson Studio yet.",
+        "empty": "There are no lessons in “My lessons” yet. Save a board as a lesson and it will appear here.",
         "untitled": "Untitled"
       },
       "wrongAccount": "This board belongs to another account.",
