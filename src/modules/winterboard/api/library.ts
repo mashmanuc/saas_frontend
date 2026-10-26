@@ -75,6 +75,16 @@ export interface PdfFragmentResult extends LibraryAsset {
 }
 
 /**
+ * Сервер шукає вікно PDF у ЗБЕРЕЖЕНОМУ стані дошки, тож спершу дозберігаємо її ще не відправлені зміни (власник
+ * 2026-10-27, конструктор: поставив PDF і одразу «⚡» — «вікна цього PDF уже немає на дошці» + «Доступ заборонено»;
+ * на стенді: щойно додане вікно — відмова, після дозбереження — вирізка є). Не вдалося — без звʼязку, вирізки немає.
+ */
+async function boardSaved(): Promise<void> {
+  const { useOpsSyncStore } = await import('../stores/opsSyncStore')
+  await useOpsSyncStore().flushAll()
+}
+
+/**
  * «✂️ Взяти фрагмент» (TZ_PDF_FRAGMENT_2026-10-13): сервер вирізає ділянку з ОРИГІНАЛУ PDF і кладе її в
  * «Матеріали». На дошку фрагмент ставить фронт штатним asset_add.
  */
@@ -85,6 +95,7 @@ export async function cutPdfFragment(args: {
   board: string
   viewer: string
 }): Promise<PdfFragmentResult> {
+  await boardSaved()
   return apiClient.post<PdfFragmentResult>(`${BASE}/pdf-fragment/`, {
     content_item: args.contentItem, page: args.page, rect: args.rect, board: args.board, viewer: args.viewer,
   })
@@ -106,6 +117,7 @@ export async function snapPdfFragment(args: {
   board: string
   viewer: string
 }): Promise<PdfFragmentSnap> {
+  await boardSaved()
   return apiClient.post<PdfFragmentSnap>(`${BASE}/pdf-fragment/snap/`, {
     content_item: args.contentItem, page: args.page, point: args.point, board: args.board, viewer: args.viewer,
   })
