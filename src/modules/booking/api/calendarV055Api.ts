@@ -253,6 +253,18 @@ export const calendarV055Api = {
   /**
    * «Цей і всі наступні уроки серії» (2026-10-22): скасувати урок і всі наступні уроки його серії
    */
+  async updateFollowingEvents(payload: {
+    id: number
+    start?: string
+    durationMin?: number
+    tutorComment?: string
+  }): Promise<{ updated: number }> {
+    // «Змінити цей і всі наступні уроки серії» (2026-10-26)
+    const response = await api.post('/v1/calendar/event/update-following/', payload)
+
+    return response.data || response
+  },
+
   async deleteFollowingEvents(payload: { id: number }): Promise<{ cancelled: number }> {
     const response = await api.post('/v1/calendar/event/delete-following/', payload)
 

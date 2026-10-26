@@ -852,6 +852,19 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     )
   }
 
+  async function updateFollowingEvents(payload: {
+    id: number
+    start?: string
+    durationMin?: number
+    tutorComment?: string
+  }) {
+    return withWeekRefetch(
+      'event_update_following',
+      () => calendarV055Api.updateFollowingEvents(payload),
+      { eventId: payload.id }
+    )
+  }
+
   async function deleteFollowingEvents(eventId: number) {
     return withWeekRefetch(
       'event_delete_following',
@@ -963,6 +976,7 @@ export const useCalendarWeekStore = defineStore('calendarWeek', () => {
     updateEvent,
     deleteEvent,
     deleteFollowingEvents,
+    updateFollowingEvents,
     getEventDetails,
     reschedulePreview,
     rescheduleConfirm,
