@@ -3,6 +3,7 @@ import { assertDictationLine, DictationLineError } from '../board/dictationLine'
 import { commitDictationAction } from '../board/commitDictationAction'
 import { parseRemoteSentence, sentenceRefusal, type RemoteSentence, type MechanicalSentenceRequest, type ApprovedAnalysisRequest, type SentenceResult } from './dictationLineContract'
 import { loadApprovedAnalysis, type ApprovedAnalysis } from '../api/dictationAnalysis'
+import { selectQuietly } from '../board/quietSelection'
 export interface RemoteSentenceAdapter { state: () => RemoteSentence | null; apply: (request: MechanicalSentenceRequest) => SentenceResult;
   applyAnalysis?: (request: ApprovedAnalysisRequest, canWrite?: () => boolean) => Promise<SentenceResult> }
 export function makeRemoteSentenceAdapter(store: ReturnType<typeof useWBStore>, sync: { mode: string; inputLocked: boolean }, load: (proposalId: string) => Promise<ApprovedAnalysis> = loadApprovedAnalysis): RemoteSentenceAdapter {
@@ -17,7 +18,9 @@ export function makeRemoteSentenceAdapter(store: ReturnType<typeof useWBStore>, 
       const result = commitDictationAction(store, { pageId: request.page_id, assetId: request.object_id }, {
         action: 'set_analysis', source_revision: request.source_revision, kind: proposal.kind, items: proposal.items,
       }, { canWrite: allowed, write: (asset) => store.updateAsset(asset) })
-      return result.status === 'refused' ? { request_id: request.request_id, status: 'refused', reason: sentenceRefusal(result.reason) } : { request_id: request.request_id, status: 'done' }
+      if (result.status === 'refused') return { request_id: request.request_id, status: 'refused', reason: sentenceRefusal(result.reason) }
+      selectQuietly(request.object_id) // LAW §9 v1.67: робота з пульта — знову тихо (без панелі на проєкторі)
+      return { request_id: request.request_id, status: 'done' }
     },
     state() {
       const page = store.pages[store.currentPageIndex]
@@ -39,9 +42,9 @@ export function makeRemoteSentenceAdapter(store: ReturnType<typeof useWBStore>, 
         canWrite: () => sync.mode === 'SYNC' && !sync.inputLocked,
         write: (asset) => store.updateAsset(asset),
       })
-      return result.status === 'refused'
-        ? { request_id, status: 'refused', reason: sentenceRefusal(result.reason) }
-        : { request_id, status: 'done' }
+      if (result.status === 'refused') return { request_id, status: 'refused', reason: sentenceRefusal(result.reason) }
+      selectQuietly(object_id) // LAW §9 v1.67: робота з пульта — знову тихо (без панелі на проєкторі)
+      return { request_id, status: 'done' }
     },
   }
 }

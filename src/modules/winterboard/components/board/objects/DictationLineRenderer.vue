@@ -46,6 +46,7 @@ import type { WBAsset } from '../../../types/winterboard'
 import { applyDictationAction, assertDictationLine, DictationLineError, type DictationAction } from '../../../board/dictationLine'
 import { dictationLineSvg } from '../../../board/dictationLineSvg'
 import { finishReveal, revealDuration, revealElapsed } from '../../../board/dictationReveal'
+import { quietSelection } from '../../../board/quietSelection'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
 
@@ -65,7 +66,8 @@ const data = computed(() => {
     return null
   }
 })
-const canEdit = computed(() => props.interactive && props.isSelected && !props.asset.locked)
+// LAW §9 v1.67: речення, виділене з пульта, тихе — кнопок під ним на проєкторі немає до дотику на ноутбуці
+const canEdit = computed(() => props.interactive && props.isSelected && !props.asset.locked && quietSelection.id !== props.asset.id)
 // LAW §9 v1.66 «пише рукою»: щойно продиктоване на ЦЬОМУ ноутбуці — штрихи в темпі руки (~30 кадрів/с), потім готове
 const revealMs = ref<number | null>(null)
 let revealFrame = 0

@@ -4,6 +4,7 @@ import DictationLineRenderer from '../components/board/objects/DictationLineRend
 import { applyDictationAction, type DictationAction } from '../board/dictationLine'
 import { sentenceFixture } from './fixtures/dictationLineFixture'
 import type { WBAsset } from '../types/winterboard'
+import { quietSelection, selectQuietly } from '../board/quietSelection'
 
 const capture = vi.hoisted(() => ({ register: vi.fn(), snapshot: vi.fn() }))
 vi.mock('../composables/useExportCapture', () => ({ useExportCapture: capture.register }))
@@ -25,6 +26,16 @@ async function press(w: VueWrapper, selector: string) {
 }
 
 describe('Речення — ноутбук, перо, readonly та SVG', () => {
+  it('v1.67: речення, виділене з пульта, — без кнопок на проєкторі; дотик на ноутбуці їх повертає', async () => {
+    selectQuietly('sentence-1')
+    const w = render()
+    expect(w.find('[data-testid="dictation-controls"]').exists()).toBe(false)
+    window.dispatchEvent(new Event('pointerdown'))
+    await w.vm.$nextTick()
+    expect(quietSelection.id).toBeNull()
+    expect(w.find('[data-testid="dictation-controls"]').exists()).toBe(true)
+  })
+
   it('усі механічні дії є на ноутбуці; вибір слова — не запис', async () => {
     const w = render()
     expect(w.findAll('[data-token-id]')).toHaveLength(2)

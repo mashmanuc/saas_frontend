@@ -9,6 +9,7 @@ import { makeRemoteSentenceAdapter } from '../remote/remoteSentenceAdapter'
 import { parseRemoteSentence, readSentenceRequest } from '../remote/dictationLineContract'
 import type { SentenceRequest } from '../remote/dictationLineContract'
 import RemoteSentenceControls from '../components/remote/RemoteSentenceControls.vue'
+import { isQuietSelection } from '../board/quietSelection'
 
 beforeEach(() => { flushPendingUpdates(); setActivePinia(createPinia()) })
 afterEach(() => { vi.useRealTimers() })
@@ -57,6 +58,22 @@ describe('Новий диктант — один asset, компактне мі�
     expect(adapter.apply({ ...req, hidden: false }).status).toBe('refused')
     sync.inputLocked = false
     expect(adapter.apply({ ...req, source_revision: 'b'.repeat(64) }).status).toBe('refused')
+  })
+  it('v1.67: дія пульта знову робить виділення тихим, відмова — ні', async () => {
+    const { store, sync, deps } = setup()
+    await handwriteDictation('Мама, мама.', deps, { lang: 'uk' })
+    expect(isQuietSelection(store.selectedIds)).toBe(true)
+    window.dispatchEvent(new Event('pointerdown')) // учитель торкнувся ноутбука — панель є
+    expect(isQuietSelection(store.selectedIds)).toBe(false)
+    const adapter = makeRemoteSentenceAdapter(store, sync)
+    const state = adapter.state()!
+    const req = { request_id: RID, page_id: state.page_id, object_id: state.object_id,
+      source_revision: 'b'.repeat(64), action: 'set_punctuation' as const, hidden: true }
+    expect(adapter.apply(req).status).toBe('refused')
+    expect(isQuietSelection(store.selectedIds)).toBe(false)
+    expect(adapter.apply({ ...req, source_revision: state.source_revision }).status).toBe('done')
+    expect(isQuietSelection(store.selectedIds)).toBe(true)
+    window.dispatchEvent(new Event('pointerdown'))
   })
   it('підмінений layout не створює часткового речення', async () => {
     const { store, deps } = setup()
