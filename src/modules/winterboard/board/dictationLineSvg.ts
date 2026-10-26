@@ -1,11 +1,32 @@
 /** Один SVG для екрана й знімка. Без тексту користувача, зовнішніх URL та повторного layout. */
-import { dictationVisibility, type DictationLineData } from './dictationLine'
+import { dictationVisibility, type DictationLineData, type DictationStroke } from './dictationLine'
 import { dictationInkBounds } from './dictationInkBounds'
 import { annotationLabels, basisWidth, wordSegments, POS_LABELS } from './dictationAnalysis'
 const xml = (value: string) => value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]!))
 
-export function dictationLineSvg(data: DictationLineData): string {
-  const { strokes, blanks } = dictationVisibility(data)
+/**
+ * v1.66 «пише рукою»: штрихи, які рука вже закінчила до `revealMs` (`t` — кінець штриха), а поточний — частково.
+ * Рамка й позиція — як у готового речення: чорнило лягає точно туди, де стоятиме.
+ */
+function revealed(data: DictationLineData, strokes: DictationStroke[], revealMs: number): DictationStroke[] {
+  const all = data.layout.strokes
+  const out: DictationStroke[] = []
+  for (const stroke of strokes) {
+    const i = all.indexOf(stroke)
+    const start = i > 0 ? all[i - 1].t : 0
+    if (revealMs >= stroke.t) out.push(stroke)
+    else if (revealMs > start && stroke.p.length > 1) {
+      const n = Math.max(2, Math.ceil(stroke.p.length * (revealMs - start) / Math.max(1, stroke.t - start)))
+      out.push({ ...stroke, p: stroke.p.slice(0, n) })
+    }
+  }
+  return out
+}
+
+export function dictationLineSvg(data: DictationLineData, revealMs: number | null = null): string {
+  const visible = dictationVisibility(data)
+  const blanks = visible.blanks
+  const strokes = revealMs === null ? visible.strokes : revealed(data, visible.strokes, revealMs)
   const { size } = data.layout
   const { x, y, w: width, h: height } = dictationInkBounds(data)
   const paths = strokes.map((stroke) => {

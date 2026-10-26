@@ -41,10 +41,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import type { WBAsset } from '../../../types/winterboard'
 import { applyDictationAction, assertDictationLine, DictationLineError, type DictationAction } from '../../../board/dictationLine'
 import { dictationLineSvg } from '../../../board/dictationLineSvg'
+import { finishReveal, revealDuration, revealElapsed } from '../../../board/dictationReveal'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
 
@@ -65,7 +66,26 @@ const data = computed(() => {
   }
 })
 const canEdit = computed(() => props.interactive && props.isSelected && !props.asset.locked)
-const svg = computed(() => data.value ? dictationLineSvg(data.value) : '')
+// LAW §9 v1.66 «пише рукою»: щойно продиктоване на ЦЬОМУ ноутбуці — штрихи в темпі руки (~30 кадрів/с), потім готове
+const revealMs = ref<number | null>(null)
+let revealFrame = 0
+function revealTick() {
+  const elapsed = revealElapsed(props.asset.id)
+  if (elapsed === null || !data.value || elapsed >= revealDuration(data.value)) {
+    revealMs.value = null
+    finishReveal(props.asset.id)
+    revealFrame = 0
+    return
+  }
+  if (revealMs.value === null || elapsed - revealMs.value >= 33) revealMs.value = elapsed
+  revealFrame = requestAnimationFrame(revealTick)
+}
+watch(() => props.asset.id, () => {
+  if (revealFrame) cancelAnimationFrame(revealFrame)
+  revealFrame = revealElapsed(props.asset.id) !== null ? requestAnimationFrame(revealTick) : 0
+}, { immediate: true })
+onUnmounted(() => { if (revealFrame) cancelAnimationFrame(revealFrame) })
+const svg = computed(() => data.value ? dictationLineSvg(data.value, revealMs.value) : '')
 const words = computed(() => data.value?.tokens.filter((token) => token.kind === 'word') ?? [])
 const selectedHidden = computed(() => Boolean(selectedWord.value && data.value?.hidden.words.includes(selectedWord.value)))
 watch(() => `${props.asset.id}:${data.value?.source.revision}`, () => { selectedWord.value = null })

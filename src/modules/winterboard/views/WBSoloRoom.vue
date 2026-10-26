@@ -2067,7 +2067,7 @@ const boardRemote = useBoardRemote({
   },
   // LAW §9 v1.49 «✍️ Диктант»: речення з пульта — рукописом під уже написаним на поточній сторінці
   sentence: makeRemoteSentenceAdapter(store, opsSync),
-  dictate: (text: string, align?: 'left' | 'center', lang?: 'uk' | 'en') => handwriteDictation(text, undefined, { align, lang }),
+  dictate: (text: string, align?: 'left' | 'center', lang?: 'uk' | 'en', skip?: number) => handwriteDictation(text, undefined, { align, lang, skip }),
   // Відео з пульта (V1 2026-09-26): лише відео ПОТОЧНОЇ сторінки
   media: {
     list: () => (store.currentPage?.assets ?? [])

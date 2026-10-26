@@ -208,7 +208,7 @@
       <v-layer ref="uiLayerRef">
         <!-- LAW §9 v1.56: у режимі показу рамки виділення на проєкторі немає (виділення лишається — пульт за ним) -->
         <v-transformer
-          v-if="selectedNode && !showMode.active"
+          v-if="selectedNode && !showMode.active && !isQuietSelection(wbStore.selectedIds)"
           ref="transformerRef"
           :config="transformerConfig"
         />
@@ -1048,6 +1048,7 @@ import { coverCrop, isImageBackground } from '../../board/pageBackground'
 import { closeMediaShow, isImageShowAsset, isMediaShowType, mediaShow } from '../../board/mediaShow'
 import WBImageShow from './WBImageShow.vue'
 import { showMode } from '../../board/showMode'
+import { isQuietSelection } from '../../board/quietSelection'
 import { cardWindowActions, hasWindowActions } from '../../board/windowActions'
 import { penTapSelection, topCardAt } from '../../board/penTapSelect'
 import { handwriteBusyId, solveWithFeedback } from '../../composables/useHandwriteSolution'
@@ -1767,6 +1768,8 @@ const windowControlsTarget = computed<WBAsset | null>(() => {
   if (isInMediaShow(asset)) return null
   // LAW §9 v1.56: у режимі показу чорного меню на проєкторі немає (а з ним і одноразової підказки до нього)
   if (showMode.active) return null
+  // LAW §9 v1.66: «Речення», щойно продиктоване з пульта, — без меню до першого дотику на ноутбуці
+  if (isQuietSelection(wbStore.selectedIds)) return null
   return hasWindowActions(cardWindowActions(asset, windowViewer.value)) ? asset : null
 })
 
@@ -2998,7 +3001,8 @@ const selectionRectConfig = computed(() => {
 const selectionIndicators = computed(() => {
   const ids = new Set(wbStore.selectedIds)
   // LAW §9 v1.56: у режимі показу рамки навколо картинки на проєкторі немає (виділення лишається — пульт за ним)
-  if (ids.size === 0 || showMode.active) return []
+  // LAW §9 v1.66: тихе виділення з пульта (диктант) — без рамки до першого дотику на ноутбуці
+  if (ids.size === 0 || showMode.active || isQuietSelection(wbStore.selectedIds)) return []
 
   const page = wbStore.currentPage
   if (!page) return []
@@ -5758,6 +5762,8 @@ function getSolidProxyConfig(asset: WBAsset): Record<string, unknown> {
   const isLockedItem = !!asset.locked
   const isMultiSel = isInMultiSelection(asset.id)
   const isSelected = wbStore.selectedIds.includes(asset.id)
+  // LAW §9 v1.66: тихе виділення з пульта (щойно продиктоване «Речення») — без контуру до першого дотику на ноутбуці
+  const framed = isSelected && !isQuietSelection(wbStore.selectedIds)
   return {
     ...centerXf(asset),
     width: asset.w,
@@ -5765,8 +5771,8 @@ function getSolidProxyConfig(asset: WBAsset): Record<string, unknown> {
     // Visible only коли selected — слабкий border для UX hint
     // (overlay сам має visual frame через .wb-solid-overlay border).
     fill: 'transparent',
-    stroke: isSelected ? '#3b82f6' : 'transparent',
-    strokeWidth: isSelected ? 2 : 0,
+    stroke: framed ? '#3b82f6' : 'transparent',
+    strokeWidth: framed ? 2 : 0,
     // hitFunc fallback не потрібен — Rect має фulfill hit area за замовчуванням
     // навіть з fill 'transparent' (Konva listens by default if listening: true).
     draggable: selectable && !isLockedItem && !isMultiSel,

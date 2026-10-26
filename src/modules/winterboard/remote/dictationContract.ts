@@ -44,11 +44,13 @@ export function parseRemoteDictation(raw: unknown): RemoteDictationResult | unde
 export type DictateAlign = 'left' | 'center'
 
 /** Аргументи `board.dictate` на ноутбуці: закритий набір, ті самі межі, що на сервері; інше — null. */
-export function readDictateArgs(args: unknown): { requestId: string; text: string; align: DictateAlign; lang?: DictationLang } | null {
+export function readDictateArgs(args: unknown): { requestId: string; text: string; align: DictateAlign; lang?: DictationLang; skip?: number } | null {
   if (!args || typeof args !== 'object' || Array.isArray(args)) return null
   const a = args as Record<string, unknown>
   const keys = Object.keys(a)
-  if (keys.some((k) => k !== 'request_id' && k !== 'text' && k !== 'align' && k !== 'lang')) return null
+  if (keys.some((k) => k !== 'request_id' && k !== 'text' && k !== 'align' && k !== 'lang' && k !== 'skip')) return null
+  // v1.66: «Пропустити рядок» — скільки рядків зошита пропустити, ціле 1…3, як на сервері
+  if (a.skip !== undefined && (typeof a.skip !== 'number' || !Number.isInteger(a.skip) || a.skip < 1 || a.skip > 3)) return null
   if (a.lang !== undefined && a.lang !== 'uk' && a.lang !== 'en') return null
   if (typeof a.request_id !== 'string' || typeof a.text !== 'string') return null
   if (a.align !== undefined && a.align !== 'left' && a.align !== 'center') return null
@@ -57,7 +59,8 @@ export function readDictateArgs(args: unknown): { requestId: string; text: strin
   // v1.55: з керівних — лише перенос рядка (новий рядок на дошці), як на сервері
   // eslint-disable-next-line no-control-regex
   if (!text || text.length > DICTATE_TEXT_MAX_LEN || /[\u0000-\u0009\u000b-\u001f]/.test(text)) return null
-  return { requestId: a.request_id, text, align: a.align === 'center' ? 'center' : 'left', ...(a.lang ? { lang: a.lang as DictationLang } : {}) }
+  return { requestId: a.request_id, text, align: a.align === 'center' ? 'center' : 'left', ...(a.lang ? { lang: a.lang as DictationLang } : {}),
+    ...(a.skip !== undefined ? { skip: a.skip as number } : {}) }
 }
 
 /**

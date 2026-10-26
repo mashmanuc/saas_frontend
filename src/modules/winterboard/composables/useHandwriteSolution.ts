@@ -38,6 +38,8 @@ import {
 } from '../board/handwriteSteps'
 import type { WBStroke } from '../types/winterboard'
 import { dictationFromLayout } from '../board/dictationFromLayout'
+import { revealDictation } from '../board/dictationReveal'
+import { selectQuietly } from '../board/quietSelection'
 
 export interface HandwriteLayoutRequest {
   text: string; width: number; height: number; mode: 'steps' | 'full'; answer: string
@@ -753,6 +755,9 @@ export const DICTATION_BUSY_ID = '__dictation__'
  */
 export const DICTATION_HAND: HandwriteHand = 'school'
 
+/** v1.66: «Пропустити рядок» на сторінці без ліній — один «рядок» білої дошки, px. */
+export const FREE_SKIP_PX = 56
+
 /**
  * Речення з пульта — рукописом (власник 2026-10-24: «…для неї багато часу займає написання речень на дошці… в нас є
  * телефон мікрофон дошка і пропис»). Той самий почерк і шлях, що ✍ розв'язку: сервер вписує текст у вільне місце
@@ -760,7 +765,7 @@ export const DICTATION_HAND: HandwriteHand = 'school'
  * «Скасувати». Місце — під усім, що вже є на поточній сторінці (`dictationArea`).
  */
 export async function handwriteDictation(
-  text: string, depsIn?: HandwriteDeps, opts: { align?: DictateAlign; lang?: 'uk' | 'en' } = {},
+  text: string, depsIn?: HandwriteDeps, opts: { align?: DictateAlign; lang?: 'uk' | 'en'; skip?: number } = {},
 ): Promise<DictationResult> {
   const refuse = (reason: DictationReason): DictationResult => ({ status: 'refused', reason })
   if (active || handwriteBusyId.value !== null) return refuse('busy')
@@ -776,6 +781,9 @@ export async function handwriteDictation(
   // v1.51: на фоні «в лінійку» / «в косу» — рядки на лінії зошита; область — смуга сторінки від запасу над першою
   // лінією (сервер приймає ≤ 1920×1080), числа лінійки — у координатах цієї смуги. Інакше — як v1.49, але рівно.
   const ruling = notebookRuling(page as any, pageW)
+  // v1.66 «Пропустити рядок» (власник 2026-10-26: «відступ від попереднього»): на зошиті — N ліній, на білій — N×56 px
+  const skip = Number.isInteger(opts.skip) && (opts.skip as number) > 0 ? Math.min(3, opts.skip as number) : 0
+  if (ruling) ruling.first_baseline += skip * ruling.pitch
   let area: Rect | null
   let req: HandwriteLayoutRequest
   if (ruling) {
@@ -786,6 +794,7 @@ export async function handwriteDictation(
       ruling: { ...ruling, first_baseline: ruling.first_baseline - top, align } }
   } else {
     area = dictationArea(page, pageW, pageH)
+    if (area && skip) area = area.h - skip * FREE_SKIP_PX > 0 ? { ...area, y: area.y + skip * FREE_SKIP_PX, h: area.h - skip * FREE_SKIP_PX } : null
     if (!area) return refuse('no_space')
     req = { text, width: area.w, height: area.h, mode: 'full', answer: '', hand: DICTATION_HAND, tokens: true, align }
   }
@@ -807,9 +816,12 @@ export async function handwriteDictation(
         const asset = dictationFromLayout(layout, { id: `dictation-${crypto.randomUUID()}`, text, lang: opts.lang,
           align, x: area.x, y: area.y, width: req.width, height: req.height })
         // Одна цілісна дія; старий шлях без lang нижче не змінюється.
+        // v1.66: на цьому ноутбуці речення пишеться рукою (лише вигляд), виділення — тихе (без панелі до дотику)
+        revealDictation(asset.id)
         store.addAsset(asset, page.id)
         if (!store.pages[store.currentPageIndex]?.assets.some((a) => a.id === asset.id)) return refuse('blocked')
         store.selectItems?.([asset.id])
+        selectQuietly(asset.id)
         return { status: 'written' }
       } catch (err) {
         console.warn('[WB:dictation] sentence creation refused', err)

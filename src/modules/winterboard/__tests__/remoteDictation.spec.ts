@@ -335,4 +335,17 @@ describe('v1.51: диктант як у зошиті', () => {
   it('ноутбук оголошує «посередині» і передає вирівнювання; телефон розуміє нову можливість', () => {
     expect(parseRemoteCaps(['dictation', 'dictation_center'])).toEqual(['dictation', 'dictation_center'])
   })
+
+  it('v1.66 «Пропустити рядок»: на зошиті — на лінію нижче; команда — ціле 1…3', async () => {
+    expect(readDictateArgs({ request_id: RID, text: 'Речення.', skip: 1 })).toEqual({ requestId: RID, text: 'Речення.', align: 'left', skip: 1 })
+    for (const skip of [0, 4, 1.5, '1', true]) expect(readDictateArgs({ request_id: RID, text: 'Речення.', skip }), String(skip)).toBeNull()
+    const d = makeDeps()
+    ;(d.page as any).grid = ruled
+    const done = handwriteDictation('Речення.', d.deps, { skip: 1 })
+    await flush(); d.runAll()
+    expect(await done).toEqual({ status: 'written' })
+    const req = (d.deps.fetchLayout as any).mock.calls[0][0]
+    // перша лінія чистої сторінки — 64; з пропуском — 96 (у координатах смуги від 96 − 48 = 48 → 48)
+    expect(req.ruling.first_baseline + Math.max(0, Math.floor(96 - 48))).toBe(96)
+  })
 })

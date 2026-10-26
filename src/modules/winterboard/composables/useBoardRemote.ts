@@ -123,7 +123,7 @@ export interface UseBoardRemoteOptions {
    * v1.49 «✍️ Диктант»: написати речення рукописом під уже написаним (`handwriteDictation`). Є колбек — `caps`
    * отримує 'dictation' і пульт показує кнопку; без нього (класна кімната) команда отримує `refused: error`.
    */
-  dictate?: (text: string, align?: 'left' | 'center', lang?: 'uk' | 'en') => Promise<{ status: 'written' } | { status: 'stopped' } | { status: 'refused'; reason: DictationReason }>
+  dictate?: (text: string, align?: 'left' | 'center', lang?: 'uk' | 'en', skip?: number) => Promise<{ status: 'written' } | { status: 'stopped' } | { status: 'refused'; reason: DictationReason }>
 }
 
 /** v1.18: чому ноутбук тимчасово не пише в дошку (закритий набір, як на сервері). */
@@ -805,7 +805,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
           if (dictationRequests.size > 100) dictationRequests.delete(dictationRequests.keys().next().value!)
         }
         sendState()
-        const task = req.lang ? opts.dictate(req.text, req.align, req.lang) : opts.dictate(req.text, req.align)
+        const task = req.skip ? opts.dictate(req.text, req.align, req.lang, req.skip)
+          : req.lang ? opts.dictate(req.text, req.align, req.lang) : opts.dictate(req.text, req.align)
         task.then(
           (r) => {
             dictationResult.value = r.status === 'written'

@@ -9423,6 +9423,7 @@
         "writing": "Writing on the board…",
         "done": "Done — the sentence is on the board",
         "noAnswer": "The board didn’t take the sentence — tap “Write on the board” again",
+        "skipLine": "Skip a line",
         "punctuate": "Add punctuation",
         "punctuating": "Adding punctuation…",
         "punctuateFailed": "Couldn’t add punctuation — please add it yourself",

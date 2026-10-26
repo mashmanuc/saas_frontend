@@ -618,18 +618,30 @@
           </button>
         </div>
         <p class="wb-remote__note">{{ t(dictLang === 'en' ? 'winterboard.remote.dictation.hintEn' : 'winterboard.remote.dictation.hint') }}</p>
-        <!-- v1.51: «Посередині» — як число й «Класна робота» в зошиті; лише одне речення, після «Готово» скидається -->
-        <button
-          v-if="canDictateCenter"
-          type="button"
-          class="wb-remote__dict-lang-btn wb-remote__dict-center"
-          :class="{ 'wb-remote__dict-lang-btn--on': dictCenter }"
-          data-testid="dictation-center"
-          :aria-pressed="dictCenter"
-          @click="dictCenter = !dictCenter"
-        >
-          {{ t('winterboard.remote.dictation.center') }}
-        </button>
+        <div v-if="canDictateCenter" class="wb-remote__dict-row">
+          <!-- v1.51: «Посередині» — як число й «Класна робота» в зошиті; лише одне речення, після «Готово» скидається -->
+          <button
+            type="button"
+            class="wb-remote__dict-lang-btn wb-remote__dict-center"
+            :class="{ 'wb-remote__dict-lang-btn--on': dictCenter }"
+            data-testid="dictation-center"
+            :aria-pressed="dictCenter"
+            @click="dictCenter = !dictCenter"
+          >
+            {{ t('winterboard.remote.dictation.center') }}
+          </button>
+          <!-- v1.66 «Пропустити рядок» (власник 2026-10-26): відступ від попереднього, як у зошиті; після «Готово» скидається -->
+          <button
+            type="button"
+            class="wb-remote__dict-lang-btn wb-remote__dict-center"
+            :class="{ 'wb-remote__dict-lang-btn--on': dictSkip }"
+            data-testid="dictation-skip"
+            :aria-pressed="dictSkip"
+            @click="dictSkip = !dictSkip"
+          >
+            {{ t('winterboard.remote.dictation.skipLine') }}
+          </button>
+        </div>
         <textarea
           v-model="dictText"
           class="wb-remote__dictation-text"
@@ -1041,6 +1053,7 @@ const sentence = ref<RemoteSentence | null>(null)
 const sentenceResult = shallowRef<SentenceResult | null>(null)
 function sendSentenceRequest(request: SentenceRequest) { return sendCmd('dictation.action', { ...request }) }
 const dictCenter = ref(false)
+const dictSkip = ref(false)
 const dictText = ref('')
 const dictationResult = ref<RemoteDictationResult | null>(null)
 /** id останнього речення з цього телефона — чужі чи старі відповіді не показуємо. */
@@ -1095,7 +1108,9 @@ const dictationLine = computed(() => {
 })
 // Речення написане — поле чисте для наступного (текст уже на дошці), «Посередині» — знову вимкнено
 watch(dictationState, (st, prev) => {
-  if (st === 'done' && prev !== 'done' && dictationRequestId.value === sheetDictationId) { dictText.value = ''; dictCenter.value = false }
+  if (st === 'done' && prev !== 'done' && dictationRequestId.value === sheetDictationId) {
+    dictText.value = ''; dictCenter.value = false; dictSkip.value = false
+  }
 })
 const scenario = ref<RemoteStateDetail['scenario'] | null>(null)
 const scenarioCount = computed(() => scenario.value?.items.length ?? 0)
@@ -1690,13 +1705,13 @@ function startDictationVoice(): void {
 }
 /** v1.49: речення — ноутбуку; пише він, відповідь прийде полем `dictation` стану. */
 function sendDictation(): void {
-  sheetDictationId = dictateText(dictText.value, dictLang.value, dictCenter.value)
+  sheetDictationId = dictateText(dictText.value, dictLang.value, dictCenter.value, dictSkip.value ? 1 : 0)
 }
 /**
  * Один шлях `board.dictate` для вікна диктанту й «Перекладу» з мовного розбору (v1.62): той самий текст для сервера,
  * той самий стан «Пишу… / Готово / причина» і та сама межа 8 с без відповіді. → id запиту або null (не надіслано).
  */
-function dictateText(raw: string, lang: DictationLang, center = false): string | null {
+function dictateText(raw: string, lang: DictationLang, center = false, skip = 0): string | null {
   const text = normalizeDictation(raw)
   if (!text) return null
   const requestId = newRequestId()
@@ -1704,6 +1719,7 @@ function dictateText(raw: string, lang: DictationLang, center = false): string |
   const args: Record<string, unknown> = { request_id: requestId, text }
   if (canSentence.value) args.lang = lang
   if (center && canDictateCenter.value) args.align = 'center'
+  if (skip > 0) args.skip = skip
   if (!sendCmd('board.dictate', args)) { dictationRequestId.value = null; return null }
   if (dictationAckTimer) clearTimeout(dictationAckTimer)
   dictationAckTimer = setTimeout(giveUpDictation, DICTATION_ACK_TIMEOUT_MS)
@@ -2059,6 +2075,9 @@ onBeforeUnmount(() => {
 }
 .wb-remote__dict-lang-btn--on { border-color: var(--accent); background: #1e3a8a; }
 .wb-remote__dict-center { flex: none; width: 100%; }
+/* v1.66: «Посередині» й «Пропустити рядок» — поруч, одним рядком */
+.wb-remote__dict-row { display: flex; gap: 8px; }
+.wb-remote__dict-row .wb-remote__dict-center { flex: 1 1 0; width: auto; min-width: 0; }
 .wb-remote__dictation-text {
   width: 100%;
   min-height: 96px;
