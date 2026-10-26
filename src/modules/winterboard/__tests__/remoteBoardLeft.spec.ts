@@ -50,11 +50,11 @@ vi.mock('@/modules/auth/api/authApi', () => ({ default: { logout: vi.fn() } }))
 vi.mock('@/utils/telemetryAgent', () => ({ trackEvent: vi.fn() }))
 vi.mock('@/modules/intent/corridors/corridorApi', () => ({ fetchCorridorRegistry: vi.fn(async () => null) }))
 const getActiveRemoteSession = vi.fn()
-const getRemoteLaunch = vi.fn(async () => ({ screen: { page: 'sidebar.item.schedule' }, boards: [] }))
+const getRemoteLaunch = vi.fn(async () => ({ screen: { page: 'sidebar.item.schedule' }, lessons: [] }))
 vi.mock('../api/winterboardApi', () => ({
   winterboardApi: {
     getActiveRemoteSession: (...a: any[]) => getActiveRemoteSession(...a),
-    getRemoteLaunch: (...a: any[]) => getRemoteLaunch(...a),
+    getRemoteLaunch: () => getRemoteLaunch(),
     remoteLaunch: vi.fn(), searchVideos: vi.fn(), lookupVideo: vi.fn(),
   },
 }))

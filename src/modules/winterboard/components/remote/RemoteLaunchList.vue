@@ -5,19 +5,19 @@
     <p v-if="info" class="rl__where" :class="{ 'rl__where--none': !info.screen }" data-testid="remote-launch-where">
       {{ where }}
     </p>
-    <ul v-if="info && info.boards.length" class="rl__list">
-      <li v-for="board in info.boards" :key="board.id">
+    <ul v-if="lessons.length" class="rl__list">
+      <li v-for="lesson in lessons" :key="lesson.id">
         <button
           type="button"
           class="rl__item"
-          :class="{ 'rl__item--busy': busyId === board.id }"
+          :class="{ 'rl__item--busy': busyId === lesson.id }"
           :disabled="busyId !== null"
-          :data-testid="`remote-launch-${board.id}`"
-          @click="start(board)"
+          :data-testid="`remote-launch-${lesson.id}`"
+          @click="start(lesson)"
         >
-          <span class="rl__name">{{ board.name || t('winterboard.remote.launch.untitled') }}</span>
-          <span v-if="busyId === board.id" class="rl__date">{{ t('winterboard.remote.launch.opening') }}</span>
-          <span v-else-if="board.updated_at" class="rl__date">{{ shortDate(board.updated_at) }}</span>
+          <span class="rl__name">{{ lesson.name || t('winterboard.remote.launch.untitled') }}</span>
+          <span v-if="busyId === lesson.id" class="rl__date">{{ t('winterboard.remote.launch.opening') }}</span>
+          <span v-else-if="lesson.updated_at" class="rl__date">{{ shortDate(lesson.updated_at) }}</span>
         </button>
       </li>
     </ul>
@@ -34,16 +34,17 @@
  * Запуск уроку з пульта — LAW §9 v1.63, маніфест пульта П8 (2026-10-26).
  *
  * Лише коли на жодному комп'ютері не відкрита дошка (батько показує цей блок при
- * `noActiveBoard`). Останні уроки Студії; дотик просить сервер відкрити урок на
- * комп'ютері, якого торкались останнім, і до 10 с чекає, поки дошка там відкриється
- * (`remote/active/`), — тоді батько підключається як звичайно. Пульт нічого не пише.
+ * `noActiveBoard`). Останні «Мої уроки» — не шаблони Студії (v1.65); дотик просить
+ * комп'ютер, якого торкались останнім, «Провести» урок (свіжа копія, шаблон чистий) і
+ * до 20 с чекає, поки там відкриється дошка (`remote/active/`), — тоді батько
+ * підключається як звичайно. Пульт нічого не пише.
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { winterboardApi } from '../../api/winterboardApi'
-import type { RemoteLaunchBoard, RemoteLaunchInfo } from '../../api/winterboardApi'
+import type { RemoteLaunchInfo, RemoteLaunchLesson } from '../../api/winterboardApi'
 
-const LAUNCH_WAIT_TRIES = 10          // до 10 с чекаємо, поки комп'ютер відкриє урок
+const LAUNCH_WAIT_TRIES = 20          // до 20 с: комп'ютер спершу робить свіжу копію уроку
 const LAUNCH_WAIT_STEP_MS = 1000
 
 const emit = defineEmits<{ (e: 'opened'): void }>()
@@ -51,6 +52,7 @@ const { t, te, locale } = useI18n()
 
 const info = ref<RemoteLaunchInfo | null>(null)
 const busyId = ref<string | null>(null)
+const lessons = computed<RemoteLaunchLesson[]>(() => info.value?.lessons ?? [])
 const note = ref<{ tone: 'warn' | 'error'; text: string } | null>(null)
 let alive = true
 
@@ -84,14 +86,18 @@ async function load(): Promise<void> {
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
-/** Чи відкрилась дошка на комп'ютері: true — так; false — не за 10 с; null — помилка сервера. */
-async function waitForBoard(id: string): Promise<boolean | null> {
+/**
+ * Чи відкрилась дошка на комп'ютері: true — так; false — не за 20 с; null — помилка сервера.
+ * Id свіжої копії пульт не знає; будь-яка відкрита дошка — наша: перед запуском сервер
+ * перевірив, що відкритої немає.
+ */
+async function waitForBoard(): Promise<boolean | null> {
   for (let i = 0; i < LAUNCH_WAIT_TRIES; i += 1) {
     await sleep(LAUNCH_WAIT_STEP_MS)
     if (!alive) return false
     try {
       const active = await winterboardApi.getActiveRemoteSession()
-      if (active.session_id === id) return true
+      if (active?.session_id) return true
     } catch (err) {
       // 404 — комп'ютер ще відкриває; без відповіді (мережа) — чекаємо далі; інша — зупинка
       const status = statusOf(err)
@@ -101,15 +107,15 @@ async function waitForBoard(id: string): Promise<boolean | null> {
   return false
 }
 
-async function start(board: RemoteLaunchBoard): Promise<void> {
+async function start(lesson: RemoteLaunchLesson): Promise<void> {
   if (busyId.value) return
-  busyId.value = board.id
+  busyId.value = lesson.id
   note.value = null
   try {
-    const sentTo = await winterboardApi.remoteLaunch(board.id)
+    const sentTo = await winterboardApi.remoteLaunch(lesson.id)
     // рядок «де» — туди, куди сервер справді надіслав (учитель міг клацнути на іншому комп'ютері)
     if (info.value) info.value = { ...info.value, screen: { page: sentTo?.page ?? null } }
-    const opened = await waitForBoard(board.id)
+    const opened = await waitForBoard()
     if (opened) emit('opened')
     else note.value = {
       tone: opened === false ? 'warn' : 'error',

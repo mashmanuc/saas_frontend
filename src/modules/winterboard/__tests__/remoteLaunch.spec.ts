@@ -1,7 +1,8 @@
-// LAW §9 v1.63, маніфест пульта П8 (2026-10-26): запуск уроку з пульта.
-// Комп'ютер: вкладка каже «мене щойно торкались» (remote.here) і відкриває урок за
-// remote.launch; сторінка пульта й телефон не шлють. Пульт: «де відкриється», список
-// уроків, дотик → чекання дошки → підключення; кожна відмова — словами.
+// LAW §9 v1.63 + v1.65, маніфест пульта П8 (2026-10-26): запуск уроку з пульта.
+// Комп'ютер: вкладка каже «мене щойно торкались» (remote.here), а за remote.launch робить
+// «Провести» уроку з «Моїх уроків» (свіжа копія; шаблон Студії не відкривається); сторінка
+// пульта й телефон не шлють. Пульт: «де відкриється», «Мої уроки», дотик → чекання дошки →
+// підключення; кожна відмова — словами.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ref } from 'vue'
@@ -39,11 +40,21 @@ vi.mock('../api/winterboardApi', () => ({
   },
 }))
 
+const loadToSession = vi.fn()
+vi.mock('@/modules/knowledge/api/lessonViewApi', () => ({
+  lessonViewApi: { loadToSession: (...a: any[]) => loadToSession(...a) },
+}))
+const notifyError = vi.fn()
+vi.mock('@/utils/notify', () => ({ notifyError: (...a: any[]) => notifyError(...a) }))
+vi.mock('@/i18n', () => ({ i18n: { global: { t: (k: string) => k } } }))
+
 import { installRemoteLaunchScreen, pageKeyFor, HERE_THROTTLE_MS } from '../remote/remoteLaunchScreen'
 import RemoteLaunchList from '../components/remote/RemoteLaunchList.vue'
 
 const BOARD = '817d5b00-8230-4b60-bab9-da6c5367a1ca'
 const OTHER = '0ad194de-e783-4199-b171-0e5c73a668e0'
+const LESSON = '5b1c2d3e-4f50-4a6b-8c7d-9e0f1a2b3c4d'
+const COPY = '9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d'
 
 function fakeRouter(path: string, name = 'MyLessons', params: Record<string, string> = {}) {
   const currentRoute = ref<any>({ path, name, params })
@@ -145,22 +156,37 @@ describe('П8 · комп\'ютер: «мене торкались» і відк
     expect(sent).toHaveLength(1)
   })
 
-  it('remote.launch відкриває дошку звичайним переходом; сміття й ту саму дошку — ні', () => {
+  it('remote.launch = «Провести»: свіжа копія уроку відкривається; дошку за id (шаблон) — ні', async () => {
+    loadToSession.mockReset().mockResolvedValue({ session_id: COPY, board_id: COPY, name: 'Свято' })
     const router = fakeRouter('/tutor/schedule', 'TutorSchedule')
     uninstall = installRemoteLaunchScreen(router as any)
-    fire('message', { type: 'remote.launch', session_id: 'не-id' })
-    fire('message', { type: 'other', session_id: BOARD })
+    fire('message', { type: 'remote.launch', lesson_id: 'не-id' })
+    fire('message', { type: 'other', lesson_id: LESSON })
+    fire('message', { type: 'remote.launch', session_id: BOARD })     // v1.63: шаблон за id — більше ні
+    await vi.waitFor(() => expect(loadToSession).not.toHaveBeenCalled())
     expect(router.push).not.toHaveBeenCalled()
-    fire('message', { type: 'remote.launch', session_id: BOARD })
-    expect(router.push).toHaveBeenCalledWith({ name: 'winterboard-solo', params: { id: BOARD } })
-    fire('message', { type: 'remote.launch', session_id: BOARD })
-    expect(router.push).toHaveBeenCalledTimes(1)
+    fire('message', { type: 'remote.launch', lesson_id: LESSON })
+    fire('message', { type: 'remote.launch', lesson_id: LESSON })     // друге, поки перше в роботі — ні
+    await vi.waitFor(() => expect(router.push).toHaveBeenCalledWith({ name: 'winterboard-solo', params: { id: COPY } }))
+    expect(loadToSession).toHaveBeenCalledTimes(1)
+    expect(loadToSession).toHaveBeenCalledWith(LESSON)
+  })
+
+  it('«Провести» не вийшло — на комп\'ютері та сама помилка, що в «Моїх уроках»', async () => {
+    loadToSession.mockReset().mockRejectedValue(new Error('500'))
+    notifyError.mockReset()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const router = fakeRouter('/tutor/schedule', 'TutorSchedule')
+    uninstall = installRemoteLaunchScreen(router as any)
+    fire('message', { type: 'remote.launch', lesson_id: LESSON })
+    await vi.waitFor(() => expect(notifyError).toHaveBeenCalledWith('knowledge.lesson.prepare.error'))
+    expect(router.push).not.toHaveBeenCalled()
   })
 })
 
 describe('П8 · пульт: список уроків і запуск', () => {
   const i18n = () => createI18n({ legacy: false, locale: 'uk', messages: { uk } })
-  const boards = [
+  const lessons = [
     { id: BOARD, name: 'Свято Шевченка', updated_at: '2026-10-25T10:00:00Z' },
     { id: OTHER, name: '', updated_at: null },
   ]
@@ -174,7 +200,7 @@ describe('П8 · пульт: список уроків і запуск', () => {
   afterEach(() => { vi.useRealTimers() })
 
   it('показує, де відкриється, і уроки; без назви — «Без назви»', async () => {
-    getRemoteLaunch.mockResolvedValue({ screen: { page: 'sidebar.item.schedule' }, boards })
+    getRemoteLaunch.mockResolvedValue({ screen: { page: 'sidebar.item.schedule' }, lessons })
     const w = mountList()
     await flushPromises()
     expect(w.get('[data-testid=remote-launch-where]').text()).toBe('Урок відкриється на комп\'ютері, де зараз «Розклад».')
@@ -183,20 +209,21 @@ describe('П8 · пульт: список уроків і запуск', () => {
   })
 
   it('сторінка невідома / комп\'ютера немає — каже словами', async () => {
-    getRemoteLaunch.mockResolvedValue({ screen: { page: null }, boards })
+    getRemoteLaunch.mockResolvedValue({ screen: { page: null }, lessons })
     let w = mountList()
     await flushPromises()
     expect(w.get('[data-testid=remote-launch-where]').text()).toContain('де ви востаннє працювали на сайті')
-    getRemoteLaunch.mockResolvedValue({ screen: null, boards })
+    getRemoteLaunch.mockResolvedValue({ screen: null, lessons })
     w = mountList()
     await flushPromises()
     expect(w.get('[data-testid=remote-launch-where]').text()).toContain('Відкрийте M4SH на комп\'ютері в класі')
   })
 
   it('дотик → «Відкриваю…» → дошка відкрилась → підключаємось', async () => {
-    getRemoteLaunch.mockResolvedValue({ screen: { page: 'sidebar.item.myLessons' }, boards })
+    getRemoteLaunch.mockResolvedValue({ screen: { page: 'sidebar.item.myLessons' }, lessons })
     remoteLaunch.mockResolvedValue({ page: 'sidebar.item.myLessons' })
-    getActiveRemoteSession.mockRejectedValueOnce(notFound()).mockResolvedValue({ session_id: BOARD, name: 'Свято', ts: 1 })
+    // id свіжої копії пульт не знає — чекає будь-яку відкриту дошку
+    getActiveRemoteSession.mockRejectedValueOnce(notFound()).mockResolvedValue({ session_id: COPY, name: 'Свято', ts: 1 })
     const w = mountList()
     await flushPromises()
     await w.get(`[data-testid=remote-launch-${BOARD}]`).trigger('click')
@@ -209,23 +236,25 @@ describe('П8 · пульт: список уроків і запуск', () => {
     expect(w.emitted('opened')).toHaveLength(1)
   })
 
-  it('комп\'ютер не відкрив за 10 с — пояснення, повторів немає', async () => {
-    getRemoteLaunch.mockResolvedValue({ screen: { page: null }, boards })
+  it('комп\'ютер не відкрив за 20 с — пояснення, повторів немає', async () => {
+    getRemoteLaunch.mockResolvedValue({ screen: { page: null }, lessons })
     remoteLaunch.mockResolvedValue({ page: null })
     getActiveRemoteSession.mockRejectedValue(notFound())
     const w = mountList()
     await flushPromises()
     await w.get(`[data-testid=remote-launch-${BOARD}]`).trigger('click')
-    await vi.advanceTimersByTimeAsync(10_000)
+    await vi.advanceTimersByTimeAsync(19_000)
+    expect(w.find('[data-testid=remote-launch-note]').exists()).toBe(false)
+    await vi.advanceTimersByTimeAsync(1_000)
     await flushPromises()
-    expect(getActiveRemoteSession).toHaveBeenCalledTimes(10)
+    expect(getActiveRemoteSession).toHaveBeenCalledTimes(20)
     expect(remoteLaunch).toHaveBeenCalledTimes(1)
     expect(w.get('[data-testid=remote-launch-note]').text()).toContain('Клацніть на ньому мишкою')
     expect(w.emitted('opened')).toBeUndefined()
   })
 
   it('відмови сервера: немає комп\'ютера — словами; дошка вже відкрита — підключаємось', async () => {
-    getRemoteLaunch.mockResolvedValue({ screen: { page: 'sidebar.item.schedule' }, boards })
+    getRemoteLaunch.mockResolvedValue({ screen: { page: 'sidebar.item.schedule' }, lessons })
     remoteLaunch.mockRejectedValueOnce({ response: { status: 409, data: { error: 'no_screen' } } })
     const w = mountList()
     await flushPromises()

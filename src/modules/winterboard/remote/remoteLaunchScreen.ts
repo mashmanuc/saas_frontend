@@ -6,13 +6,16 @@
  * при (пере)підключенні, після дотику (не частіше ніж раз на 3 с, останній дотик
  * не губиться) і після переходу сторінкою. Пульт відкриває урок на вкладці, якої
  * торкались ОСТАННЬОЮ (власник: «до останнього хіба що?»); сервер шле їй
- * `remote.launch`, і вкладка відкриває дошку звичайним переходом — пише лише ноутбук.
+ * `remote.launch` з уроком із «Моїх уроків», і вкладка робить те саме, що кнопка
+ * «Провести»: свіжа копія уроку, шаблон не змінюється (v1.65) — пише лише ноутбук.
  *
  * Сторінка пульта й телефон не шлють: телефон — пульт, а не екран класу.
  */
 import type { Router } from 'vue-router'
 import { realtimeService } from '@/services/realtime'
 import { SECTIONED_MENU_BY_ROLE } from '@/config/menu'
+import { i18n } from '@/i18n'
+import { notifyError } from '@/utils/notify'
 
 export const HERE_THROTTLE_MS = 3_000
 
@@ -50,6 +53,7 @@ export function installRemoteLaunchScreen(router: Router): () => void {
   let lastTouch = Date.now()          // відкриття сторінки — теж дія вчителя
   let lastSent = 0
   let trailing: ReturnType<typeof setTimeout> | null = null
+  let launching = false               // одне «Провести» за раз, як кнопка в «Моїх уроках»
 
   const onPult = () => PULT_ROUTES.has(String(router.currentRoute.value.name ?? ''))
 
@@ -92,13 +96,27 @@ export function installRemoteLaunchScreen(router: Router): () => void {
     if (data?.type === 'connection.established') send()
   })
 
-  const offMessage = realtimeService.on('message', (data: { type?: string; session_id?: unknown }) => {
+  // v1.65: «Провести» — та сама дія, що кнопка в «Моїх уроках»: свіжа копія уроку з шаблону.
+  // Дошку за id (v1.63) більше не відкриваємо: так пульт відкривав шаблон Студії як урок.
+  async function conduct(lessonId: string): Promise<void> {
+    launching = true
+    try {
+      const { lessonViewApi } = await import('@/modules/knowledge/api/lessonViewApi')
+      const { session_id } = await lessonViewApi.loadToSession(lessonId)
+      await router.push({ name: 'winterboard-solo', params: { id: session_id } })
+    } catch (err) {
+      console.error('[remoteLaunch] conduct failed:', err)
+      notifyError(i18n.global.t('knowledge.lesson.prepare.error'))
+    } finally {
+      launching = false
+    }
+  }
+
+  const offMessage = realtimeService.on('message', (data: { type?: string; lesson_id?: unknown }) => {
     if (data?.type !== 'remote.launch') return
-    const id = typeof data.session_id === 'string' ? data.session_id : ''
-    if (!UUID_RE.test(id) || onPult()) return
-    const cur = router.currentRoute.value
-    if (cur.name === 'winterboard-solo' && cur.params.id === id) return
-    void router.push({ name: 'winterboard-solo', params: { id } })
+    const id = typeof data.lesson_id === 'string' ? data.lesson_id : ''
+    if (!UUID_RE.test(id) || onPult() || launching) return
+    void conduct(id)
   })
 
   return () => {
