@@ -655,6 +655,20 @@
           <span aria-hidden="true">🎙</span>
           {{ ptt.listening.value && dictationVoiceActive ? t('winterboard.remote.listening') : t('winterboard.remote.dictation.holdToSpeak') }}
         </button>
+        <!-- LAW §9 v1.64 «Розставити знаки» (власник 2026-10-26): розпізнавання дає лише слова — Інтегралик розставляє
+             знаки в полі, вчитель бачить і править ДО «Написати на дошці». Там, де ввімкнено мовний розбір. -->
+        <button
+          v-if="canAnalysis"
+          type="button"
+          class="wb-remote__video-mic"
+          data-testid="dictation-punctuate"
+          :disabled="!dictText.trim() || dictPunctuating"
+          @click="punctuateDictationText"
+        >
+          <span aria-hidden="true">✨</span>
+          {{ dictPunctuating ? t('winterboard.remote.dictation.punctuating') : t('winterboard.remote.dictation.punctuate') }}
+        </button>
+        <p v-if="dictPunctuateNote" class="wb-remote__why" role="status" data-testid="dictation-punctuate-note">{{ dictPunctuateNote }}</p>
         <button
           type="button"
           class="wb-remote__ai-btn"
@@ -835,6 +849,7 @@ import RemoteObjectControls from '../components/remote/RemoteObjectControls.vue'
 import RemoteLaunchList from '../components/remote/RemoteLaunchList.vue'
 import RemoteSentenceControls from '../components/remote/RemoteSentenceControls.vue'
 import RemoteSentenceAnalysis from '../components/remote/RemoteSentenceAnalysis.vue'
+import { punctuateDictation } from '../api/dictationAnalysis'
 import type { RemoteSentence, SentenceRequest, SentenceResult } from '../remote/dictationLineContract'
 import type { RemotePhotoResult } from '../remote/photoContract'
 import { RECORDING_SOURCE, type RemoteRecordingCmd, type RemoteRecordingInfo, type RemoteRecordingResult } from '../remote/recordingContract'
@@ -1693,6 +1708,25 @@ function dictateText(raw: string, lang: DictationLang, center = false): string |
   if (dictationAckTimer) clearTimeout(dictationAckTimer)
   dictationAckTimer = setTimeout(giveUpDictation, DICTATION_ACK_TIMEOUT_MS)
   return requestId
+}
+/** v1.64 «Розставити знаки»: текст поля → той самий текст зі знаками; поле міняємо лише якщо вчитель його не правив. */
+const dictPunctuating = ref(false)
+const dictPunctuateNote = ref('')
+async function punctuateDictationText(): Promise<void> {
+  const text = dictText.value.trim()
+  if (!text || dictPunctuating.value) return
+  dictPunctuating.value = true
+  dictPunctuateNote.value = ''
+  try {
+    const out = await punctuateDictation(text, dictLang.value)
+    if (dictText.value.trim() === text) dictText.value = out
+    else dictPunctuateNote.value = t('winterboard.remote.dictation.punctuateChanged')
+  } catch (error) {
+    console.warn('[WB:dictation] знаки не розставлено', error instanceof Error ? error.name : 'request_failed')
+    dictPunctuateNote.value = t('winterboard.remote.dictation.punctuateFailed')
+  } finally {
+    dictPunctuating.value = false
+  }
 }
 /** v1.62: «Переклад» з мовного розбору пише звичайним диктантом мовою перекладу. */
 function dictateTranslation(text: string, lang: 'uk' | 'en'): boolean {

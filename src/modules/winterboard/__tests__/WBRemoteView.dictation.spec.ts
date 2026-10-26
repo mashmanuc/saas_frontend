@@ -43,23 +43,29 @@ const getActiveRemoteSession = vi.fn()
 vi.mock('../api/winterboardApi', () => ({
   winterboardApi: { getActiveRemoteSession: (...a: any[]) => getActiveRemoteSession(...a), searchVideos: vi.fn(), lookupVideo: vi.fn() },
 }))
+const punctuateDictation = vi.fn()
+vi.mock('../api/dictationAnalysis', async (importOriginal) => ({
+  ...(await importOriginal<any>()), punctuateDictation: (...a: any[]) => punctuateDictation(...a),
+}))
 
 import WBRemoteView from '../views/WBRemoteView.vue'
 
 const MSG = {
   connected: 'Зв\'язок є', serverRejected: 'Сервер відхилив ({code})',
-  dictation: { button: 'Диктант', write: 'Написати на дошці', writing: 'Пишу на дошці…', done: 'Готово', noAnswer: 'Дошка не прийняла речення' },
+  dictation: { button: 'Диктант', write: 'Написати на дошці', writing: 'Пишу на дошці…', done: 'Готово', noAnswer: 'Дошка не прийняла речення',
+    punctuate: 'Розставити знаки', punctuating: 'Розставляю знаки…', punctuateFailed: 'Не вдалося розставити знаки',
+    punctuateChanged: 'Ви змінили текст' },
 }
 const CAPS = ['dictation', 'dictation_center', 'dictation_line_v1']
 
 const mounted: Array<{ unmount: () => void }> = []
-async function connected() {
+async function connected(caps = CAPS) {
   const i18n = createI18n({ legacy: false, locale: 'uk', fallbackLocale: 'uk', missingWarn: false, fallbackWarn: false,
     messages: { uk: { winterboard: { remote: MSG } } } })
   const w = mount(WBRemoteView, { attachTo: document.body, global: { plugins: [i18n], stubs: { RouterLink: true } } })
   mounted.push(w)
   await flushPromises()
-  onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 0, pageCount: 1, caps: CAPS })
+  onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 0, pageCount: 1, caps })
   await nextTick()
   await w.find('[data-testid="open-dictation"]').trigger('click')
   return w
@@ -132,5 +138,54 @@ describe('LAW §9 v1.55 · диктант на пульті не висить', 
     onStateCb?.({ pair: PAIR, clientId: 'l', pageIndex: 0, pageCount: 1, caps: CAPS, dictation: { request_id: rid, status: 'done' } })
     await nextTick()
     expect(status(w)).toBe('Готово')
+  })
+})
+
+describe('LAW §9 v1.64 · «Розставити знаки» у вікні диктанту', () => {
+  beforeEach(() => {
+    channelState.value = 'idle'
+    send.mockClear(); punctuateDictation.mockReset()
+    getActiveRemoteSession.mockReset()
+    getActiveRemoteSession.mockResolvedValue({ session_id: SID, name: 'Українська 5-А', ts: 1 })
+    onStateCb = null; onErrorCb = null
+    try { localStorage.setItem('wb.remote.firstTipSeen', '1') } catch { /* noop */ }
+  })
+  afterEach(() => { while (mounted.length) mounted.pop()!.unmount() })
+  const field = (w: any) => w.find('[data-testid="dictation-text"]').element as HTMLTextAreaElement
+
+  it('кнопка — лише там, де ввімкнено мовний розбір', async () => {
+    const off = await connected()
+    expect(off.find('[data-testid="dictation-punctuate"]').exists()).toBe(false)
+    const on = await connected([...CAPS, 'dictation_analysis_v1'])
+    expect(on.find('[data-testid="dictation-punctuate"]').exists()).toBe(true)
+  })
+
+  it('знаки лягають у поле, вчитель бачить їх ДО «Написати на дошці»; дошці нічого не йде', async () => {
+    punctuateDictation.mockResolvedValue('Він жартував, а вона сміялась.')
+    const w = await connected([...CAPS, 'dictation_analysis_v1'])
+    await w.find('[data-testid="dictation-text"]').setValue('він жартував а вона сміялась')
+    await w.find('[data-testid="dictation-punctuate"]').trigger('click')
+    await flushPromises()
+    expect(punctuateDictation).toHaveBeenCalledWith('він жартував а вона сміялась', 'uk')
+    expect(field(w).value).toBe('Він жартував, а вона сміялась.')
+    expect(dictateCmd()).toBeUndefined()
+  })
+
+  it('збій — пояснення, поле не змінено; змінили текст під час роботи — не перезаписуємо', async () => {
+    punctuateDictation.mockRejectedValue(new Error('boom'))
+    const w = await connected([...CAPS, 'dictation_analysis_v1'])
+    await w.find('[data-testid="dictation-text"]').setValue('він жартував')
+    await w.find('[data-testid="dictation-punctuate"]').trigger('click')
+    await flushPromises()
+    expect(field(w).value).toBe('він жартував')
+    expect(w.find('[data-testid="dictation-punctuate-note"]').text()).toBe('Не вдалося розставити знаки')
+    let finish!: (v: string) => void
+    punctuateDictation.mockReturnValue(new Promise<string>((r) => { finish = r }))
+    await w.find('[data-testid="dictation-punctuate"]').trigger('click')
+    await w.find('[data-testid="dictation-text"]').setValue('він жартував а вона')
+    finish('Він жартував.')
+    await flushPromises()
+    expect(field(w).value).toBe('він жартував а вона')
+    expect(w.find('[data-testid="dictation-punctuate-note"]').text()).toBe('Ви змінили текст')
   })
 })

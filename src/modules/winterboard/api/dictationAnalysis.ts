@@ -23,6 +23,15 @@ export async function requestTranslation(target: TranslationTarget, signal: Abor
   const response = await apiClient.post('/v1/intents/dictation-analysis/', { ...target, kind: 'translation' }, { signal, timeout: 55000 })
   return readTranslationDraft(response, target)
 }
+/** LAW §9 v1.64 «Розставити знаки»: текст поля диктанту → той самий текст зі знаками (сервер звіряє слова). */
+export async function punctuateDictation(text: string, lang: 'uk' | 'en'): Promise<string> {
+  const raw = await apiClient.post('/v1/intents/dictation-analysis/punctuation/', { text, lang }, { timeout: 55000 }) as unknown as { text: string }
+  if (!raw || typeof raw !== 'object' || Object.keys(raw).join() !== 'text' || typeof raw.text !== 'string' || !raw.text.trim()
+    || Array.from(raw.text).length > 300
+    // eslint-disable-next-line no-control-regex
+    || /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/u.test(raw.text)) throw new AnalysisError()
+  return raw.text
+}
 export async function analysisAvailable(): Promise<boolean> {
   const raw = await apiClient.get('/v1/intents/dictation-analysis/availability/') as unknown as { enabled: boolean }
   if (!raw || Object.keys(raw).join() !== 'enabled' || typeof raw.enabled !== 'boolean') throw new AnalysisError()
