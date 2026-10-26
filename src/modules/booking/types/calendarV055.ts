@@ -44,6 +44,7 @@ export interface CalendarEvent {
   lessonType?: string       // Тип уроку
   seriesId?: number | null  // Серія уроку (2026-10-22, «цей і всі наступні»)
   seriesFollowingCount?: number // Скільки уроків скасує «цей і всі наступні» (разом із цим)
+  seriesFollowingEditCount?: number // Скільки уроків змінить «цей і всі наступні» (оплачені теж)
 }
 
 export interface AccessibleSlot {

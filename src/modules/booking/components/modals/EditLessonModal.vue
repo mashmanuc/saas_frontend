@@ -89,6 +89,19 @@
                 </div>
               </div>
 
+              <!-- Серія (2026-10-26): «Лише цей урок» або «Цей і всі наступні» — для змін часу, тривалості, нотатки -->
+              <fieldset v-if="isEditing && hasFollowingEdit" class="delete-scope" data-testid="event-edit-scope">
+                <legend class="field-label">{{ $t('calendar.editLesson.editScopeTitle') }}</legend>
+                <label class="delete-scope-option">
+                  <input v-model="editScope" type="radio" value="one" data-testid="event-edit-scope-one" />
+                  <span>{{ $t('calendar.editLesson.deleteScopeOne') }}</span>
+                </label>
+                <label class="delete-scope-option">
+                  <input v-model="editScope" type="radio" value="following" data-testid="event-edit-scope-following" />
+                  <span>{{ $t('calendar.editLesson.deleteScopeFollowing', { count: followingEditCount }) }}</span>
+                </label>
+              </fieldset>
+
               <!-- Actions -->
               <div class="modal-actions">
                 <Button
@@ -364,6 +377,8 @@ const error = ref<string | null>(null)
 const showConfirmDelete = ref(false)
 // «Цей і всі наступні уроки серії» (2026-10-22): скільки уроків піде — рахує сервер (оплачені й проведені не входять)
 const deleteScope = ref<'one' | 'following'>('one')
+// «Змінити цей і всі наступні» (2026-10-26): ті самі два варіанти для вкладки «Оновити»
+const editScope = ref<'one' | 'following'>('one')
 const previewResult = ref<ReschedulePreviewResponse | null>(null)
 
 const editForm = ref({
@@ -406,6 +421,9 @@ const canEdit = computed(() => {
 
 const followingCount = computed<number>(() => eventDetails.value?.event?.seriesFollowingCount || 0)
 const hasFollowing = computed(() => Boolean(eventDetails.value?.event?.seriesId) && followingCount.value > 1)
+/** Скільки уроків зміниться (оплачені теж — їх можна переносити, але не видаляти). */
+const followingEditCount = computed<number>(() => eventDetails.value?.event?.seriesFollowingEditCount || 0)
+const hasFollowingEdit = computed(() => Boolean(eventDetails.value?.event?.seriesId) && followingEditCount.value > 1)
 
 const confirmDeleteMessage = computed(() => {
   const student = eventDetails.value?.event?.clientName || ''
@@ -455,6 +473,7 @@ watch(
       await loadEventDetails()
       activeTab.value = 'update'
       deleteScope.value = 'one'
+      editScope.value = 'one'
       isEditing.value = false
       previewResult.value = null
     } else {
@@ -524,19 +543,31 @@ async function handleSaveEdit() {
     const localDate = new Date(editForm.value.start)
     const isoString = formatWithOffset(localDate)
     
-    await store.updateEvent({
+    const payload = {
       id: props.eventId,
       start: isoString,
       durationMin: editForm.value.durationMin,
       tutorComment: sanitizeComment(editForm.value.tutorComment || ''),
-    })
-    
-    toast.success(t('calendar.success.updated'))
+    }
+    if (editScope.value === 'following' && hasFollowingEdit.value) {
+      const result = await store.updateFollowingEvents(payload)
+      toast.success(t('calendar.editLesson.updatedFollowing', { count: result?.updated ?? followingEditCount.value }))
+    } else {
+      await store.updateEvent(payload)
+      toast.success(t('calendar.success.updated'))
+    }
     await loadEventDetails()
     isEditing.value = false
+    editScope.value = 'one'
     emit('updated')
   } catch (err: any) {
-    handleError(err, t('calendar.errors.updateFailed'))
+    // Серія: хоч один урок ліг би на зайнятий час — сервер нічого не змінює й каже, який саме
+    const conflict = err?.response?.data?.error?.details?.conflicts?.[0]
+    if (err?.response?.data?.error?.code === 'TIME_OVERLAP' && conflict?.start) {
+      error.value = t('calendar.editLesson.followingConflict', { date: formatDateTime(conflict.start) })
+    } else {
+      handleError(err, t('calendar.errors.updateFailed'))
+    }
   } finally {
     isSaving.value = false
   }
