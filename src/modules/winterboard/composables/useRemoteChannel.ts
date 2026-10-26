@@ -415,6 +415,8 @@ export function useRemoteChannel(opts: {
   onError?: (code: string) => void
   /** v1.16 (Б-120): хтось приєднався до кімнати дошки — `userId` з `presence.join` */
   onBoardJoin?: (userId: string) => void
+  /** LAW §9 v1.63 (П8): хтось пішов з кімнати дошки — `userId` з `presence.leave` */
+  onBoardLeave?: (userId: string) => void
 }) {
   const state: Ref<RemoteChannelState> = ref('idle')
   const lastError = ref<string | null>(null)
@@ -543,8 +545,11 @@ export function useRemoteChannel(opts: {
         // v1.16 (Б-120): дошка (пере)підключилась — після F5 ноутбук пульт «забуває»
         // і мовчить, доки пульт не привітається знову
         opts.onBoardJoin?.(String(msg.userId ?? ''))
+      } else if (msg?.type === 'presence.leave') {
+        // v1.63 (П8): ноутбук пішов з дошки — пульт перевірить, чи вона ще десь відкрита
+        opts.onBoardLeave?.(String(msg.userId ?? ''))
       }
-      // решта типів (presence.leave, ops.applied, stroke.broadcast…) пульту не потрібні
+      // решта типів (ops.applied, stroke.broadcast…) пульту не потрібні
     }
     socket.onclose = (ev) => {
       if (ws !== socket) return   // late close від попереднього сокета (INV-WS-1)

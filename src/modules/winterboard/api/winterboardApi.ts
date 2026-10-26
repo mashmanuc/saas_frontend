@@ -341,6 +341,19 @@ export interface VideoSearchResponse {
 }
 const COPILOT = '/v1/learning-engine'   // 8a-2 Tutor Copilot
 
+/** LAW §9 v1.63 (П8): урок Студії в списку запуску на пульті. */
+export interface RemoteLaunchBoard {
+  id: string
+  name: string
+  updated_at: string | null
+}
+
+/** LAW §9 v1.63 (П8): `page` — ключ пункту меню сторінки на комп'ютері (`sidebar.item.*`) або null. */
+export interface RemoteLaunchInfo {
+  screen: { page: string | null } | null
+  boards: RemoteLaunchBoard[]
+}
+
 export const winterboardApi = {
   // ── Sessions CRUD ──────────────────────────────────────────────────
 
@@ -358,6 +371,16 @@ export const winterboardApi = {
    */
   getActiveRemoteSession(): Promise<{ session_id: string; name: string; ts: number | null }> {
     return apiClient.get(`${BASE}/remote/active/`).then((r: any) => r.data ?? r)
+  },
+
+  /** LAW §9 v1.63 (П8): де відкриється урок і останні уроки Студії — пульт, коли ніде не відкрита дошка. */
+  getRemoteLaunch(): Promise<RemoteLaunchInfo> {
+    return apiClient.get(`${BASE}/remote/launch/`).then((r: any) => r.data ?? r)
+  },
+
+  /** LAW §9 v1.63 (П8): попросити комп'ютер, якого торкались останнім, відкрити урок. Нічого не пише. */
+  remoteLaunch(sessionId: string): Promise<{ page: string | null }> {
+    return apiClient.post(`${BASE}/remote/launch/`, { session_id: sessionId }).then((r: any) => r.data ?? r)
   },
 
   /**

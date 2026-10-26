@@ -18,6 +18,7 @@ import { useNotifyStore } from './stores/notifyStore'
 import { useSettingsStore } from './stores/settingsStore'
 import { useThemeStore } from './stores/themeStore'
 import { useRealtimeStore } from './stores/realtimeStore'
+import { installRemoteLaunchScreen } from './modules/winterboard/remote/remoteLaunchScreen'
 import { useNotificationsStore } from './stores/notificationsStore'
 import { useAuthStore } from './modules/auth/store/authStore'
 import { createErrorCollector } from './modules/diagnostics/plugins/errorCollector'
@@ -77,10 +78,14 @@ setupI18n(getInitialLocale()).then(async () => {
   // (tutor:{id}/student:{id}) the gateway authorizes — bare roots were denied.
   setupQueryBridge({ queryClient, userId: authStore.user?.id ?? null })
 
+  // LAW §9 v1.63: пульт запускає урок на комп'ютері, якого торкались останнім.
+  const uninstallRemoteLaunch = installRemoteLaunchScreen(router)
+
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
       try {
         teardownQueryBridge()
+        uninstallRemoteLaunch()
         queryClient.clear()
       } catch {
         // ignore

@@ -40,11 +40,16 @@
     <!-- Причина, чому пульт не керує — ЗАВЖДИ словами, ніколи мовчки -->
     <div v-if="reason" class="wb-remote__block" :class="`wb-remote__block--${reason.tone}`" role="status">
       <p class="wb-remote__reason">{{ reason.text }}</p>
-      <p v-if="reason.hint" class="wb-remote__hint">{{ reason.hint }}</p>
+      <!-- П8 (LAW §9 v1.63): коли ніде не відкрита дошка, підказку «відкрий на ноутбуці» замінює список запуску -->
+      <p v-if="reason.hint && reasonKey !== 'noActiveBoard'" class="wb-remote__hint">{{ reason.hint }}</p>
       <button type="button" class="wb-remote__refresh" @click="refreshBoard">
         {{ t('winterboard.remote.refresh') }}
       </button>
     </div>
+
+    <!-- П8 (LAW §9 v1.63): запуск уроку з пульта — останні уроки Студії; урок відкриває комп'ютер,
+         якого торкались останнім. Відкрився — підключаємось до нього звичайним шляхом. -->
+    <RemoteLaunchList v-if="reasonKey === 'noActiveBoard'" @opened="refreshBoard" />
 
     <!-- Після ПЕРШОГО підключення на цьому пристрої — три рядки, один раз
          (TZ_REMOTE_DESKTOP_CONNECT §2.4). -->
@@ -827,6 +832,7 @@ import RemoteBoardMirror from '../components/remote/RemoteBoardMirror.vue'
 import { createMirrorFullscreen } from '../remote/mirrorFullscreen'
 import RemoteScenarioSheet from '../components/remote/RemoteScenarioSheet.vue'
 import RemoteObjectControls from '../components/remote/RemoteObjectControls.vue'
+import RemoteLaunchList from '../components/remote/RemoteLaunchList.vue'
 import RemoteSentenceControls from '../components/remote/RemoteSentenceControls.vue'
 import RemoteSentenceAnalysis from '../components/remote/RemoteSentenceAnalysis.vue'
 import type { RemoteSentence, SentenceRequest, SentenceResult } from '../remote/dictationLineContract'
@@ -1342,8 +1348,21 @@ function tel(event: string, ctx: Record<string, unknown> = {}) {
  */
 let routeIdRejected = false
 
+// LAW §9 v1.63 (П8): ноутбук пішов з дошки (урок закінчено, вкладку закрито, F5). Інша вкладка з
+// тією ж дошкою відповість на hello, F5 повернеться join'ом; ні того, ні іншого за LEFT_GRACE_MS —
+// дошки ніде нема: шукаємо знову, і пульт показує список запуску. Один таймер на подію, не опитування.
+const LEFT_HELLO_MS = 1500
+const LEFT_GRACE_MS = 10_000
+let leftHelloTimer: ReturnType<typeof setTimeout> | null = null
+let leftTimer: ReturnType<typeof setTimeout> | null = null
+function cancelBoardLeft(): void {
+  if (leftHelloTimer) { clearTimeout(leftHelloTimer); leftHelloTimer = null }
+  if (leftTimer) { clearTimeout(leftTimer); leftTimer = null }
+}
+
 const channel = useRemoteChannel({
   onState(s) {
+    cancelBoardLeft()
     if (s.pair !== pair.value) { tel('state_foreign'); return }   // стан для іншої дошки / старої вкладки
     pageIndex.value = s.pageIndex
     pageCount.value = s.pageCount
@@ -1412,8 +1431,21 @@ const channel = useRemoteChannel({
   onBoardJoin(userId) {
     const me = String(authStore.user?.id ?? '')
     if (!pair.value || (me && userId !== me)) return
+    cancelBoardLeft()
     sendCmd('hello')
     tel('hello_on_join')
+  },
+  onBoardLeave(userId) {
+    const me = String(authStore.user?.id ?? '')
+    if (!pair.value || !me || userId !== me) return
+    cancelBoardLeft()
+    leftHelloTimer = setTimeout(() => { leftHelloTimer = null; sendCmd('hello') }, LEFT_HELLO_MS)
+    leftTimer = setTimeout(() => {
+      leftTimer = null
+      tel('board_left')
+      disconnect()
+      refreshBoard()
+    }, LEFT_GRACE_MS)
   },
 })
 
@@ -1756,6 +1788,7 @@ async function resolveAndConnect() {
 }
 
 function disconnect() {
+  cancelBoardLeft()
   closeSheet()
   channel.disconnect()
   pageIndex.value = null
