@@ -21,7 +21,8 @@ describe('Прийняті добірки тригонометрії у конс
   it('усі шість доступні разом у 10 класі, не сховані широкою назвою', () => {
     const unit = gradeTracks(10, labels).find(t => t.track === 'algebra')!
       .units.find(t => t.title === 'Тригонометричні функції')!
-    expect(unit.topics).toEqual(ids)
+    // Шість тем — першими й разом; після них може йти інша добірка розділу (тригонометричні нерівності, 28.10).
+    expect(unit.topics.slice(0, ids.length)).toEqual(ids)
   })
   it('не з’являються у 5–9 класах', () => {
     for (const grade of [5, 6, 7, 8, 9] as Grade[]) {
