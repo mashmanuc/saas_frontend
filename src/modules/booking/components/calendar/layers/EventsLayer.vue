@@ -13,6 +13,8 @@
         'is-cancelled': event.status === 'cancelled',
         'is-platform': isPlatform(event),
         'is-short': !hasTwoLines(event),
+        'is-held': event.outcome === 'held',
+        'is-not-held': event.outcome === 'not_held',
       }"
       :title="cardTitle(event)"
       :style="getEventStyle(event)"
@@ -27,6 +29,8 @@
           :class="{ 'event-pay-chip--last': leftOf(event) === 1, 'event-pay-chip--unpaid': leftOf(event) === 0 }"
           :data-testid="`lesson-pay-chip-${event.id}`"
         >₴{{ leftOf(event) }}</span>
+        <!-- Підсумок уроку (2026-10-27): ✓ — «Відбувся»; «Не відбувся» — закреслене імʼя -->
+        <span v-if="event.outcome === 'held'" class="event-held-mark" aria-hidden="true">✓</span>
         <span class="event-student" :class="{ 'event-student--two': nameLines(event) === 2 }" data-testid="lesson-name">
           {{ getStudentName(event) }}
         </span>
@@ -66,6 +70,8 @@ interface CalendarEvent {
   is_first?: boolean
   student?: Student
   clientName?: string
+  /** Підсумок уроку (2026-10-27): held / not_held / null (BOOKING_DOMAIN_SSOT П2) */
+  outcome?: 'held' | 'not_held' | null
 }
 
 const props = defineProps<{
@@ -148,6 +154,8 @@ const formatTimeRange = (event: CalendarEvent): string => {
 /** Підказка при наведенні: повне імʼя, час, звідки учень і оплата — словами */
 function cardTitle(event: CalendarEvent): string {
   const parts = [getStudentName(event), formatTimeRange(event)]
+  if (event.outcome === 'held') parts.push(t('calendar.outcome.held'))
+  else if (event.outcome === 'not_held') parts.push(t('calendar.outcome.notHeld'))
   if (isPlatform(event)) parts.push(t('calendar.lessonCard.fromPlatform', { name: String(event.student?.platform).trim() }))
   const left = leftOf(event)
   if (left === 0) parts.push(t('calendar.lessonCard.unpaid'))
@@ -199,6 +207,19 @@ function cardTitle(event: CalendarEvent): string {
 .event-card.is-past {
   opacity: 0.55;
   cursor: default;
+}
+
+.event-held-mark {
+  flex: 0 0 auto;
+  font-weight: 700;
+}
+
+.event-card.is-not-held .event-student {
+  text-decoration: line-through;
+}
+
+.event-card.is-not-held {
+  background-image: repeating-linear-gradient(135deg, transparent 0 6px, rgba(0, 0, 0, 0.08) 6px 8px);
 }
 
 .event-card.is-no-show {

@@ -42,6 +42,8 @@ export interface CalendarEvent {
   clientPhone: string | null
   paidStatus: 'unpaid' | 'paid'
   doneStatus: 'not_done' | 'done' | 'not_done_client_missed' | 'done_client_missed'
+  // Підсумок уроку (2026-10-27): «Відбувся» / «Не відбувся»; null — ще немає (BOOKING_DOMAIN_SSOT П2)
+  outcome?: 'held' | 'not_held' | null
   regularity: 'single' | 'once_a_week' | 'twice_a_week'
   tutorComment: string | null
   lesson_link?: string    // v0.58: Zoom/Meet link for lesson

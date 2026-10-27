@@ -100,6 +100,7 @@
       v-if="showCreateModal && selectedCell && props.mode === 'tutor'"
       :visible="showCreateModal"
       :selected-cell="selectedCell"
+      :preset-student-id="extraLessonStudentId"
       @close="showCreateModal = false"
       @success="handleLessonCreated"
     />
@@ -111,6 +112,8 @@
       @close="showEventModal = false"
       @updated="handleEventUpdated"
       @deleted="handleEventDeleted"
+      @outcome-changed="refreshWeek"
+      @extra-lesson="openExtraLesson"
     />
 
     <SlotEditorModal
@@ -209,7 +212,7 @@ import { useAvailabilityDraftUnifiedStore } from '@/modules/booking/stores/avail
 import { useTutorLessonLinksStore } from '@/modules/booking/stores/tutorLessonLinksStore'
 import { useCalendarWebSocket } from '@/modules/booking/composables/useCalendarWebSocket'
 import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import CalendarBoardV2 from './CalendarBoardV2.vue'
 import { studentPaymentsApi } from '@/modules/dashboard/api/studentPayments'
@@ -253,6 +256,7 @@ const warnDebug = (...args: unknown[]) => {
   }
 }
 const router = useRouter()
+const route = useRoute()
 
 const store = useCalendarWeekStore()
 const draftStore = useAvailabilityDraftUnifiedStore()
@@ -413,6 +417,8 @@ const showSlotModal = ref(false)
 const showCreateSlotModal = ref(false)
 const showBlockSlotModal = ref(false)
 const selectedCell = ref<CalendarCell | null>(null)
+/** «+ Додаткове заняття» з підсумку уроку: учень, якого вікно створення вибере саме (П5) */
+const extraLessonStudentId = ref<number | null>(null)
 const selectedEventId = ref<number | null>(null)
 const selectedSlot = ref<AccessibleSlotV055 | null>(null)
 const selectedSlotForBlock = ref<AccessibleSlotLegacy | null>(null)
@@ -488,7 +494,9 @@ onMounted(async () => {
   } catch (err: any) {
     handleError(err)
   }
-  
+
+  openExtraLessonFromQuery()
+
   // Add beforeunload listener
   window.addEventListener('beforeunload', handleBeforeUnload)
 })
@@ -585,6 +593,7 @@ function handleCellClick(data: { date: string; hour: number }) {
     slotId: undefined,
   }
 
+  extraLessonStudentId.value = null                  // звичайний урок — учня обирає вчитель
   showCreateModal.value = true
   emit('cellClick', selectedCell.value)
 }
@@ -604,6 +613,39 @@ async function handleLessonCreated(eventId: number) {
   if (store.currentTutorId && store.currentWeekStart) {
     await store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart, true)
   }
+}
+
+// ── Підсумок уроку (2026-10-27, BOOKING_DOMAIN_SSOT П5) ─────────────────────────────────────────────
+// «+ Додаткове заняття»: звичайне створення уроку з уже вибраним учнем; час — запропонований, учитель змінює.
+
+async function refreshWeek() {
+  if (store.currentTutorId && store.currentWeekStart) {
+    await store.fetchWeekSnapshot(store.currentTutorId, store.currentWeekStart, true)
+  }
+}
+
+// Вікно «Урок завершено» (П7) веде сюди з ?extraLesson=<учень>&at=<час> — відкрити створення уроку й прибрати параметри
+function openExtraLessonFromQuery() {
+  const studentId = Number(route.query.extraLesson)
+  const at = typeof route.query.at === 'string' ? route.query.at : ''
+  if (props.mode !== 'tutor' || !studentId || !at || Number.isNaN(new Date(at).getTime())) return
+  openExtraLesson({ studentId, start: at })
+  void router.replace({ query: { ...route.query, extraLesson: undefined, at: undefined } })
+}
+
+function openExtraLesson(payload: { studentId: number; start: string }) {
+  const start = new Date(payload.start)
+  const end = new Date(start.getTime() + 60 * 60 * 1000)
+  showEventModal.value = false
+  extraLessonStudentId.value = payload.studentId
+  selectedCell.value = {
+    dayKey: start.toISOString().slice(0, 10),
+    slotIndex: start.getHours() * 2 + (start.getMinutes() >= 30 ? 1 : 0),
+    startAtUTC: start.toISOString(),
+    endAtUTC: end.toISOString(),
+    status: 'empty',
+  }
+  showCreateModal.value = true
 }
 
 async function handleEventUpdated() {

@@ -26,6 +26,8 @@
                 v-if="!isEditing"
                 :event="eventDetails.event"
                 :dictionaries="eventDetails.dictionaries"
+                @outcome-changed="handleOutcomeChanged"
+                @extra-lesson="handleExtraLesson"
               >
                 <template v-if="lessonChips.length" #chips>
                   <span
@@ -393,6 +395,10 @@ const emit = defineEmits<{
   close: []
   updated: []
   deleted: []
+  /** Підсумок уроку змінено — оновити тиждень, вікно лишити відкритим */
+  'outcome-changed': []
+  /** «+ Додаткове заняття» з підсумку уроку (П5): той самий учень, час обирає вчитель */
+  'extra-lesson': [payload: { studentId: number; start: string }]
 }>()
 
 const { t, locale } = useI18n()
@@ -559,6 +565,24 @@ watch(
   },
   { immediate: true }
 )
+
+// Підсумок уроку (2026-10-27): вікно лишається відкритим з новим станом, тиждень розкладу оновлюється
+function handleOutcomeChanged(outcome: 'held' | 'not_held') {
+  if (eventDetails.value?.event) eventDetails.value.event.outcome = outcome
+  emit('outcome-changed')
+}
+
+// «+ Додаткове заняття» (П5): той самий учень; час — завтра о тій самій годині, далі його змінює вчитель
+function handleExtraLesson() {
+  const event = eventDetails.value?.event
+  if (!event?.studentId) return
+  const lessonStart = new Date(event.start)
+  const start = new Date()
+  start.setDate(start.getDate() + 1)
+  start.setHours(lessonStart.getHours(), lessonStart.getMinutes(), 0, 0)
+  emit('extra-lesson', { studentId: event.studentId, start: start.toISOString() })
+  emit('close')
+}
 
 async function loadEventDetails() {
   isLoading.value = true

@@ -691,6 +691,7 @@ const testStore = useTestStore()
 const { t } = useI18n()
 import { notifyInfo, notifyError, notifyWarning, notifySuccess } from '@/utils/notify'
 import { closeRecordingBeforeEndLesson, type EndLessonRecordingResult } from '../board/endLessonRecording'
+import { requestAfterLessonOutcome } from '@/modules/booking/composables/afterLessonOutcome'
 const { announce } = useAnnouncer()
 const { showToast } = useToast()
 
@@ -2017,6 +2018,9 @@ async function confirmEndSession(): Promise<void> {
     } else if (endLessonRecordingOutcome === 'later') {
       notifyInfo(t('winterboard.classroom.endedRecordingLater'), { timeout: 8000 })
     }
+    // Підсумок уроку (2026-10-27, BOOKING_DOMAIN_SSOT П7): на головній — «Як пройшов урок?», якщо в уроку є пара
+    // в розкладі. Лише сигнал; вікно й запит — у booking (App.vue), класу до розкладу діла немає.
+    requestAfterLessonOutcome(sid)
     router.push(dashboardPath.value)
   } catch (err) {
     console.error('[WB:ClassroomRoom] End session failed', err)

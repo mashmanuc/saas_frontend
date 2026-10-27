@@ -3984,6 +3984,18 @@
     }
   },
   "calendar": {
+    "outcome": {
+      "title": "How did the lesson go?",
+      "held": "Took place",
+      "notHeld": "Didn't take place",
+      "notCountedHint": "This lesson is not counted in payments.",
+      "extra": "+ Extra lesson",
+      "newTime": "+ Schedule another time",
+      "saveError": "Could not save. Please try again.",
+      "later": "Later",
+      "done": "Done",
+      "afterTitle": "Lesson finished"
+    },
     "slotEditor": {
       "title": "Edit slot",
       "timeRange": "Time range",

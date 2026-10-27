@@ -320,6 +320,8 @@ import type { Order } from '@/modules/booking/api/ordersApi'
 const props = defineProps<{
   visible: boolean
   selectedCell: CalendarCell
+  /** «+ Додаткове заняття» з підсумку уроку (2026-10-27): учня вже вибрано, змінити можна */
+  presetStudentId?: number | null
 }>()
 
 const emit = defineEmits<{
@@ -450,6 +452,8 @@ async function loadOrders() {
   try {
     const response = await ordersApi.listOrders()
     orders.value = response.results || []
+    const preset = props.presetStudentId ? orders.value.find(o => o.student?.id === props.presetStudentId) : null
+    if (preset && !formData.value.orderId) selectOrder(preset)
   } catch (error) {
     console.error('[CreateLessonModal] Failed to load orders:', error)
     orders.value = []

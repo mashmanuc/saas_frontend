@@ -30,6 +30,9 @@
     <LimitPaywallModalAsync v-if="authStore.isAuthenticated" />
     <!-- ТЗ спільного екрана, R7: незбережені дії перед виходом — показати, не стирати мовчки. -->
     <LogoutUnsentDialogAsync v-if="authStore.isAuthenticated" />
+    <!-- Підсумок уроку (2026-10-27, BOOKING_DOMAIN_SSOT П7): «Як пройшов урок?» одразу після «Завершити урок» —
+         тут, бо клас іде на головну, а вікно має пережити перехід. -->
+    <AfterLessonOutcomeDialogAsync v-if="authStore.isAuthenticated && authStore.userRole === 'tutor'" />
     <!-- Тости. Були в PageShell — і НЕ існували на winterboard-роутах, бо в
          дошки власний layout (той самий доказ, що вище про LimitPaywallModal).
          Наслідок був не косметичний: команди палітри й будь-які success/error
@@ -62,6 +65,7 @@ const ChatModalAsync = defineAsyncComponent(() => import('@/modules/chat/compone
 const CommandPalette = defineAsyncComponent(() => import('@/modules/intent/CommandPalette.vue'))
 const LimitPaywallModalAsync = defineAsyncComponent(() => import('@/modules/billing/components/LimitPaywallModal.vue'))
 const LogoutUnsentDialogAsync = defineAsyncComponent(() => import('@/modules/auth/components/LogoutUnsentDialog.vue'))
+const AfterLessonOutcomeDialogAsync = defineAsyncComponent(() => import('@/modules/booking/components/outcome/AfterLessonOutcomeDialog.vue'))
 
 const isDev = import.meta.env.DEV
 

@@ -57,3 +57,34 @@ describe('Розклад учителя — «Відкрити дошку уро
     expect(push).toHaveBeenCalledWith('/winterboard/abc')
   })
 })
+
+// Підсумок уроку (власник 2026-10-27; BOOKING_DOMAIN_SSOT П1): лише на головній вкладці (actions), лише урок з учнем,
+// що вже почався
+describe('Розклад учителя — «Як пройшов урок?»', () => {
+  const PanelStub = defineComponent({ name: 'LessonOutcomePanel', props: ['eventId', 'outcome'], emits: ['changed', 'extra'],
+    setup: () => () => h('div', { 'data-testid': 'panel' }) })
+  const past = new Date(Date.now() - 2 * 3600_000).toISOString()
+  const future = new Date(Date.now() + 2 * 3600_000).toISOString()
+  const withPanel = (event: Record<string, unknown>, actions = true) => mount(EventDetailsView, {
+    props: { event: event as never, dictionaries: {}, actions },
+    global: { stubs: { StartLessonDialog: DialogStub, JoinLessonPicker: true, LessonOutcomePanel: PanelStub },
+      mocks: { $t: (k: string) => k } },
+  })
+
+  it('урок з учнем, що вже почався, — є; з підсумком — передає його; події нагору', async () => {
+    const w = withPanel({ ...EVENT, start: past, studentId: 580, outcome: 'held' })
+    const p = w.findComponent(PanelStub)
+    expect(p.exists()).toBe(true)
+    expect(p.props('outcome')).toBe('held')
+    p.vm.$emit('changed', 'not_held')
+    p.vm.$emit('extra')
+    expect(w.emitted('outcome-changed')?.[0]).toEqual(['not_held'])
+    expect(w.emitted('extra-lesson')).toHaveLength(1)
+  })
+
+  it('майбутній урок, урок без учня, інші вкладки — немає', () => {
+    expect(withPanel({ ...EVENT, start: future, studentId: 580 }).findComponent(PanelStub).exists()).toBe(false)
+    expect(withPanel({ ...EVENT, start: past, studentId: null }).findComponent(PanelStub).exists()).toBe(false)
+    expect(withPanel({ ...EVENT, start: past, studentId: 580 }, false).findComponent(PanelStub).exists()).toBe(false)
+  })
+})

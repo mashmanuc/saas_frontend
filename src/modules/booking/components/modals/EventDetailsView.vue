@@ -28,6 +28,15 @@
         :event-id="event.id"
         :lesson-link="event.lesson_link"
       />
+      <!-- Підсумок уроку (2026-10-27): лише на головній вкладці вікна (як і кнопки уроку), лише урок з учнем,
+           що вже почався (BOOKING_DOMAIN_SSOT П1) -->
+      <LessonOutcomePanel
+        v-if="canHaveOutcome"
+        :event-id="event.id"
+        :outcome="event.outcome ?? null"
+        @changed="(o) => emit('outcome-changed', o)"
+        @extra="emit('extra-lesson')"
+      />
     </template>
 
     <StartLessonDialog
@@ -40,22 +49,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Clock as ClockIcon, Phone as PhoneIcon, Monitor as MonitorIcon } from 'lucide-vue-next'
 import type { CalendarEvent } from '@/modules/booking/types/calendarWeek'
 import { calendarV055Api } from '@/modules/booking/api/calendarV055Api'
 import JoinLessonPicker from './JoinLessonPicker.vue'
+import LessonOutcomePanel from '@/modules/booking/components/outcome/LessonOutcomePanel.vue'
+import type { LessonOutcome } from '@/modules/booking/api/lessonOutcomeApi'
 import StartLessonDialog from '@/modules/knowledge/components/StartLessonDialog.vue'
 import { activeLocale } from '@/utils/i18nDate'
 
 const props = withDefaults(defineProps<{
   event: CalendarEvent
   dictionaries: any
-  /** false — лише відомості про урок (у «Видалити» / «Перенести»), без кнопки дошки */
+  /** false — лише відомості про урок (у «Видалити» / «Перенести»), без кнопки дошки й без підсумку */
   actions?: boolean
 }>(), { actions: true })
+
+const emit = defineEmits<{
+  'outcome-changed': [outcome: LessonOutcome]
+  'extra-lesson': []
+}>()
+
+// П1: підсумок — лише для уроку з учнем, що вже почався
+const canHaveOutcome = computed(() =>
+  !!props.event.studentId && new Date(props.event.start).getTime() <= Date.now(),
+)
 
 const router = useRouter()
 const { t } = useI18n()
