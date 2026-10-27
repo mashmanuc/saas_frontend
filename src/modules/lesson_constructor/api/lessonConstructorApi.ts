@@ -60,6 +60,7 @@ export const TOPICS = [
   { value: 'exponential-log-expressions',                                             label: 'Показникові та логарифмічні вирази', section: 'Числа й вирази', block: 'Алгебра і початки аналізу' },
   { value: 'exponential-log-trig-expressions',                                        label: 'Показникові, логарифмічні, тригонометричні вирази', section: 'Числа й вирази', block: 'Алгебра і початки аналізу' },
   { value: 'exponential-log-trig-expressions.logarithmic',                            label: 'Логарифмічні вирази', section: 'Числа й вирази', block: 'Алгебра і початки аналізу' },
+  { value: 'exponential-log-trig-expressions.exponential',                            label: 'Показникова функція та вирази', section: 'Числа й вирази', block: 'Алгебра і початки аналізу' },
   { value: 'exponential-log-trig-expressions.trigonometric',                          label: 'Тригонометричні вирази', section: 'Числа й вирази', block: 'Алгебра і початки аналізу' },
   { value: 'exponential-log-trig-expressions.trigonometric.identities',               label: 'Основні тригонометричні тотожності', section: 'Числа й вирази', block: 'Алгебра і початки аналізу' },
   { value: 'exponential-log-trig-expressions.trigonometric.reduction',                label: 'Формули зведення', section: 'Числа й вирази', block: 'Алгебра і початки аналізу' },
