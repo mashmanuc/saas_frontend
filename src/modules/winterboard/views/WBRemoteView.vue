@@ -618,26 +618,36 @@
           </button>
         </div>
         <p class="wb-remote__note">{{ t(dictLang === 'en' ? 'winterboard.remote.dictation.hintEn' : 'winterboard.remote.dictation.hint') }}</p>
-        <div v-if="canDictateCenter" class="wb-remote__dict-row">
-          <!-- v1.51: «Посередині» — як число й «Класна робота» в зошиті; лише одне речення, після «Готово» скидається -->
+        <!-- LAW §9 v1.69 «Вільний диктант»: розмітка прямо в полі — «↔» на початку рядка = посередині, порожній рядок =
+             пропустити. Кнопки — те саме, що голосом («посередині», «з нового рядка», «пропусти рядок»). -->
+        <div class="wb-remote__dict-row">
           <button
+            v-if="canDictateCenter"
             type="button"
             class="wb-remote__dict-lang-btn wb-remote__dict-center"
-            :class="{ 'wb-remote__dict-lang-btn--on': dictCenter }"
+            :class="{ 'wb-remote__dict-lang-btn--on': dictCentered }"
             data-testid="dictation-center"
-            :aria-pressed="dictCenter"
-            @click="dictCenter = !dictCenter"
+            :aria-pressed="dictCentered"
+            :disabled="dictSending"
+            @click="dictText = toggleCenterLast(dictText)"
           >
             {{ t('winterboard.remote.dictation.center') }}
           </button>
-          <!-- v1.66 «Пропустити рядок» (власник 2026-10-26): відступ від попереднього, як у зошиті; після «Готово» скидається -->
           <button
             type="button"
             class="wb-remote__dict-lang-btn wb-remote__dict-center"
-            :class="{ 'wb-remote__dict-lang-btn--on': dictSkip }"
+            data-testid="dictation-newline"
+            :disabled="dictSending"
+            @click="dictText = addNewLine(dictText)"
+          >
+            {{ t('winterboard.remote.dictation.newLine') }}
+          </button>
+          <button
+            type="button"
+            class="wb-remote__dict-lang-btn wb-remote__dict-center"
             data-testid="dictation-skip"
-            :aria-pressed="dictSkip"
-            @click="dictSkip = !dictSkip"
+            :disabled="dictSending"
+            @click="dictText = addSkippedLine(dictText)"
           >
             {{ t('winterboard.remote.dictation.skipLine') }}
           </button>
@@ -646,27 +656,31 @@
           v-model="dictText"
           class="wb-remote__dictation-text"
           data-testid="dictation-text"
-          rows="4"
-          :maxlength="DICTATE_TEXT_MAX_LEN"
+          rows="6"
+          :maxlength="FREE_DICTATION_MAX_LEN"
+          :readonly="dictSending"
           :placeholder="t('winterboard.remote.dictation.placeholder')"
         />
+        <p v-if="dictVoice.listening.value" class="wb-remote__why" role="status" data-testid="dictation-heard">
+          {{ dictRaw ? t('winterboard.remote.dictation.heard', { text: dictRaw }) : t('winterboard.remote.listening') }}
+        </p>
+        <!-- v1.69: натиснув — слухає, доки не натиснеш ще раз (паузи не зупиняють); звук не залишає телефона -->
         <button
-          v-if="ptt.supported"
+          v-if="dictVoice.supported"
           type="button"
           class="wb-remote__video-mic"
-          :class="{ 'wb-remote__video-mic--on': ptt.listening.value && dictationVoiceActive }"
+          :class="{ 'wb-remote__video-mic--on': dictVoice.listening.value }"
           data-testid="dictation-mic"
-          :disabled="!isReady"
-          :aria-pressed="ptt.listening.value && dictationVoiceActive"
-          @pointerdown.prevent="startDictationVoice"
-          @pointerup.prevent="ptt.release()"
-          @pointercancel.prevent="ptt.release()"
-          @pointerleave="ptt.release()"
-          @contextmenu.prevent
+          :disabled="!isReady || dictSending || dictAutoPunctuating"
+          :aria-pressed="dictVoice.listening.value"
+          @click="toggleDictationVoice"
         >
           <span aria-hidden="true">🎙</span>
-          {{ ptt.listening.value && dictationVoiceActive ? t('winterboard.remote.listening') : t('winterboard.remote.dictation.holdToSpeak') }}
+          {{ dictVoice.listening.value ? t('winterboard.remote.dictation.stopSpeaking') : t('winterboard.remote.dictation.tapToSpeak') }}
         </button>
+        <p v-if="dictAutoPunctuating" class="wb-remote__why" role="status" data-testid="dictation-auto-punct">
+          {{ t('winterboard.remote.dictation.punctuating') }}
+        </p>
         <!-- LAW §9 v1.64 «Розставити знаки» (власник 2026-10-26): розпізнавання дає лише слова — Інтегралик розставляє
              знаки в полі, вчитель бачить і править ДО «Написати на дошці». Там, де ввімкнено мовний розбір. -->
         <button
@@ -674,7 +688,7 @@
           type="button"
           class="wb-remote__video-mic"
           data-testid="dictation-punctuate"
-          :disabled="!dictText.trim() || dictPunctuating"
+          :disabled="!dictHasText || dictPunctuating || dictSending || dictVoice.listening.value || dictAutoPunctuating"
           @click="punctuateDictationText"
         >
           <span aria-hidden="true">✨</span>
@@ -685,7 +699,7 @@
           type="button"
           class="wb-remote__ai-btn"
           data-testid="dictation-send"
-          :disabled="!isReady || !dictText.trim() || dictationState === 'writing'"
+          :disabled="!isReady || !dictHasText || dictSending || dictationState === 'writing' || dictVoice.listening.value || dictAutoPunctuating"
           @click="sendDictation"
         >
           {{ t('winterboard.remote.dictation.write') }}
@@ -844,13 +858,14 @@ import { winterboardApi, type VideoCandidate } from '../api/winterboardApi'
 import { matchVideoSearchPhrase } from '../remote/videoSearchPhrase'
 import { useRemoteChannel } from '../composables/useRemoteChannel'
 import { usePushToTalk } from '../composables/usePushToTalk'
+import { useVoiceDictation } from '@/composables/useVoiceDictation'
 import { matchRemotePhrase, wantsHide } from '../remote/remoteGrammar'
 import { derivePair } from '../remote/remotePair'
 import { firstTipSeen, markFirstTipSeen, remoteEntryUrl } from '../remote/remoteEntry'
 import type { RemoteStateDetail, RemoteCap, RemoteAssistantReplyDetail, RemoteAssistantReplyStatus, RemoteHandwriteStep, RemoteObject, RemoteObjectNotice } from '../composables/useRemoteChannel'
 import { newRequestId } from '../remote/photoContract'
 import {
-  DICTATE_TEXT_MAX_LEN, DICTATION_LANGS, DICTATION_SPEECH_LANG, appendDictated, normalizeDictation, type DictationLang,
+  DICTATION_LANGS, DICTATION_SPEECH_LANG, normalizeDictation, type DictationLang,
   type RemoteDictationResult,
 } from '../remote/dictationContract'
 import RemotePhotoPanel from '../components/remote/RemotePhotoPanel.vue'
@@ -862,6 +877,11 @@ import RemoteLaunchList from '../components/remote/RemoteLaunchList.vue'
 import RemoteSentenceControls from '../components/remote/RemoteSentenceControls.vue'
 import RemoteSentenceAnalysis from '../components/remote/RemoteSentenceAnalysis.vue'
 import { punctuateDictation } from '../api/dictationAnalysis'
+import {
+  FREE_DICTATION_MAX_LEN, addNewLine, addSkippedLine, chunksToField, fieldLines, fieldToChunks, lastLineCentered,
+  mergeSpoken, parseSpoken, punctuationBatches, renderField, toggleCenterLast, withPunctuated,
+  type DictationChunk, type ParsedSpoken,
+} from '../remote/freeDictation'
 import type { RemoteSentence, SentenceRequest, SentenceResult } from '../remote/dictationLineContract'
 import type { RemotePhotoResult } from '../remote/photoContract'
 import { RECORDING_SOURCE, type RemoteRecordingCmd, type RemoteRecordingInfo, type RemoteRecordingResult } from '../remote/recordingContract'
@@ -1052,15 +1072,18 @@ const canAnalysis = computed(() => caps.value?.includes('dictation_analysis_v1')
 const sentence = ref<RemoteSentence | null>(null)
 const sentenceResult = shallowRef<SentenceResult | null>(null)
 function sendSentenceRequest(request: SentenceRequest) { return sendCmd('dictation.action', { ...request }) }
-const dictCenter = ref(false)
-const dictSkip = ref(false)
 const dictText = ref('')
+// v1.69 «Вільний диктант»: поле з розміткою → шматки `board.dictate` по одному; наступний — після «Готово» попереднього
+const dictQueue = ref<DictationChunk[]>([])
+const dictQueueTotal = ref(0)
+const dictSending = computed(() => dictQueue.value.length > 0)
+const dictHasText = computed(() => fieldToChunks(dictText.value).length > 0)
+const dictCentered = computed(() => lastLineCentered(dictText.value))
 const dictationResult = ref<RemoteDictationResult | null>(null)
 /** id останнього речення з цього телефона — чужі чи старі відповіді не показуємо. */
 const dictationRequestId = ref<string | null>(null)
 /** Речення, надіслане з вікна диктанту: лише його «Готово» чистить поле й «Посередині» (не переклад з розбору, v1.62). */
 let sheetDictationId: string | null = null
-const dictationVoiceActive = ref(false)
 // v1.50: мова диктанту — локально на цьому телефоні (стан ноутбука не змінює)
 const DICT_LANG_KEY = 'm4sh:remote-dictation-lang'
 function loadDictLang(): DictationLang {
@@ -1101,15 +1124,28 @@ const dictationState = computed(() => {
 const dictationLine = computed(() => {
   const st = dictationState.value
   if (!st) return ''
+  if (st === 'writing' && dictQueueTotal.value > 1) {
+    return t('winterboard.remote.dictation.writingOf', {
+      n: dictQueueTotal.value - dictQueue.value.length + 1, total: dictQueueTotal.value,
+    })
+  }
   if (st === 'writing') return t('winterboard.remote.dictation.writing')
   if (st === 'noAnswer') return t('winterboard.remote.dictation.noAnswer')
   if (st === 'done') return t('winterboard.remote.dictation.done')
   return t(`winterboard.remote.dictation.reason.${dictationResult.value?.reason ?? 'error'}`)
 })
-// Речення написане — поле чисте для наступного (текст уже на дошці), «Посередині» — знову вимкнено
+// v1.69: шматок написаний — зникає з поля, далі наступний; відмова чи «не відповів» — зупинка, решта лишається в полі
 watch(dictationState, (st, prev) => {
-  if (st === 'done' && prev !== 'done' && dictationRequestId.value === sheetDictationId) {
-    dictText.value = ''; dictCenter.value = false; dictSkip.value = false
+  if (!dictQueue.value.length || dictationRequestId.value !== sheetDictationId) return
+  if (st === 'done' && prev !== 'done') {
+    const rest = dictQueue.value.slice(1)
+    dictText.value = chunksToField(rest)
+    dictQueue.value = rest
+    if (rest.length) sendNextChunk()
+    else dictQueueTotal.value = 0
+  } else if (st === 'refused' || st === 'noAnswer') {
+    dictQueue.value = []
+    dictQueueTotal.value = 0
   }
 })
 const scenario = ref<RemoteStateDetail['scenario'] | null>(null)
@@ -1687,25 +1723,88 @@ const videoVoiceActive = ref(false)
 function startVideoVoice(): void {
   if (!isReady.value || videoSearching.value || sheet.value !== 'video' || ptt.listening.value) return
   if (document.activeElement instanceof HTMLInputElement) document.activeElement.blur()
-  dictationVoiceActive.value = false
   videoVoiceActive.value = true
   ptt.press()
 }
 function startRemoteVoice(): void {
   videoVoiceActive.value = false
-  dictationVoiceActive.value = false
   ptt.press()
 }
-function startDictationVoice(): void {
-  if (!isReady.value || sheet.value !== 'dictation' || ptt.listening.value) return
+/**
+ * v1.69 «Вільний диктант»: мікрофон натиснув — слухає (паузи не зупиняють, `useVoiceDictation`), натиснув ще раз —
+ * стоп. Сказане → розмітка голосом → знаки (там, де розбір) → у поле. Звук не залишає телефона.
+ */
+const dictRaw = ref('')
+const dictVoice = useVoiceDictation()
+const dictAutoPunctuating = ref(false)
+function toggleDictationVoice(): void {
+  if (dictVoice.listening.value) {
+    dictVoice.stop()
+    void finishDictationVoice()
+    return
+  }
+  if (!isReady.value || sheet.value !== 'dictation' || dictSending.value || dictAutoPunctuating.value) return
   if (document.activeElement instanceof HTMLTextAreaElement) document.activeElement.blur()
-  videoVoiceActive.value = false
-  dictationVoiceActive.value = true
-  ptt.press(DICTATION_SPEECH_LANG[dictLang.value])
+  dictRaw.value = ''
+  dictPunctuateNote.value = ''
+  dictVoice.start(dictRaw, DICTATION_SPEECH_LANG[dictLang.value])
 }
-/** v1.49: речення — ноутбуку; пише він, відповідь прийде полем `dictation` стану. */
+// Пішли з вікна диктанту, поки мікрофон слухав — зупинити й не загубити сказане
+watch(sheet, (s) => {
+  if (s !== 'dictation' && dictVoice.listening.value) {
+    dictVoice.stop()
+    void finishDictationVoice()
+  }
+})
+async function finishDictationVoice(): Promise<void> {
+  const raw = dictRaw.value
+  dictRaw.value = ''
+  const lang = dictLang.value
+  let parsed = parseSpoken(raw, lang)
+  if (parsed.continues && !parsed.lines.some((l) => l.text || l.center)) return
+  if (canAnalysis.value && parsed.lines.some((l) => l.text)) {
+    dictAutoPunctuating.value = true
+    try {
+      parsed = await punctuateParsed(parsed, lang)
+    } catch (error) {
+      dictPunctuateNote.value = punctuateErrorNote(error)
+    } finally {
+      dictAutoPunctuating.value = false
+    }
+  }
+  dictText.value = mergeSpoken(dictText.value, parsed, lang)
+}
+/** «Розставити знаки» для рядків (без «↔» і порожніх) — порціями ≤ 300 знаків; не вийшло — виняток, текст як був. */
+async function punctuateParsed(parsed: ParsedSpoken, lang: DictationLang): Promise<ParsedSpoken> {
+  const out: string[] = []
+  for (const batch of punctuationBatches(parsed.lines.map((l) => l.text).filter(Boolean))) {
+    out.push(...(batch.send ? (await punctuateDictation(batch.lines.join('\n'), lang)).split('\n') : batch.lines))
+  }
+  return withPunctuated(parsed, out.join('\n'))
+}
+function punctuateErrorNote(error: unknown): string {
+  const e = error as { response?: { status?: number; data?: { error?: string } } }
+  return e?.response?.status === 403 && e.response.data?.error === 'LIMIT_EXCEEDED'
+    ? t('winterboard.remote.dictation.limitReached')
+    : t('winterboard.remote.dictation.punctuateFailed')
+}
+/** v1.69: «Написати на дошці» — поле → шматки, ноутбуку по одному (пише він, відповідь — полем `dictation` стану). */
 function sendDictation(): void {
-  sheetDictationId = dictateText(dictText.value, dictLang.value, dictCenter.value, dictSkip.value ? 1 : 0)
+  if (dictSending.value) return
+  const chunks = fieldToChunks(dictText.value, canDictateCenter.value)
+  if (!chunks.length) return
+  dictQueue.value = chunks
+  dictQueueTotal.value = chunks.length
+  sendNextChunk()
+}
+function sendNextChunk(): void {
+  const next = dictQueue.value[0]
+  if (!next) return
+  sheetDictationId = dictateText(next.text, dictLang.value, next.align === 'center', next.skip)
+  if (!sheetDictationId) {
+    dictQueue.value = []
+    dictQueueTotal.value = 0
+  }
 }
 /**
  * Один шлях `board.dictate` для вікна диктанту й «Перекладу» з мовного розбору (v1.62): той самий текст для сервера,
@@ -1729,17 +1828,18 @@ function dictateText(raw: string, lang: DictationLang, center = false, skip = 0)
 const dictPunctuating = ref(false)
 const dictPunctuateNote = ref('')
 async function punctuateDictationText(): Promise<void> {
-  const text = dictText.value.trim()
-  if (!text || dictPunctuating.value) return
+  const text = dictText.value
+  if (!dictHasText.value || dictPunctuating.value) return
   dictPunctuating.value = true
   dictPunctuateNote.value = ''
   try {
-    const out = await punctuateDictation(text, dictLang.value)
-    if (dictText.value.trim() === text) dictText.value = out
+    // v1.69: розмітка («↔», порожні рядки) лишається на місці — на сервер ідуть лише рядки тексту
+    const out = renderField((await punctuateParsed({ continues: false, lines: fieldLines(text) }, dictLang.value)).lines)
+    if (dictText.value === text) dictText.value = out
     else dictPunctuateNote.value = t('winterboard.remote.dictation.punctuateChanged')
   } catch (error) {
     console.warn('[WB:dictation] знаки не розставлено', error instanceof Error ? error.name : 'request_failed')
-    dictPunctuateNote.value = t('winterboard.remote.dictation.punctuateFailed')
+    dictPunctuateNote.value = punctuateErrorNote(error)
   } finally {
     dictPunctuating.value = false
   }
@@ -1752,12 +1852,6 @@ function dictateTranslation(text: string, lang: 'uk' | 'en'): boolean {
 const ptt = usePushToTalk({
   lang: locale.value === 'en' ? 'en-US' : 'uk-UA',
   onFinal(text) {
-    // v1.49: у вікні диктанту голос дописує поле речення — не команда й не фраза Інтегралику
-    if (dictationVoiceActive.value) {
-      dictationVoiceActive.value = false
-      if (sheet.value === 'dictation') dictText.value = appendDictated(dictText.value, text, dictLang.value).slice(0, DICTATE_TEXT_MAX_LEN)
-      return
-    }
     lastPhrase.value = `«${text}»`
     if (videoVoiceActive.value) {
       videoVoiceActive.value = false

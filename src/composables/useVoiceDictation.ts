@@ -213,10 +213,14 @@ export function useVoiceDictation(opts: { lang?: string } = {}) {
     return recognition
   }
 
-  /** Почати диктовку в задане поле (голос дописує до наявного тексту). */
-  function start(target: Ref<string>) {
+  /**
+   * Почати диктовку в задане поле (голос дописує до наявного тексту). `lang` — мова саме цього запуску (вільний
+   * диктант на пульті, LAW §9 v1.69: «Українська | English»); без нього — мова з опцій, як було.
+   */
+  function start(target: Ref<string>, lang?: string) {
     const r = ensure()
     if (!r) return
+    r.lang = lang || opts.lang || 'uk-UA'
     model = target
     manualStop = false
     if (restartTimer) clearTimeout(restartTimer)   // скасувати відкладений рестарт попередньої сесії
