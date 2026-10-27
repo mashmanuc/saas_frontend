@@ -45,6 +45,8 @@ vi.mock('../api/lessonViewApi', () => ({
     loadToSession: vi.fn(),
     prepareLesson: vi.fn(),
     listConducted: vi.fn(),
+    listConductStudents: vi.fn(),
+    setConductedStudent: vi.fn(),
     generateShareLink: vi.fn(),
     updateSnapshot: vi.fn(),
   },
@@ -246,7 +248,33 @@ describe('WBMyLessonsPage', () => {
     await openBtns[0].trigger('click')
     await flushPromises()
 
-    expect(lessonViewApi.loadToSession).toHaveBeenCalledWith('lesson-1')
+    // LAW §9 v1.68: спершу «З ким урок?» — без вибору копії немає
+    expect(lessonViewApi.loadToSession).not.toHaveBeenCalled()
+    await wrapper.get('[data-testid="conduct-student-none"]').trigger('click')
+    await flushPromises()
+    expect(lessonViewApi.loadToSession).toHaveBeenCalledWith('lesson-1', null)
+  })
+
+  it('v1.68: «Провести» з учнем — копія з учнем; «Без учня» — без', async () => {
+    vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue(MOCK_FILTERED_RESPONSE)
+    vi.mocked(lessonViewApi.listConductStudents).mockResolvedValue({ students: [{ id: 7, name: 'Толік' }] })
+    vi.mocked(lessonViewApi.loadToSession).mockResolvedValue({
+      session_id: 's-7', board_id: 's-7', name: 'Algebra Basics', lesson_id: 'lesson-1',
+    })
+
+    const wrapper = createWrapper()
+    await flushPromises()
+    const openBtns = wrapper.findAll('button').filter(b => b.text().includes('knowledge.lesson.prepare.button'))
+    await openBtns[0].trigger('click')
+    await flushPromises()
+
+    const items = wrapper.findAll('[data-testid="conduct-student-item"]')
+    expect(items.map(i => i.text())).toEqual(['ТТолік'])
+    await items[0].trigger('click')
+    await flushPromises()
+    expect(lessonViewApi.loadToSession).toHaveBeenCalledWith('lesson-1', 7)
+    expect(mockPush).toHaveBeenCalledWith({ name: 'winterboard-solo', params: { id: 's-7' } })
+    expect(wrapper.find('[data-testid="conduct-student-modal"]').exists()).toBe(false)
   })
 
   it('navigates to winterboard-solo after Open', async () => {
@@ -265,6 +293,8 @@ describe('WBMyLessonsPage', () => {
       b.text().includes('knowledge.lesson.prepare.button'),
     )
     await openBtns[0].trigger('click')
+    await flushPromises()
+    await wrapper.get('[data-testid="conduct-student-none"]').trigger('click')
     await flushPromises()
 
     expect(mockPush).toHaveBeenCalledWith({
@@ -348,6 +378,46 @@ describe('WBMyLessonsPage', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('winterboard.lesson.conducted.emptyTitle')
+  })
+
+  it('v1.68: папки-учні, фільтр за учнем і «Змінити учня» на картці', async () => {
+    vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue(MOCK_FILTERED_RESPONSE)
+    const withStudent = [
+      { ...MOCK_CONDUCTED_SESSIONS[0], student: { id: 7, name: 'Толік' } },
+      { ...MOCK_CONDUCTED_SESSIONS[1], student: null },
+    ]
+    const folders = { students: [{ id: 7, name: 'Толік', count: 1 }], none: 1 }
+    vi.mocked(lessonViewApi.listConducted).mockResolvedValue(
+      { sessions: withStudent, has_more: false, total: 2, folders } as any,
+    )
+    vi.mocked(lessonViewApi.listConductStudents).mockResolvedValue({ students: [{ id: 7, name: 'Толік' }] })
+    vi.mocked(lessonViewApi.setConductedStudent).mockResolvedValue({ id: 'session-conducted-1', student: null })
+
+    const wrapper = createWrapper()
+    await flushPromises()
+    await wrapper.findAll('button').find(b => b.text().includes('winterboard.lesson.tabs.conducted'))!.trigger('click')
+    await flushPromises()
+
+    // учень на картці й папки
+    expect(wrapper.text()).toContain('Толік')
+    expect(wrapper.get('[data-testid="conducted-folder"]').text()).toContain('Толік')
+    expect(wrapper.get('[data-testid="conducted-folder-none"]').text()).toContain('1')
+
+    await wrapper.get('[data-testid="conducted-folder"]').trigger('click')
+    await flushPromises()
+    const listCalls = vi.mocked(lessonViewApi.listConducted).mock.calls
+    expect(listCalls[listCalls.length - 1]?.[0]).toMatchObject({ student: 7 })
+
+    // «Змінити учня»: позначено поточного; «Без учня» — запис і перезавантаження списку
+    await wrapper.findAll('[data-testid="conducted-change-student"]')[0].trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="conduct-student-item"]').classes()).toContain('csc__item--current')
+    const calls = vi.mocked(lessonViewApi.listConducted).mock.calls.length
+    await wrapper.get('[data-testid="conduct-student-none"]').trigger('click')
+    await flushPromises()
+    expect(lessonViewApi.setConductedStudent).toHaveBeenCalledWith('session-conducted-1', null)
+    expect(vi.mocked(lessonViewApi.listConducted).mock.calls.length).toBe(calls + 1)
+    expect(wrapper.find('[data-testid="conduct-student-modal"]').exists()).toBe(false)
   })
 
   it('navigates to winterboard-solo when clicking a conducted session', async () => {

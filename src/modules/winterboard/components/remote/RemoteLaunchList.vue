@@ -5,23 +5,42 @@
     <p v-if="info" class="rl__where" :class="{ 'rl__where--none': !info.screen }" data-testid="remote-launch-where">
       {{ where }}
     </p>
-    <ul v-if="lessons.length" class="rl__list">
-      <li v-for="lesson in lessons" :key="lesson.id">
+    <!-- v1.68 «З ким урок?»: після дотику на уроці — учень; вибір іде разом із проханням провести -->
+    <div v-if="picking" class="rl__who" data-testid="remote-launch-who">
+      <div class="rl__who-head">
         <button
           type="button"
-          class="rl__item"
-          :class="{ 'rl__item--busy': busyId === lesson.id }"
+          class="rl__back"
           :disabled="busyId !== null"
-          :data-testid="`remote-launch-${lesson.id}`"
-          @click="start(lesson)"
+          data-testid="remote-launch-back"
+          @click="picking = null"
         >
-          <span class="rl__name">{{ lesson.name || t('winterboard.remote.launch.untitled') }}</span>
-          <span v-if="busyId === lesson.id" class="rl__date">{{ t('winterboard.remote.launch.opening') }}</span>
-          <span v-else-if="lesson.updated_at" class="rl__date">{{ shortDate(lesson.updated_at) }}</span>
+          ‹ {{ t('winterboard.remote.launch.back') }}
         </button>
-      </li>
-    </ul>
-    <p v-else-if="info" class="rl__empty">{{ t('winterboard.remote.launch.empty') }}</p>
+        <span class="rl__name">{{ picking.name || t('winterboard.remote.launch.untitled') }}</span>
+      </div>
+      <p class="rl__where">
+        {{ busyId ? t('winterboard.remote.launch.opening') : t('winterboard.lesson.conductStudent.title') }}
+      </p>
+      <ConductStudentChoice :key="choiceKey" :busy="busyId !== null" @choose="start(picking, $event)" />
+    </div>
+    <template v-else>
+      <ul v-if="lessons.length" class="rl__list">
+        <li v-for="lesson in lessons" :key="lesson.id">
+          <button
+            type="button"
+            class="rl__item"
+            :disabled="busyId !== null"
+            :data-testid="`remote-launch-${lesson.id}`"
+            @click="pick(lesson)"
+          >
+            <span class="rl__name">{{ lesson.name || t('winterboard.remote.launch.untitled') }}</span>
+            <span v-if="lesson.updated_at" class="rl__date">{{ shortDate(lesson.updated_at) }}</span>
+          </button>
+        </li>
+      </ul>
+      <p v-else-if="info" class="rl__empty">{{ t('winterboard.remote.launch.empty') }}</p>
+    </template>
     <!-- Натиск не мовчить (П5): що сталося — одним рядком -->
     <p v-if="note" class="rl__note" :class="`rl__note--${note.tone}`" role="status" data-testid="remote-launch-note">
       {{ note.text }}
@@ -38,11 +57,15 @@
  * комп'ютер, якого торкались останнім, «Провести» урок (свіжа копія, шаблон чистий) і
  * до 20 с чекає, поки там відкриється дошка (`remote/active/`), — тоді батько
  * підключається як звичайно. Пульт нічого не пише.
+ *
+ * v1.68 «З ким урок?»: дотик на уроці відкриває вибір учня (той самий, що на сайті); учень іде разом із
+ * проханням провести, копію з учнем створює комп'ютер.
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { winterboardApi } from '../../api/winterboardApi'
 import type { RemoteLaunchInfo, RemoteLaunchLesson } from '../../api/winterboardApi'
+import ConductStudentChoice from '@/modules/knowledge/components/ConductStudentChoice.vue'
 
 const LAUNCH_WAIT_TRIES = 20          // до 20 с: комп'ютер спершу робить свіжу копію уроку
 const LAUNCH_WAIT_STEP_MS = 1000
@@ -54,6 +77,8 @@ const info = ref<RemoteLaunchInfo | null>(null)
 const busyId = ref<string | null>(null)
 const lessons = computed<RemoteLaunchLesson[]>(() => info.value?.lessons ?? [])
 const note = ref<{ tone: 'warn' | 'error'; text: string } | null>(null)
+const picking = ref<RemoteLaunchLesson | null>(null)
+const choiceKey = ref(0)        // +1 — свіжий список учнів (учня вже немає серед своїх)
 let alive = true
 
 const where = computed(() => {
@@ -107,12 +132,18 @@ async function waitForBoard(): Promise<boolean | null> {
   return false
 }
 
-async function start(lesson: RemoteLaunchLesson): Promise<void> {
+function pick(lesson: RemoteLaunchLesson): void {
+  if (busyId.value) return
+  note.value = null
+  picking.value = lesson
+}
+
+async function start(lesson: RemoteLaunchLesson, studentId: number | null = null): Promise<void> {
   if (busyId.value) return
   busyId.value = lesson.id
   note.value = null
   try {
-    const sentTo = await winterboardApi.remoteLaunch(lesson.id)
+    const sentTo = await winterboardApi.remoteLaunch(lesson.id, studentId)
     // рядок «де» — туди, куди сервер справді надіслав (учитель міг клацнути на іншому комп'ютері)
     if (info.value) info.value = { ...info.value, screen: { page: sentTo?.page ?? null } }
     const opened = await waitForBoard()
@@ -125,11 +156,15 @@ async function start(lesson: RemoteLaunchLesson): Promise<void> {
     const code = errorOf(err)
     if (code === 'board_open') {
       emit('opened')                 // десь уже відкрита дошка — батько підключиться до неї
+    } else if (code === 'student_not_yours') {
+      note.value = { tone: 'warn', text: t('winterboard.remote.launch.studentGone') }
+      choiceKey.value += 1
     } else if (code === 'no_screen') {
       if (info.value) info.value = { ...info.value, screen: null }
       note.value = { tone: 'warn', text: t('winterboard.remote.launch.noScreen') }
     } else if (statusOf(err) === 404) {
       note.value = { tone: 'warn', text: t('winterboard.remote.launch.gone') }
+      picking.value = null
       await load()
     } else {
       note.value = { tone: 'error', text: t('winterboard.remote.launch.failed') }
@@ -167,10 +202,19 @@ onBeforeUnmount(() => {
   font-size: 15px; text-align: left; cursor: pointer;
 }
 .rl__item:disabled { opacity: 0.55; cursor: default; }
-.rl__item--busy, .rl__item--busy:disabled { opacity: 1; background: #1e3a8a; }
+.rl__who {
+  display: flex; flex-direction: column; gap: 8px;
+  --csc-bg: var(--surface, #1e293b); --csc-fg: var(--text, #f8fafc); --csc-muted: var(--muted, #94a3b8);
+  --csc-border: #334155; --csc-accent: #3b82f6;
+}
+.rl__who-head { display: flex; align-items: center; gap: 10px; color: var(--text, #f8fafc); font-size: 15px; }
+.rl__back {
+  flex: none; min-height: 40px; padding: 6px 12px; border: 0; border-radius: 10px;
+  background: var(--surface, #1e293b); color: var(--text, #f8fafc); font-size: 14px; cursor: pointer;
+}
+.rl__back:disabled { opacity: 0.55; cursor: default; }
 .rl__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .rl__date { flex: none; font-size: 12px; color: var(--muted, #94a3b8); }
-.rl__item--busy .rl__date { color: #fff; }
 .rl__empty { margin: 0; font-size: 13px; color: var(--muted, #94a3b8); }
 .rl__note { margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 14px; background: var(--surface, #1e293b); }
 .rl__note--warn { border: 1px solid var(--warn, #f59e0b); }

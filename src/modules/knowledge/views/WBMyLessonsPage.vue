@@ -480,6 +480,47 @@
         />
       </div>
 
+      <!-- «З ким урок?» (LAW §9 v1.68): папки-учні — з ким що проводили; «Без учня» — решта -->
+      <div
+        v-if="conductedFolders && conductedFolders.students.length"
+        class="ml-folders"
+        data-testid="conducted-folders"
+      >
+        <button
+          type="button"
+          class="ml-folder"
+          :class="{ 'ml-folder--on': conductedFolder === null }"
+          :aria-pressed="conductedFolder === null"
+          @click="setConductedFolder(null)"
+        >
+          {{ $t('winterboard.lesson.conducted.allFolders') }}
+        </button>
+        <button
+          v-for="f in conductedFolders.students"
+          :key="f.id"
+          type="button"
+          class="ml-folder"
+          :class="{ 'ml-folder--on': conductedFolder === f.id }"
+          :aria-pressed="conductedFolder === f.id"
+          data-testid="conducted-folder"
+          @click="setConductedFolder(f.id)"
+        >
+          📁 {{ f.name }} <span class="ml-folder__n">{{ f.count }}</span>
+        </button>
+        <button
+          v-if="conductedFolders.none"
+          type="button"
+          class="ml-folder"
+          :class="{ 'ml-folder--on': conductedFolder === 'none' }"
+          :aria-pressed="conductedFolder === 'none'"
+          data-testid="conducted-folder-none"
+          @click="setConductedFolder('none')"
+        >
+          {{ $t('winterboard.lesson.conducted.noStudentFolder') }}
+          <span class="ml-folder__n">{{ conductedFolders.none }}</span>
+        </button>
+      </div>
+
       <!-- Loading skeleton -->
       <div v-if="conductedLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div v-for="i in 6" :key="i" class="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -618,12 +659,22 @@
                 type="button"
                 class="ml-go ml-go--small"
                 :disabled="openingLessonId === session.origin_lesson_id"
-                @click="openLesson({ id: session.origin_lesson_id } as MyLesson)"
+                @click="openLesson({ id: session.origin_lesson_id } as MyLesson, cardStudentId(session) ?? undefined)"
               >
                 <span class="ml-go__tri" aria-hidden="true" />
                 {{ openingLessonId === session.origin_lesson_id
                   ? $t('knowledge.lesson.prepare.starting')
                   : $t('winterboard.lesson.conducted.again') }}
+              </button>
+              <button
+                type="button"
+                class="ml-ic"
+                :title="$t('winterboard.lesson.conducted.changeStudent')"
+                :aria-label="$t('winterboard.lesson.conducted.changeStudent')"
+                data-testid="conducted-change-student"
+                @click="studentTarget = session"
+              >
+                👤
               </button>
               <button
                 type="button"
@@ -652,6 +703,24 @@
       </div>
       </div><!-- /v-else: є сесії -->
     </div>
+
+    <!-- «З ким урок?» (LAW §9 v1.68): перед «Провести» і «Змінити учня» на картці проведеного -->
+    <ConductStudentModal
+      :open="!!conductTarget"
+      mode="conduct"
+      :current-id="conductTarget?.studentId"
+      :busy="!!openingLessonId"
+      @close="conductTarget = null"
+      @choose="conductWith"
+    />
+    <ConductStudentModal
+      :open="!!studentTarget"
+      mode="change"
+      :current-id="studentTarget ? (cardStudentId(studentTarget) ?? null) : undefined"
+      :busy="studentSaving"
+      @close="studentTarget = null"
+      @choose="changeStudent"
+    />
 
     <!-- Edit dialog (Phase 25 B1) -->
     <LessonEditDialog
@@ -1156,6 +1225,36 @@
   transition: opacity 0.1s;
 }
 
+.ml-folders {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.ml-folder {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1.5px solid var(--wb-border, rgba(5, 150, 105, 0.2));
+  background: var(--wb-card-bg, #ffffff);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.ml-folder--on {
+  border-color: var(--wb-brand, #047857);
+  background: var(--wb-brand, #047857);
+  color: var(--color-on-accent, #ffffff);
+}
+
+.ml-folder__n {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
 .ml-who {
   display: inline-flex;
   align-items: center;
@@ -1210,7 +1309,8 @@ import { useI18n } from 'vue-i18n'
 import { lessonSaveApi } from '../api/lessonSaveApi'
 import type { LessonFolder, MyLesson, MyLessonsParams } from '../api/lessonSaveApi'
 import { lessonViewApi } from '../api/lessonViewApi'
-import type { ConductedLessonItem } from '../api/lessonViewApi'
+import type { ConductedFolders, ConductedLessonItem } from '../api/lessonViewApi'
+import ConductStudentModal from '../components/ConductStudentModal.vue'
 import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
 import apiClient from '@/utils/apiClient'
 import { useNotifyStore } from '@/stores/notifyStore'
@@ -1452,6 +1552,9 @@ const conductedOffset = ref(0)
 const conductedHasMore = ref(false)
 const conductedLoaded = ref(false)
 const conductedSearchQuery = ref('')
+// «З ким урок?» (LAW §9 v1.68): папки-учні з сервера; обрана папка — id учня, 'none' («Без учня») або null (усі)
+const conductedFolders = ref<ConductedFolders | null>(null)
+const conductedFolder = ref<number | 'none' | null>(null)
 const CONDUCTED_LIMIT = 24
 let conductedSearchTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -1476,9 +1579,43 @@ function formatTime(iso: string): string {
   }
 }
 
+// Учень проведеного уроку — поле `student` (v1.68; його може змінити вчитель). Старий сервер без поля — учень
+// уроку з розкладу, як було.
 function studentName(session: ConductedLessonItem): string {
+  if ('student' in session) return session.student?.name?.trim() ?? ''
   const name = (session.lesson_info as { student_name?: string | null } | null)?.student_name
   return typeof name === 'string' ? name.trim() : ''
+}
+
+/** id учня на картці; undefined — сервер ще без поля. */
+function cardStudentId(session: ConductedLessonItem): number | null | undefined {
+  return 'student' in session ? (session.student?.id ?? null) : undefined
+}
+
+function setConductedFolder(folder: number | 'none' | null): void {
+  if (conductedFolder.value === folder) return
+  conductedFolder.value = folder
+  deselectAllConducted()
+  loadConducted(false)
+}
+
+// «Змінити учня» на картці: урок переїжджає в папку іншого учня
+const studentTarget = ref<ConductedLessonItem | null>(null)
+const studentSaving = ref(false)
+async function changeStudent(studentId: number | null): Promise<void> {
+  const session = studentTarget.value
+  if (!session || studentSaving.value) return
+  studentSaving.value = true
+  try {
+    await lessonViewApi.setConductedStudent(session.id, studentId)
+    studentTarget.value = null
+    await loadConducted(false)
+  } catch (err) {
+    console.error('[WBMyLessonsPage] change student error:', err)
+    notify.error(t('winterboard.lesson.conductStudent.saveFailed'))
+  } finally {
+    studentSaving.value = false
+  }
 }
 
 const LESSON_VIEW_KEY = 'ml-view'
@@ -1610,11 +1747,20 @@ async function loadConducted(append = false) {
       limit: CONDUCTED_LIMIT,
       offset: append ? conductedOffset.value : 0,
       q: conductedSearchQuery.value.trim() || undefined,
+      student: conductedFolder.value ?? undefined,
     })
     if (append) {
       conductedSessions.value = [...conductedSessions.value, ...res.sessions]
     } else {
       conductedSessions.value = res.sessions
+      conductedFolders.value = res.folders ?? null
+      // обрана папка спорожніла (урок переїхав до іншого учня) — назад до «Усі»
+      const f = conductedFolder.value
+      const folders = res.folders
+      if (f !== null && folders && (f === 'none' ? !folders.none : !folders.students.some((s) => s.id === f))) {
+        conductedFolder.value = null
+        return await loadConducted(false)
+      }
     }
     conductedTotal.value = res.total
     conductedHasMore.value = res.has_more
@@ -1965,12 +2111,22 @@ function onThumbnailError(event: Event, lesson: MyLesson): void {
 // ── "Провести" — завжди fresh WBSession з KnowledgeLesson.snapshot ────
 // loadToSession: кожного разу нова сесія → template незмінний → урок повторюваний.
 // Сесія зберігається в "проведені уроки" після закриття.
-async function openLesson(lesson: MyLesson): Promise<void> {
+// «З ким урок?» (LAW §9 v1.68): спершу питаємо учня — проведений урок ляже в його папку. `studentId` —
+// кого позначити (у «Ще раз» — учень того уроку).
+const conductTarget = ref<{ lesson: MyLesson; studentId?: number | null } | null>(null)
+function openLesson(lesson: MyLesson, studentId?: number | null): void {
   if (openingLessonId.value) return
+  conductTarget.value = { lesson, studentId }
+}
+
+async function conductWith(studentId: number | null): Promise<void> {
+  const lesson = conductTarget.value?.lesson
+  if (!lesson || openingLessonId.value) return
   openingLessonId.value = lesson.id
   loadError.value = null
   try {
-    const { session_id } = await lessonViewApi.loadToSession(lesson.id)
+    const { session_id } = await lessonViewApi.loadToSession(lesson.id, studentId)
+    conductTarget.value = null
     await router.push({
       name: 'winterboard-solo',
       params: { id: session_id },

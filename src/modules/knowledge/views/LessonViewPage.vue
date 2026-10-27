@@ -58,6 +58,15 @@
         :tutor="lesson.tutor"
       />
     </template>
+
+    <!-- «З ким урок?» (LAW §9 v1.68) — перед «Провести» -->
+    <ConductStudentModal
+      :open="askStudent"
+      mode="conduct"
+      :busy="loadingSession"
+      @close="askStudent = false"
+      @choose="conductWith"
+    />
   </div>
 </template>
 
@@ -70,6 +79,7 @@ import LessonHero from '@/modules/knowledge/components/LessonHero.vue'
 import LessonReplayPlayer from '@/modules/knowledge/components/LessonReplayPlayer.vue'
 import LessonCTA from '@/modules/knowledge/components/LessonCTA.vue'
 import LessonErrorPage from '@/modules/knowledge/components/LessonErrorPage.vue'
+import ConductStudentModal from '@/modules/knowledge/components/ConductStudentModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -148,11 +158,19 @@ function goBack() {
   router.push({ name: 'MyLessons' })
 }
 
-async function useLessonInSession() {
+// «З ким урок?» (LAW §9 v1.68): спершу учень — проведений урок ляже в його папку
+const askStudent = ref(false)
+function useLessonInSession() {
+  if (!lesson.value || loadingSession.value) return
+  askStudent.value = true
+}
+
+async function conductWith(studentId) {
   if (!lesson.value || loadingSession.value) return
   loadingSession.value = true
   try {
-    const { session_id } = await lessonViewApi.loadToSession(lesson.value.id)
+    const { session_id } = await lessonViewApi.loadToSession(lesson.value.id, studentId)
+    askStudent.value = false
     await router.push({ name: 'winterboard-solo', params: { id: session_id } })
   } catch (err) {
     errorState.value = {

@@ -9691,6 +9691,8 @@
         "title": "Recent lessons",
         "where": "The lesson will open on the computer showing “{page}”.",
         "whereUnknown": "The lesson will open on the computer you last used on the site.",
+        "back": "Another lesson",
+        "studentGone": "This student is no longer yours — choose another",
         "noScreen": "Open M4SH on the classroom computer to start a lesson from here.",
         "opening": "Opening on the computer…",
         "notOpened": "The computer didn't open the lesson. Click on it with the mouse and try again.",
@@ -10189,8 +10191,23 @@
         "templates": "Templates",
         "conducted": "Conducted lessons"
       },
+      "conductStudent": {
+        "title": "Who is the lesson with?",
+        "changeTitle": "Lesson student",
+        "hint": "The lesson will go to the student's folder in “Conducted lessons”.",
+        "search": "Student or a new name",
+        "add": "＋ New student: “{name}”",
+        "none": "No student",
+        "empty": "No students yet — type a name",
+        "loadFailed": "Could not load students",
+        "addFailed": "Could not add the student",
+        "saveFailed": "Could not change the student"
+      },
       "conducted": {
         "emptyTitle": "No conducted lessons yet",
+        "allFolders": "All",
+        "noStudentFolder": "No student",
+        "changeStudent": "Change student",
         "today": "Today",
         "yesterday": "Yesterday",
         "again": "Again",

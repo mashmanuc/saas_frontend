@@ -96,6 +96,20 @@ export interface ConductedLessonItem {
   is_replay_frozen: boolean
   origin_lesson_id: string | null
   origin_lesson_title: string | null
+  /** «З ким урок?» (LAW §9 v1.68): учень проведеного уроку; null — «Без учня». */
+  student?: ConductStudent | null
+}
+
+/** Учень у «З ким урок?» і в папках «Проведених уроків». */
+export interface ConductStudent {
+  id: number
+  name: string
+}
+
+/** Папки-учні «Проведених уроків» з числом уроків (без фільтрів). */
+export interface ConductedFolders {
+  students: (ConductStudent & { count: number })[]
+  none: number
 }
 
 export interface ConductedLessonsResponse {
@@ -104,6 +118,7 @@ export interface ConductedLessonsResponse {
   offset: number
   limit: number
   has_more: boolean
+  folders?: ConductedFolders
 }
 
 export interface ConductedLessonsParams {
@@ -111,6 +126,8 @@ export interface ConductedLessonsParams {
   limit?: number
   has_recording?: boolean
   q?: string
+  /** Папка учня: id учня або 'none' — «Без учня». */
+  student?: number | 'none'
 }
 
 // "+ Нова дошка" у Студії — створює draft шаблон + prep сесію одразу.
@@ -167,8 +184,9 @@ export const lessonViewApi = {
    * POST /api/v1/knowledge/lessons/{id}/load-to-session/
    * Phase 23: Load lesson into new session.
    */
-  async loadToSession(lessonId: string): Promise<LoadToSessionResponse> {
-    const res = await api.post(`${BASE}/lessons/${lessonId}/load-to-session/`)
+  async loadToSession(lessonId: string, studentId: number | null = null): Promise<LoadToSessionResponse> {
+    // «З ким урок?» (LAW §9 v1.68): учень — у папку «Проведених уроків»; null — «Без учня».
+    const res = await api.post(`${BASE}/lessons/${lessonId}/load-to-session/`, { student_id: studentId })
     return res.data ?? res
   },
 
@@ -213,7 +231,20 @@ export const lessonViewApi = {
     if (params.limit !== undefined) query.limit = String(params.limit)
     if (params.has_recording) query.has_recording = '1'
     if (params.q) query.q = params.q
+    if (params.student !== undefined) query.student = String(params.student)
     const res = await api.get(`${BASE}/my-lessons/conducted/`, { params: query })
+    return res.data ?? res
+  },
+
+  /** «З ким урок?»: активні учні вчителя (і без акаунта), спершу ті, з ким проводили найсвіжіше. */
+  async listConductStudents(): Promise<{ students: ConductStudent[] }> {
+    const res = await api.get(`${BASE}/my-lessons/conduct-students/`)
+    return res.data ?? res
+  },
+
+  /** «Змінити учня» на картці проведеного уроку; null — «Без учня». */
+  async setConductedStudent(sessionId: string, studentId: number | null): Promise<{ id: string; student: ConductStudent | null }> {
+    const res = await api.post(`${BASE}/my-lessons/conducted/${sessionId}/student/`, { student_id: studentId })
     return res.data ?? res
   },
 }

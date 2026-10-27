@@ -378,9 +378,11 @@ export const winterboardApi = {
     return apiClient.get(`${BASE}/remote/launch/`).then((r: any) => r.data ?? r)
   },
 
-  /** LAW §9 v1.65 (П8): попросити комп'ютер, якого торкались останнім, провести урок («Провести»). */
-  remoteLaunch(lessonId: string): Promise<{ page: string | null }> {
-    return apiClient.post(`${BASE}/remote/launch/`, { lesson_id: lessonId }).then((r: any) => r.data ?? r)
+  /** LAW §9 v1.65 (П8): попросити комп'ютер, якого торкались останнім, провести урок («Провести»).
+   *  v1.68: `studentId` — «З ким урок?» (null — «Без учня»). */
+  remoteLaunch(lessonId: string, studentId: number | null = null): Promise<{ page: string | null }> {
+    const body = studentId === null ? { lesson_id: lessonId } : { lesson_id: lessonId, student_id: studentId }
+    return apiClient.post(`${BASE}/remote/launch/`, body).then((r: any) => r.data ?? r)
   },
 
   /**

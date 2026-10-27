@@ -98,11 +98,12 @@ export function installRemoteLaunchScreen(router: Router): () => void {
 
   // v1.65: «Провести» — та сама дія, що кнопка в «Моїх уроках»: свіжа копія уроку з шаблону.
   // Дошку за id (v1.63) більше не відкриваємо: так пульт відкривав шаблон Студії як урок.
-  async function conduct(lessonId: string): Promise<void> {
+  // v1.68: учень з пульта («З ким урок?») — у той самий виклик; сервер перевірив його ще до надсилання.
+  async function conduct(lessonId: string, studentId: number | null): Promise<void> {
     launching = true
     try {
       const { lessonViewApi } = await import('@/modules/knowledge/api/lessonViewApi')
-      const { session_id } = await lessonViewApi.loadToSession(lessonId)
+      const { session_id } = await lessonViewApi.loadToSession(lessonId, studentId)
       await router.push({ name: 'winterboard-solo', params: { id: session_id } })
     } catch (err) {
       console.error('[remoteLaunch] conduct failed:', err)
@@ -112,11 +113,12 @@ export function installRemoteLaunchScreen(router: Router): () => void {
     }
   }
 
-  const offMessage = realtimeService.on('message', (data: { type?: string; lesson_id?: unknown }) => {
+  const offMessage = realtimeService.on('message', (data: { type?: string; lesson_id?: unknown; student_id?: unknown }) => {
     if (data?.type !== 'remote.launch') return
     const id = typeof data.lesson_id === 'string' ? data.lesson_id : ''
     if (!UUID_RE.test(id) || onPult() || launching) return
-    void conduct(id)
+    const student = Number.isSafeInteger(data.student_id) && (data.student_id as number) > 0 ? data.student_id as number : null
+    void conduct(id, student)
   })
 
   return () => {

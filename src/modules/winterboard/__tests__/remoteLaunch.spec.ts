@@ -41,8 +41,12 @@ vi.mock('../api/winterboardApi', () => ({
 }))
 
 const loadToSession = vi.fn()
+const listConductStudents = vi.fn()
 vi.mock('@/modules/knowledge/api/lessonViewApi', () => ({
-  lessonViewApi: { loadToSession: (...a: any[]) => loadToSession(...a) },
+  lessonViewApi: {
+    loadToSession: (...a: any[]) => loadToSession(...a),
+    listConductStudents: (...a: any[]) => listConductStudents(...a),
+  },
 }))
 const notifyError = vi.fn()
 vi.mock('@/utils/notify', () => ({ notifyError: (...a: any[]) => notifyError(...a) }))
@@ -169,7 +173,22 @@ describe('П8 · комп\'ютер: «мене торкались» і відк
     fire('message', { type: 'remote.launch', lesson_id: LESSON })     // друге, поки перше в роботі — ні
     await vi.waitFor(() => expect(router.push).toHaveBeenCalledWith({ name: 'winterboard-solo', params: { id: COPY } }))
     expect(loadToSession).toHaveBeenCalledTimes(1)
-    expect(loadToSession).toHaveBeenCalledWith(LESSON)
+    expect(loadToSession).toHaveBeenCalledWith(LESSON, null)
+  })
+
+  it('v1.68: учень з пульта — у той самий «Провести»; зіпсований id — «Без учня»', async () => {
+    loadToSession.mockReset().mockResolvedValue({ session_id: COPY, board_id: COPY, name: 'Свято' })
+    const router = fakeRouter('/tutor/schedule', 'TutorSchedule')
+    uninstall = installRemoteLaunchScreen(router as any)
+    fire('message', { type: 'remote.launch', lesson_id: LESSON, student_id: 7 })
+    await vi.waitFor(() => expect(router.push).toHaveBeenCalledTimes(1))
+    expect(loadToSession).toHaveBeenLastCalledWith(LESSON, 7)
+    for (const bad of ['7', -1, 1.5, null]) {
+      fire('message', { type: 'remote.launch', lesson_id: LESSON, student_id: bad })
+      await vi.waitFor(() => expect(loadToSession).toHaveBeenLastCalledWith(LESSON, null))
+      loadToSession.mockClear()
+      await flushPromises()
+    }
   })
 
   it('«Провести» не вийшло — на комп\'ютері та сама помилка, що в «Моїх уроках»', async () => {
@@ -191,11 +210,18 @@ describe('П8 · пульт: список уроків і запуск', () => {
     { id: OTHER, name: '', updated_at: null },
   ]
   const mountList = () => mount(RemoteLaunchList, { global: { plugins: [i18n()] } })
+  // v1.68: дотик на уроці → «З ким урок?» → вибір
+  async function tap(w: ReturnType<typeof mountList>, lessonId: string, who = 'conduct-student-none') {
+    await w.get(`[data-testid=remote-launch-${lessonId}]`).trigger('click')
+    await flushPromises()
+    await w.get(`[data-testid=${who}]`).trigger('click')
+  }
   const notFound = () => Object.assign(new Error('404'), { response: { status: 404, data: { error: 'no_active_board' } } })
 
   beforeEach(() => {
     vi.useFakeTimers()
     getRemoteLaunch.mockReset(); remoteLaunch.mockReset(); getActiveRemoteSession.mockReset()
+    listConductStudents.mockReset().mockResolvedValue({ students: [{ id: 7, name: 'Толік' }] })
   })
   afterEach(() => { vi.useRealTimers() })
 
@@ -226,10 +252,10 @@ describe('П8 · пульт: список уроків і запуск', () => {
     getActiveRemoteSession.mockRejectedValueOnce(notFound()).mockResolvedValue({ session_id: COPY, name: 'Свято', ts: 1 })
     const w = mountList()
     await flushPromises()
-    await w.get(`[data-testid=remote-launch-${BOARD}]`).trigger('click')
+    await tap(w, BOARD)
     await flushPromises()
-    expect(remoteLaunch).toHaveBeenCalledWith(BOARD)
-    expect(w.get(`[data-testid=remote-launch-${BOARD}]`).text()).toContain('Відкриваю на комп\'ютері…')
+    expect(remoteLaunch).toHaveBeenCalledWith(BOARD, null)
+    expect(w.get('[data-testid=remote-launch-who]').text()).toContain('Відкриваю на комп\'ютері…')
     await vi.advanceTimersByTimeAsync(1_000)
     expect(w.emitted('opened')).toBeUndefined()
     await vi.advanceTimersByTimeAsync(1_000)
@@ -242,7 +268,7 @@ describe('П8 · пульт: список уроків і запуск', () => {
     getActiveRemoteSession.mockRejectedValue(notFound())
     const w = mountList()
     await flushPromises()
-    await w.get(`[data-testid=remote-launch-${BOARD}]`).trigger('click')
+    await tap(w, BOARD)
     await vi.advanceTimersByTimeAsync(19_000)
     expect(w.find('[data-testid=remote-launch-note]').exists()).toBe(false)
     await vi.advanceTimersByTimeAsync(1_000)
@@ -258,14 +284,34 @@ describe('П8 · пульт: список уроків і запуск', () => {
     remoteLaunch.mockRejectedValueOnce({ response: { status: 409, data: { error: 'no_screen' } } })
     const w = mountList()
     await flushPromises()
-    await w.get(`[data-testid=remote-launch-${BOARD}]`).trigger('click')
+    await tap(w, BOARD)
     await flushPromises()
     expect(w.get('[data-testid=remote-launch-note]').text()).toContain('Відкрийте M4SH на комп\'ютері в класі')
     expect(w.get('[data-testid=remote-launch-where]').text()).toContain('Відкрийте M4SH')
 
     remoteLaunch.mockRejectedValueOnce({ response: { status: 409, data: { error: 'board_open' } } })
-    await w.get(`[data-testid=remote-launch-${BOARD}]`).trigger('click')
+    // вибір лишився відкритим — учитель тапає ще раз
+    await w.get('[data-testid=conduct-student-none]').trigger('click')
     await flushPromises()
     expect(w.emitted('opened')).toHaveLength(1)
+  })
+
+  it('v1.68: «З ким урок?» на пульті — учень іде з проханням; не свій — словами й свіжий список; «Інший урок»', async () => {
+    getRemoteLaunch.mockResolvedValue({ screen: { page: 'sidebar.item.myLessons' }, lessons })
+    remoteLaunch.mockRejectedValueOnce({ response: { status: 400, data: { error: 'student_not_yours' } } })
+    const w = mountList()
+    await flushPromises()
+    await w.get(`[data-testid=remote-launch-${BOARD}]`).trigger('click')
+    await flushPromises()
+    expect(remoteLaunch).not.toHaveBeenCalled()                  // сам дотик на уроці ще нічого не просить
+    expect(w.get('[data-testid=remote-launch-who]').text()).toContain('Свято Шевченка')
+    await w.get('[data-testid=conduct-student-item]').trigger('click')
+    await flushPromises()
+    expect(remoteLaunch).toHaveBeenCalledWith(BOARD, 7)
+    expect(w.get('[data-testid=remote-launch-note]').text()).toContain('Цього учня вже немає серед ваших')
+    expect(listConductStudents).toHaveBeenCalledTimes(2)
+    await w.get('[data-testid=remote-launch-back]').trigger('click')
+    expect(w.find('[data-testid=remote-launch-who]').exists()).toBe(false)
+    expect(w.find(`[data-testid=remote-launch-${OTHER}]`).exists()).toBe(true)
   })
 })
