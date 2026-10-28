@@ -147,6 +147,26 @@ describe('PresenceNowPanel', () => {
     old.unmount()
   })
 
+  it('гості за посиланням на запис уроку — «з них дивились запис уроку»; нуль чи старий бекенд — рядок як був', async () => {
+    // Власник 2026-10-28: учень, що відкрив запис уроку без акаунта, рахувався гостем разом із рекламою.
+    const today = { since: '2026-10-28T00:00:00+03:00', guests: 6, start: 2, register_open: 1, registrations: 0, replay: 3 }
+    vi.mocked(getPresenceNow).mockResolvedValue({ ...NOW_EMPTY, today })
+    const w = mountWith(PresenceNowPanel)
+    await flushPromises()
+    expect(w.get('[data-testid="presence-today"]').text())
+      .toBe('Сьогодні на сайті — гостей: 6, з них дивились запис уроку: 3 · на /start: 2 · відкрили форму: 1 · реєстрацій: 0')
+    w.unmount()
+
+    for (const t of [{ ...today, replay: 0 }, (({ replay: _r, ...rest }) => rest)(today)]) {
+      vi.mocked(getPresenceNow).mockResolvedValue({ ...NOW_EMPTY, today: t })
+      const plain = mountWith(PresenceNowPanel)
+      await flushPromises()
+      expect(plain.get('[data-testid="presence-today"]').text())
+        .toBe('Сьогодні на сайті — гостей: 6 · на /start: 2 · відкрили форму: 1 · реєстрацій: 0')
+      plain.unmount()
+    }
+  })
+
   it('збій після «можна пушити» — одразу «не пуште наосліп», без спаму запитами', async () => {
     vi.useFakeTimers()
     vi.spyOn(console, 'error').mockImplementation(() => {})

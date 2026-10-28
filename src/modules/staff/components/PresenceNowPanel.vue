@@ -55,7 +55,12 @@
     <!-- 2026-10-05: між «на /start» і «реєстрацій» — скільки відкрили форму (видно, де відпадають:
          на лендінгу чи на формі). Бекенд без поля — старий рядок, а не «0», який збрехав би. -->
     <p v-if="data?.today" class="presence-now__today" data-testid="presence-today">
-      <template v-if="typeof data.today.register_open === 'number'">
+      <!-- 2026-10-28 (власник: учень, що відкрив запис уроку, рахувався гостем): «з них дивились запис уроку» —
+           окремо від гостей з реклами; лише коли такі є -->
+      <template v-if="typeof data.today.register_open === 'number' && data.today.replay">
+        {{ t('staff.presence.now.todayFunnelReplay', { guests: data.today.guests, replay: data.today.replay, start: data.today.start, opened: data.today.register_open, registrations: data.today.registrations }) }}
+      </template>
+      <template v-else-if="typeof data.today.register_open === 'number'">
         {{ t('staff.presence.now.todayFunnel', { guests: data.today.guests, start: data.today.start, opened: data.today.register_open, registrations: data.today.registrations }) }}
       </template>
       <template v-else>

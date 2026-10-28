@@ -6033,6 +6033,7 @@
         "guests": "Гостей без акаунта за 30 хв: {n}",
         "today": "Сьогодні на сайті — гостей: {guests} · на /start: {start} · реєстрацій: {registrations}",
         "todayFunnel": "Сьогодні на сайті — гостей: {guests} · на /start: {start} · відкрили форму: {opened} · реєстрацій: {registrations}",
+        "todayFunnelReplay": "Сьогодні на сайті — гостей: {guests}, з них дивились запис уроку: {replay} · на /start: {start} · відкрили форму: {opened} · реєстрацій: {registrations}",
         "confirming": "Схоже, нікого — перевіряю ще раз…",
         "stale": "Відповідь застаріла — натисніть «Оновити», перш ніж пушити",
         "staffOnline": "Staff онлайн (не рахується): {names}"
