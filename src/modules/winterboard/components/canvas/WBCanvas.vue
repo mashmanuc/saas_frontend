@@ -629,16 +629,18 @@
           ? { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', zIndex: '50' }
           : getOverlayStyle(asset)"
       >
-        <Nmt3dRenderer
-          :asset="(asset as any)"
-          :is-selected="wbStore.selectedIds.includes(asset.id)"
-          :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
-          :board-mode="wbStore.mode"
-          :is-expanded="expandedAssetId === asset.id"
-          @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
-          @delete="emit('asset-delete', asset.id)"
-          @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
-        />
+        <div class="wb-card-zoom" :style="cardZoomStyle(zoom, expandedAssetId === asset.id)">
+          <Nmt3dRenderer
+            :asset="(asset as any)"
+            :is-selected="wbStore.selectedIds.includes(asset.id)"
+            :interactive="currentTool === 'select' && wbStore.mode === 'edit'"
+            :board-mode="wbStore.mode"
+            :is-expanded="expandedAssetId === asset.id"
+            @update:asset="(updated: any) => emit('asset-update', updated as WBAsset)"
+            @delete="emit('asset-delete', asset.id)"
+            @expand="expandedAssetId = expandedAssetId === asset.id ? null : asset.id"
+          />
+        </div>
       </div>
     </template>
 

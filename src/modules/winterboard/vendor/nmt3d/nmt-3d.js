@@ -2778,10 +2778,19 @@
       this.measures = (this.geom && this.geom.measures) || null;
     }
 
+    // Розмір сцени в пікселях картки, а не на екрані: дошка зменшує картку обгорткою scale(масштаб), і без цього
+    // тіло малювалось і знімалось для експорту в екранному розмірі (масштаб 10 % — знімок ~68×50, смуги в PDF).
+    // clientWidth — розмір верстки без трансформацій; без верстки (jsdom) — як раніше.
+    _stageSize() {
+      const W = this.host.clientWidth, H = this.host.clientHeight;
+      if (W > 0 && H > 0) return { W, H };
+      const rect = this.host.getBoundingClientRect();
+      return { W: rect.width, H: rect.height };
+    }
+
     _autoFit() {
       // Determine center offset + optionally scale so the geometry fits in the stage.
-      const rect = this.host.getBoundingClientRect();
-      const W = rect.width, H = rect.height;
+      const { W, H } = this._stageSize();
       if (W < 10 || H < 10) return false;
       const probe = { yaw: this.cam.yaw, pitch: this.cam.pitch, scale: 1 };
       const pts = this._collectAllPoints();
@@ -2830,8 +2839,7 @@
     _render() {
       this._autoFit();
       if (this._needsFit) this._needsFit = false;
-      const rect = this.host.getBoundingClientRect();
-      const W = rect.width, H = rect.height;
+      const { W, H } = this._stageSize();
       const cx = W / 2, cy = H / 2;
       const cam = this.cam;
       const G = this.geom;
@@ -3229,8 +3237,10 @@
       let penCurPath = null;
 
       const ptFromEvt = (e) => {
+        // Екранні координати → пікселі сцени: картка на дошці зменшена обгорткою scale(масштаб).
         const r = this.host.getBoundingClientRect();
-        return { x: e.clientX - r.left, y: e.clientY - r.top };
+        const k = r.width > 0 ? this._stageSize().W / r.width : 1;
+        return { x: (e.clientX - r.left) * k, y: (e.clientY - r.top) * k };
       };
 
       this.host.addEventListener('pointerdown', (e) => {
