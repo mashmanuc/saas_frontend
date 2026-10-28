@@ -225,6 +225,11 @@ export function buildTaskCompanion(resolution: CompanionResolution, x: number, y
     return { id, type: 'calculus_card', src: '', x, y, w: 480, h: 360,
       rotation: 0, locked: false, data } as WBAsset
   }
+  if (resolution.rendererType === 'nmt3d') {
+    const data = taskSolidData(d)
+    if (!data) return null
+    return { id, type: 'nmt3d', src: '', x, y, w: 680, h: 500, rotation: 0, locked: false, data } as unknown as WBAsset
+  }
   if (resolution.rendererType === 'number_line') {
     const data = taskNumberLine(d.number_line)
     if (!data) return null
@@ -262,6 +267,14 @@ export function matchesTaskCompanion(asset: WBAsset, resolution: CompanionResolu
     const actual = asset.data as unknown as CalculusData
     if (!wanted || actual?.mode !== wanted.mode || actual.expr !== wanted.expr) return false
     return wanted.mode === 'derivative' ? actual.x0 === wanted.x0 : actual.a === wanted.a && actual.b === wanted.b
+  }
+  if (asset.type === 'nmt3d') {
+    // Своє тіло — той самий шаблон і ті самі пропорції з умови. Лінії й камеру вчитель міняє сам,
+    // а шаблон без пропорцій 3D-об'єкт доповнює типовими — тоді досить шаблону.
+    const wanted = taskSolidData(resolution.data) as { templateKey: string; params?: Record<string, number> } | null
+    const actual = asset.data as unknown as { templateKey?: string; params?: Record<string, number> }
+    if (!wanted || actual?.templateKey !== wanted.templateKey) return false
+    return !wanted.params || stable(actual.params ?? null) === stable(wanted.params)
   }
   if (asset.type === 'number_line') {
     const actual = taskNumberLine(asset.data), wanted = taskNumberLine(resolution.data.number_line)

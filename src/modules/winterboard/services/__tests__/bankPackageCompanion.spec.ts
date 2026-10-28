@@ -39,9 +39,9 @@ function expectProbes(source: string, probes: Array<{ x: number; y: number | nul
 }
 
 describe('Три пакети: «Побудувати» з надрукованої умови', () => {
-  it('обсяг: 656 задач, 203 побудови, решта — з причиною', () => {
-    expect(rows).toHaveLength(656)
-    expect(built).toHaveLength(203)
+  it('обсяг: 668 задач, 179 побудов з умови, решта — з причиною', () => {
+    expect(rows).toHaveLength(668)
+    expect(built).toHaveLength(179)
     for (const r of rows.filter(t => t.handled && !t.fingerprint)) expect(r.reason, r.id).toBeTruthy()
   })
 
@@ -109,6 +109,22 @@ describe('Три пакети: «Побудувати» з надрукован�
         expect([TEMPLATES[tplKey].params[p].min, TEMPLATES[tplKey].params[p].max], `${tplKey}.${p}`).toEqual([min, max])
     for (const [tplKey, map] of Object.entries(SOLID_OPTS))
       for (const opt of Object.values(map)) expect(TEMPLATES[tplKey].aux.map(a => a.key), tplKey).toContain(opt)
+  })
+
+  it('дві задачі з різними тілами на сторінці: кожна будує своє, повтор знаходить своє', () => {
+    const cube = resolveCompanions(['show_3d_solid'], { shape: 'cube', solid_marks: ['diagonal'] }, [])[0]
+    const cuboid = resolveCompanions(['show_3d_solid'],
+      { shape: 'cuboid', solid_dims: { length: 3, width: 4, height: 12 }, solid_marks: ['diagonal'] }, [])[0]
+    const built = buildTaskCompanion(cuboid, 900, 60, 'cuboid')!
+    expect(built.type).toBe('nmt3d')
+    // 3D-об'єкт після відкриття дописує решту ліній і камеру — це все ще те саме тіло.
+    const mounted = JSON.parse(JSON.stringify({ ...built, data: { ...built.data, cam: { yaw: 1, pitch: 0, scale: 90 },
+      opts: { ...(built.data as unknown as { opts: object }).opts, sides: false } } }))
+    expect(matchesTaskCompanion(mounted, cuboid)).toBe(true)
+    expect(matchesTaskCompanion(mounted, cube)).toBe(false)
+    const other = resolveCompanions(['show_3d_solid'],
+      { shape: 'cuboid', solid_dims: { length: 3, width: 4, height: 5 }, solid_marks: [] }, [])[0]
+    expect(matchesTaskCompanion(mounted, other)).toBe(false)
   })
 
   it('пошкоджені дані не перетворюються на рисунок навмання', () => {
