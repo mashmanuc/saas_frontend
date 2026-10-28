@@ -1355,6 +1355,7 @@ function handleSpawnCompanions(payload: {
 
   for (const resolution of companions) {
     const nativeTaskVisual = ['number_line', 'graph_calculator'].includes(resolution.rendererType)
+      || (resolution.rendererType === 'calculus_card' && 'calculus' in resolution.data)
     if (!nativeTaskVisual && existingTypes.has(resolution.rendererType)) {
       // Companion цього типу вже є в companionLinks — вибираємо існуючий
       const existing = assets.value.find(

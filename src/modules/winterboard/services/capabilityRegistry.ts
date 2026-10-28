@@ -16,7 +16,7 @@
 
 // ── Renderer resolution result ────────────────────────────────────────────────
 
-import { taskGraphPoints, taskNumberLine } from './taskCompanion'
+import { taskCalculusInput, taskGraphPoints, taskNumberLine } from './taskCompanion'
 
 export interface CompanionResolution {
   /** WBAsset.type — який renderer spawn-ити. */
@@ -152,7 +152,9 @@ function hasTrigSolver(data: Record<string, unknown>): boolean {
 const RENDERER_REQUIRES_DATA: Record<string, (d: Record<string, unknown>) => boolean> = {
   graph_calculator: (d) => hasEquations(d) || taskGraphPoints(d).length > 0,
   number_line: (d) => taskNumberLine(d.number_line) !== null,
-  calculus_card:    hasEquations,   // FIX: було 'calculus' (стара назва) → guard не діяв
+  // Новий точний контракт відмовляє при пошкодженій точці. Старий шлях
+  // без поля calculus зберігаємо для наявних карток інших пакетів.
+  calculus_card: (d) => 'calculus' in d ? taskCalculusInput(d) !== null : hasEquations(d),
   quadratic_card:   hasQuadratic,
   trig_solver:      hasTrigSolver,
   // ТЗ-F §F-3: немає shape_2d → кнопки «Побудувати» немає (143 задачі без фігури = брехня)

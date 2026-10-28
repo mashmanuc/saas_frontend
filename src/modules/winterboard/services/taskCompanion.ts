@@ -1,9 +1,11 @@
 /** Тонкий адаптер даних задачі до чинних об’єктів. Без ops, мережі або стану дошки. */
 import { buildNumberLineAsset } from '../constants/numberLineDefaults'
 import { buildGraphCalculatorAsset } from '../constants/graphCalculatorDefaults'
+import { buildDefaultCalculusData } from '../constants/calculusDefaults'
 import { evaluate } from '../engine/numberLine/evaluate'
 import { defaultNumberLineData, type NumberLineData } from '../engine/numberLine/types'
-import { graphViewportFor } from '../utils/graphAutofit'
+import { autofitExpressions, graphViewportFor } from '../utils/graphAutofit'
+import type { CalculusData } from '../types/calculus'
 import type { WBAsset } from '../types/winterboard'
 import type { CompanionResolution } from './capabilityRegistry'
 
@@ -59,9 +61,34 @@ export function taskGraphSources(data: Record<string, unknown>): string[] {
     ? data.equations.map(s => /^[a-zA-Z]\s*=/.test(s.trim()) ? s.trim() : `y=${s.trim()}`) : []
 }
 
+/** Абсциса саме з умови, не типовий x₀=1 і не відповідь задачі. */
+export function taskCalculusInput(data: Record<string, unknown>): { expr: string; x0: number } | null {
+  const raw = data.calculus
+  const sources = taskGraphSources(data)
+  if (!object(raw) || raw.mode !== 'derivative' || !finite(raw.x0) || sources.length !== 1) return null
+  const expr = sources[0].replace(/^y\s*=\s*/, '')
+  return { expr, x0: raw.x0 }
+}
+
+export function taskCalculusData(data: Record<string, unknown>): CalculusData | null {
+  const input = taskCalculusInput(data)
+  if (!input) return null
+  const { expr, x0 } = input
+  const fit = autofitExpressions([`y=${expr}`], {}, [x0])
+  return { ...buildDefaultCalculusData('derivative'), expr, x0,
+    viewport: fit ? { cx: (fit.xMin + fit.xMax) / 2, cy: (fit.yMin + fit.yMax) / 2, scale: 50, fit }
+      : { cx: x0, cy: 0, scale: 50 } }
+}
+
 /** Ті самі canonical factories, що для вставлення з панелі інструментів. */
 export function buildTaskCompanion(resolution: CompanionResolution, x: number, y: number, id: string): WBAsset | null {
   const d = resolution.data
+  if (resolution.rendererType === 'calculus_card') {
+    const data = taskCalculusData(d)
+    if (!data) return null
+    return { id, type: 'calculus_card', src: '', x, y, w: 480, h: 360,
+      rotation: 0, locked: false, data } as WBAsset
+  }
   if (resolution.rendererType === 'number_line') {
     const data = taskNumberLine(d.number_line)
     if (!data) return null
@@ -94,6 +121,11 @@ export function buildTaskCompanion(resolution: CompanionResolution, x: number, y
 /** Після reload зв’язок відновлюється за змістом, не лише за типом об’єкта. */
 export function matchesTaskCompanion(asset: WBAsset, resolution: CompanionResolution): boolean {
   if (asset.type !== resolution.rendererType) return false
+  if (asset.type === 'calculus_card') {
+    const wanted = taskCalculusInput(resolution.data)
+    const actual = asset.data as unknown as CalculusData
+    return !!wanted && actual?.mode === 'derivative' && actual.expr === wanted.expr && actual.x0 === wanted.x0
+  }
   if (asset.type === 'number_line') {
     const actual = taskNumberLine(asset.data), wanted = taskNumberLine(resolution.data.number_line)
     return !!actual && !!wanted && stable(numberLineInput(actual)) === stable(numberLineInput(wanted))
