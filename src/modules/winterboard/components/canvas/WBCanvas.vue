@@ -1382,12 +1382,21 @@ function handleSpawnCompanions(payload: {
     const def = RENDERER_DEFAULTS[resolution.rendererType] ?? { w: 640, h: 520 }
 
     // Праворуч від задачі (стек кількох companions горизонтально). Якщо не влазить
-    // у ширину сторінки — під задачею.
+    // у ширину сторінки або праворуч уже стоїть інший об'єкт (дві задачі поруч на
+    // сторінці, 28.10: тіло лягало на сусідню картку) — під задачею.
     let companionX = cursorX
     let companionY = sourceAsset ? sourceAsset.y : spawnY
-    if (companionX + def.w > PAGE_W - 60) {
+    let size = { w: def.w, h: def.h }
+    const occupied = (x: number, y: number, w: number, h: number) => assets.value.some(a => a.id !== sourceAssetId
+      && x < a.x + a.w && x + w > a.x && y < a.y + a.h && y + h > a.y)
+    if (companionX + def.w > PAGE_W - 60 || occupied(companionX, companionY, def.w, def.h)) {
       companionX = sourceAsset ? sourceAsset.x : 60
       companionY = sourceAsset ? sourceAsset.y + sourceAsset.h + G : spawnY
+      // Дві задачі поруч («Наочний»): під своєю карткою — не ширше за неї й до низу сторінки,
+      // якщо так лишається щонайменше 300 px. Лише для коробок без власної прив'язки до центру.
+      const fit = { w: Math.min(def.w, sourceAsset?.w ?? def.w), h: Math.min(def.h, PAGE_HEIGHT - 24 - companionY) }
+      if (sourceAsset && ['nmt3d', 'calculus_card'].includes(resolution.rendererType) && fit.h >= 300
+          && !occupied(companionX, companionY, fit.w, fit.h)) size = fit
     }
 
     // Клемп у межі сторінки ПО ОБОХ осях: гілка вище штовхає об'єкт униз і
@@ -1395,8 +1404,8 @@ function handleSpawnCompanions(payload: {
     // його не бачив і будував ще раз (живий прогін №2, 2026-08-04; вимір
     // LIVE_OBJECTS_GAP: 5/32 випадків за межею, до +140 px). Перекриття з
     // задачею гірше за невидимість — тому клемп, не відмова.
-    companionX = Math.max(24, Math.min(companionX, PAGE_W - def.w - 24))
-    companionY = Math.max(24, Math.min(companionY, PAGE_HEIGHT - def.h - 24))
+    companionX = Math.max(24, Math.min(companionX, PAGE_W - size.w - 24))
+    companionY = Math.max(24, Math.min(companionY, PAGE_HEIGHT - size.h - 24))
 
     // null = для цього контенту немає чесного рендера (напр. зрізана
     // піраміда без шаблона) — пустушку не створюємо і в урок не пишемо.
@@ -1420,6 +1429,7 @@ function handleSpawnCompanions(payload: {
     }
 
     const nativeAsset = nativeTaskVisual ? buildTaskCompanion(resolution, companionX, companionY, generateId()) : null
+    if (nativeAsset && ['nmt3d', 'calculus_card'].includes(nativeAsset.type)) Object.assign(nativeAsset, size)
     if (nativeTaskVisual && !nativeAsset) {
       notifyWarning('Не можу побудувати ілюстрацію: дані задачі пошкоджені.')
       continue
@@ -1432,8 +1442,8 @@ function handleSpawnCompanions(payload: {
       src:      '',
       x:        companionX,
       y:        companionY,
-      w:        def.w,
-      h:        def.h,
+      w:        size.w,
+      h:        size.h,
       rotation: 0,
       locked:   false,
       data:     companionData as unknown as WBAsset['data'],
@@ -1461,7 +1471,7 @@ function handleSpawnCompanions(payload: {
       problemExternalId: typeof externalId === 'string' ? externalId : undefined,
     })
 
-    cursorX = companionX + def.w + G   // наступний companion праворуч від цього
+    cursorX = companionX + size.w + G   // наступний companion праворуч від цього
   }
 }
 

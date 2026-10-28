@@ -83,11 +83,12 @@ export function taskSolid(templateKey: string, d: Record<string, unknown>):
       const v = dims[key] as number
       lo = Math.max(lo, min / v); hi = Math.min(hi, max / v)
     }
-    // Пропорції, яких шаблон не вміщує (дуже високий конус), не стискаємо кожну окремо: лишаємо типовий вигляд.
-    if (lo <= hi) {
-      const k = Math.sqrt(lo * hi)
-      out.params = Object.fromEntries(Object.entries(spec).map(([p, [key]]) => [p, Math.round((dims[key] as number) * k * 1000) / 1000]))
-    }
+    // Пропорції, яких шаблон не вміщує (паралелепіпед 13 × 2,6 × 1,9): найбільший розмір — у межу, менші
+    // притискаються до мінімуму. Тіло лишається видовженим, а не «типовим» (28.10: типовий вигляд збігався з
+    // іншим паралелепіпедом сторінки, і кнопка виділяла чуже тіло).
+    const k = lo <= hi ? Math.sqrt(lo * hi) : hi
+    out.params = Object.fromEntries(Object.entries(spec).map(([p, [key, min, max]]) =>
+      [p, Math.round(Math.min(max, Math.max(min, (dims[key] as number) * k)) * 1000) / 1000]))
   }
   if (d.solid_marks !== undefined) {
     const marks = d.solid_marks

@@ -82,8 +82,9 @@ describe('Три пакети: «Побудувати» з надрукован�
     if (data.params) {
       const spec = SOLID_PARAMS[data.templateKey]
       const pairs = Object.entries(spec).map(([p, [key]]) => [data.params![p], dims![key]])
-      // Один множник на всі розміри: пропорції умови збережено.
-      for (const [v, w] of pairs) expect(v / w).toBeCloseTo(pairs[0][0] / pairs[0][1], 2)
+      const inside = Object.entries(spec).every(([p, [, min, max]]) => data.params![p] > min && data.params![p] < max)
+      // Один множник на всі розміри: пропорції умови збережено (якщо шаблон їх вміщує).
+      if (inside) for (const [v, w] of pairs) expect(v / w).toBeCloseTo(pairs[0][0] / pairs[0][1], 2)
     }
     const ws = new (window as unknown as { NMT3D: { Workspace: new (h: HTMLElement, k: string) => {
       params: Record<string, number>; opts: Record<string, boolean>; setParams(p: object): void
@@ -125,6 +126,10 @@ describe('Три пакети: «Побудувати» з надрукован�
     const other = resolveCompanions(['show_3d_solid'],
       { shape: 'cuboid', solid_dims: { length: 3, width: 4, height: 5 }, solid_marks: [] }, [])[0]
     expect(matchesTaskCompanion(mounted, other)).toBe(false)
+    // Видовжений паралелепіпед (поза межами шаблону) — теж своє тіло, не «впізнає» сусіднє.
+    const long = resolveCompanions(['show_3d_solid'],
+      { shape: 'cuboid', solid_dims: { length: 13.04, width: 2.61, height: 1.92 }, solid_marks: [] }, [])[0]
+    expect(matchesTaskCompanion(mounted, long)).toBe(false)
   })
 
   it('пошкоджені дані не перетворюються на рисунок навмання', () => {
@@ -133,9 +138,9 @@ describe('Три пакети: «Побудувати» з надрукован�
       expect(taskSolidData({ ...base, solid_dims })).toBeNull()
     expect(taskSolidData({ ...base, solid_marks: 'slant' })).toBeNull()
     expect(taskSolidData({ shape: 'prism', base_shape: 'pentagon', solid_dims: { base_side: 2, height: 3 } })).toBeNull()
-    // Пропорції поза межами шаблону — типовий вигляд, а не стиснення кожного розміру окремо.
+    // Пропорції поза межами шаблону: найбільший розмір — у межу, менший — до мінімуму (видовжене, не «типове»).
     expect(taskSolidData({ ...base, solid_dims: { radius: 1, height: 400 } })).toEqual(
-      { version: 1, templateKey: 'cone', mode: 'adapt' })
+      { version: 1, templateKey: 'cone', mode: 'adapt', params: { r: 0.4, h: 3.6 } })
     for (const calculus of [{ mode: 'integral', a: 2, b: 2 }, { mode: 'integral', a: 3, b: 1 }, { mode: 'integral', a: 0 },
       { mode: 'integral', a: '0', b: 1 }])
       expect(resolveCompanions(['show_integral_area'], { equations: ['x^2'], calculus }, [])).toEqual([])

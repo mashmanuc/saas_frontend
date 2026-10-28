@@ -5434,27 +5434,42 @@
   {
    "id": "gen3-prism-prism_lateral_area-3800060",
    "topic": "prisms",
-   "handled": false
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи призми в умові не заданий (лише периметр чи площа)",
+   "probes": []
   },
   {
    "id": "nmt-sc-3084",
    "topic": "prisms",
-   "handled": false
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи призми в умові не заданий (лише периметр чи площа)",
+   "probes": []
   },
   {
    "id": "gen3-prism-prism_lateral_area-3800141",
    "topic": "prisms",
-   "handled": false
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи призми в умові не заданий (лише периметр чи площа)",
+   "probes": []
   },
   {
    "id": "gen3-prism-prism_lateral_area-3800097",
    "topic": "prisms",
-   "handled": false
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи призми в умові не заданий (лише периметр чи площа)",
+   "probes": []
   },
   {
    "id": "gen3-prism-prism_lateral_area-3800021",
    "topic": "prisms",
-   "handled": false
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи призми в умові не заданий (лише периметр чи площа)",
+   "probes": []
   },
   {
    "id": "gen3-prism-prism_lateral_arithmetic-4000058",
@@ -5711,7 +5726,10 @@
   {
    "id": "gen3-pyramid-height_from_volume_base-30294",
    "topic": "pyramids",
-   "handled": false
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи піраміди в умові не заданий (лише площа основи)",
+   "probes": []
   },
   {
    "id": "gen3-solids-measurement-volume-pyramid-12071",
@@ -5801,12 +5819,18 @@
   {
    "id": "nmt-oa-3487",
    "topic": "pyramids",
-   "handled": false
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи піраміди в умові не заданий (лише площа основи)",
+   "probes": []
   },
   {
    "id": "nmt-oa-3512",
    "topic": "pyramids",
-   "handled": false
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи піраміди в умові не заданий (лише площа основи)",
+   "probes": []
   },
   {
    "id": "nmt-oa-3731",
@@ -5839,7 +5863,10 @@
   {
    "id": "nmt-oa-3733",
    "topic": "pyramids",
-   "handled": false
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи піраміди в умові не заданий (лише площа основи)",
+   "probes": []
   },
   {
    "id": "nmt-sc-2575",
@@ -5900,12 +5927,18 @@
   {
    "id": "nmt-sc-3106",
    "topic": "pyramids",
-   "handled": false
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи піраміди в умові не заданий (лише площа основи)",
+   "probes": []
   },
   {
    "id": "nmt-sc-3205",
    "topic": "pyramids",
-   "handled": false
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи піраміди в умові не заданий (лише площа основи)",
+   "probes": []
   },
   {
    "id": "gen3-pyramid-apothem_from_height_side-31963",
