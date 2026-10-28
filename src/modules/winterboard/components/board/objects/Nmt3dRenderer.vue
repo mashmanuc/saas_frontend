@@ -164,6 +164,11 @@ function _camEqual(
     && Math.abs(a.scale - b.scale) < 0.5
 }
 
+/** Наближення камери збережено в пікселях картки (з 28.10); старе — в екранних, за невідомого масштабу дошки. */
+function camScaleKnown(cam: object | null | undefined): boolean {
+  return (cam as { unit?: string } | null | undefined)?.unit === 'card'
+}
+
 /** Capture current ws.cam → emit asset_update with data.cam (if changed + edit mode). */
 function _emitCamIfChanged(): void {
   if (!ws || !ws.cam) return
@@ -172,6 +177,9 @@ function _emitCamIfChanged(): void {
     yaw: ws.cam.yaw,
     pitch: ws.cam.pitch,
     scale: ws.cam.scale,
+    // 28.10: сцена малюється в пікселях картки — наближення теж; старі камери без позначки рахувались в
+    // екранних пікселях (при невідомому масштабі дошки), їхнє наближення не відновлюємо (див. camScaleKnown).
+    unit: 'card' as const,
   }
   if (_camEqual(_lastEmittedCam, newCam)) return
   _lastEmittedCam = newCam
@@ -362,8 +370,12 @@ async function mount(): Promise<void> {
   if (effectiveCam && ws.cam) {
     ws.cam.yaw = effectiveCam.yaw
     ws.cam.pitch = effectiveCam.pitch
-    ws.cam.scale = effectiveCam.scale
-    ws._needsFit = false  // prevent _autoFit from recomputing scale
+    // Кеш вкладки — завжди нинішнього коду (пікселі картки). Стара камера з даних — лише поворот, наближення
+    // вписується наново, як для нового тіла (у кадрі тіло займає рамку так само, як до наближення коліщатком).
+    if (cached?.cam || camScaleKnown(effectiveCam)) {
+      ws.cam.scale = effectiveCam.scale
+      ws._needsFit = false  // prevent _autoFit from recomputing scale
+    }
   }
   if (cached) {
     if (Array.isArray(cached.strokes)) {
@@ -597,8 +609,12 @@ watch(
     if (ws.cam) {
       ws.cam.yaw = newCam.yaw
       ws.cam.pitch = newCam.pitch
-      ws.cam.scale = newCam.scale
-      ws._needsFit = false
+      if (camScaleKnown(newCam)) {
+        ws.cam.scale = newCam.scale
+        ws._needsFit = false
+      } else {
+        ws._needsFit = true
+      }
       if (typeof ws._render === 'function') ws._render()
     }
   },

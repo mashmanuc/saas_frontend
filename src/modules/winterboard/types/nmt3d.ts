@@ -38,6 +38,8 @@ export interface Nmt3dData {
     yaw: number
     pitch: number
     scale: number
+    /** 'card' — наближення в пікселях картки (з 28.10); без позначки — старе, в екранних пікселях. */
+    unit?: 'card'
   }
 }
 

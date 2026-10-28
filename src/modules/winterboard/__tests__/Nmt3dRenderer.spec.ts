@@ -647,7 +647,7 @@ describe('Nmt3dRenderer — boardMode gate for store→engine sync', () => {
       ...makeAsset({ a: 3 }),
       data: {
         ...makeAsset({ a: 3 }).data,
-        cam: { yaw: 1.5, pitch: -0.4, scale: 175 },
+        cam: { yaw: 1.5, pitch: -0.4, scale: 175, unit: 'card' },
       },
     } as Nmt3dAsset
     const wrapper = await mountRenderer({ asset, boardMode: 'replay' })
@@ -657,6 +657,20 @@ describe('Nmt3dRenderer — boardMode gate for store→engine sync', () => {
     expect(lastWs!.cam.pitch).toBeCloseTo(-0.4, 5)
     expect(lastWs!.cam.scale).toBeCloseTo(175, 5)
     expect(lastWs!._needsFit).toBe(false)  // don't recompute scale
+    wrapper.unmount()
+  })
+
+  // 28.10: стара камера (без unit) зберігала наближення в екранних пікселях за невідомого масштабу дошки —
+  // поворот відновлюємо, наближення вписується наново, як для нового тіла.
+  it('INV-NMT3D-21b: old data.cam without unit → rotation restored, scale refit', async () => {
+    const asset = {
+      ...makeAsset({ a: 3 }),
+      data: { ...makeAsset({ a: 3 }).data, cam: { yaw: 1.5, pitch: -0.4, scale: 17 } },
+    } as Nmt3dAsset
+    const wrapper = await mountRenderer({ asset, boardMode: 'replay' })
+    expect(lastWs!.cam.yaw).toBeCloseTo(1.5, 5)
+    expect(lastWs!.cam.pitch).toBeCloseTo(-0.4, 5)
+    expect(lastWs!.cam.scale).not.toBeCloseTo(17, 5)
     wrapper.unmount()
   })
 
@@ -715,7 +729,7 @@ describe('Nmt3dRenderer — boardMode gate for store→engine sync', () => {
     const emissions = wrapper.emitted('update:asset')
     expect(emissions).toBeTruthy()
     const lastEmit = emissions![emissions!.length - 1][0] as any
-    expect(lastEmit.data.cam).toEqual({ yaw: 1.8, pitch: 0.6, scale: 145 })
+    expect(lastEmit.data.cam).toEqual({ yaw: 1.8, pitch: 0.6, scale: 145, unit: 'card' })
     wrapper.unmount()
   })
 
@@ -770,7 +784,7 @@ describe('Nmt3dRenderer — boardMode gate for store→engine sync', () => {
     await wrapper.setProps({
       asset: {
         ...asset,
-        data: { ...asset.data, cam: { yaw: 2.5, pitch: 1.0, scale: 190 } },
+        data: { ...asset.data, cam: { yaw: 2.5, pitch: 1.0, scale: 190, unit: 'card' } },
       },
     })
     await nextTick()

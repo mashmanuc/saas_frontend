@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { describe, expect, it, vi } from 'vitest'
-import { EXPORT_MATH_CLASS, FONT_PROBE_STYLE_ATTR, HTML2CANVAS_PROBE_SRC, domExportScale, fitExportRows, fitMathToContainers, fixFontProbe, settleMathJaxSvg, snapshotBranch, snapshotElement } from '../utils/snapshotElement'
+import { EXPORT_MATH_CLASS, FONT_PROBE_STYLE_ATTR, HTML2CANVAS_PROBE_SRC, domExportScale, fitExportRows, fitMathToContainers, fixFontProbe, settleMathJaxSvg, snapshotBranch, snapshotElement, fitScrollWindows, trimScrollEdges } from '../utils/snapshotElement'
 
 // html2canvas у happy-dom не малює — підміняємо: запамʼятовуємо, що було в документі в момент виклику.
 const h2c = vi.hoisted(() => ({ calls: [] as Array<{ probe: boolean; scale: number }>, sizes: [] as Array<[number, number]> }))
@@ -264,5 +264,118 @@ describe('snapshotElement — картка в зменшеній обгортц�
     await snapshotElement(root, new AbortController().signal)
     expect(h2c.sizes).toEqual([[445, 200]])
     root.remove()
+  })
+})
+
+// Рев'ю Лови 2026-10-28 (PDF, сторінки 3/4): нижній рядок розбору у вікні з прокруткою різався рамкою навпіл.
+describe('trimScrollEdges — вікно прокрутки у знімку по межі цілого рядка', () => {
+  const rect = (top: number, bottom: number) => ({ top, bottom, height: bottom - top, left: 0, right: 300, width: 300, x: 0, y: top, toJSON() {} }) as DOMRect
+  // happy-dom не верстає: рядки тексту — за самим текстом (Range.getClientRects), вікно — 70 px з 200 px вмісту.
+  function windowOf(lines: Record<string, Array<[number, number]>>, math?: [number, number], scrollHeight = 200) {
+    const box = document.createElement('div')
+    box.style.overflowY = 'auto'
+    box.style.boxSizing = 'border-box'
+    box.innerHTML = Object.keys(lines).map(t => `<p>${t}</p>`).join('') + (math ? `<span class="${EXPORT_MATH_CLASS}"><svg></svg></span>` : '')
+    document.body.appendChild(box)
+    Object.defineProperty(box, 'scrollHeight', { value: scrollHeight })
+    Object.defineProperty(box, 'clientHeight', { value: 70 })
+    Object.defineProperty(box, 'offsetHeight', { value: 70 })
+    box.getBoundingClientRect = () => rect(0, 70)
+    if (math) box.querySelector('svg')!.getBoundingClientRect = () => rect(...math)
+    let text = ''
+    vi.spyOn(document, 'createRange').mockImplementation(() => ({
+      selectNodeContents: (n: Node) => { text = n.textContent ?? '' },
+      getClientRects: () => (lines[text] ?? []).map(([t, b]) => rect(t, b)),
+    }) as unknown as Range)
+    return box
+  }
+
+  it('рядок перетинає нижній край → вікно закінчується над ним', () => {
+    const box = windowOf({ 'перший абзац': [[0, 20], [20, 40]], 'другий абзац': [[40, 60], [60, 80]] })
+    trimScrollEdges(box)
+    expect(box.style.height).toBe('60px')
+    expect(box.style.flex).toBe('0 0 auto')
+    box.remove(); vi.restoreAllMocks()
+  })
+
+  it('формула вища за свій рядок — ріжемо над формулою', () => {
+    const box = windowOf({ 'а тоді': [[58, 78]], 'вище': [[0, 20]] }, [52, 80])
+    trimScrollEdges(box)
+    expect(box.style.height).toBe('52px')
+    box.remove(); vi.restoreAllMocks()
+  })
+
+  it('рядок закінчується рівно на краю — вікно без змін', () => {
+    const box = windowOf({ 'рядок': [[50, 70]], 'нижче за вікном': [[70, 90]] })
+    trimScrollEdges(box)
+    expect(box.style.height).toBe('')
+    box.remove(); vi.restoreAllMocks()
+  })
+
+  it('один елемент вищий за вікно — не ховаємо все', () => {
+    const box = windowOf({ 'дуже високий': [[0, 150]] })
+    trimScrollEdges(box)
+    expect(box.style.height).toBe('')
+    box.remove(); vi.restoreAllMocks()
+  })
+
+  it('вікно без прокрутки (усе вміщується) — без змін', () => {
+    const box = windowOf({ 'рядок': [[60, 80]] }, undefined, 70)
+    trimScrollEdges(box)
+    expect(box.style.height).toBe('')
+    box.remove(); vi.restoreAllMocks()
+  })
+})
+
+// Стенд 28.10: на екрані розбір вміщувався в картку впритул (вікно без прокрутки), у знімку MathJax трохи вищий
+// за KaTeX — і останній рядок виїжджав за край. Що на екрані видно цілком, у знімку теж видно цілком.
+describe('fitScrollWindows — вікно, що на екрані показує все, у знімку теж показує все', () => {
+  function windowWith(contentH: number, scrollH: number) {
+    const box = document.createElement('div')
+    box.style.overflowY = 'auto'
+    box.style.padding = '12px 0 14px'
+    box.innerHTML = '<div class="flow"></div>'
+    Object.defineProperty(box, 'clientHeight', { value: 400 })
+    Object.defineProperty(box, 'scrollHeight', { value: scrollH })
+    Object.defineProperty(box.firstElementChild, 'offsetHeight', { value: contentH })
+    document.body.appendChild(box)
+    return box
+  }
+  const flow = (box: HTMLElement) => box.firstElementChild as HTMLElement
+
+  it('на екрані вміщувалось, у знімку на кілька px більше → вміст стиснуто рівно до вікна', () => {
+    const box = windowWith(380, 406)
+    fitScrollWindows([box], [true])
+    expect(flow(box).style.transform).toBe(`scale(${374 / 380})`)
+    expect(flow(box).style.transformOrigin).toBe('top left')
+    box.remove()
+  })
+
+  it('на екрані теж прокручували — не стискаємо (там ріже trimScrollEdges)', () => {
+    const box = windowWith(380, 406)
+    fitScrollWindows([box], [false])
+    expect(flow(box).style.transform).toBe('')
+    box.remove()
+  })
+
+  it('у знімку вміщується — без змін', () => {
+    const box = windowWith(370, 396)
+    fitScrollWindows([box], [true])
+    expect(flow(box).style.transform).toBe('')
+    box.remove()
+  })
+
+  it('набагато більше за вікно — не дрібнимо текст', () => {
+    const box = windowWith(600, 626)
+    fitScrollWindows([box], [true])
+    expect(flow(box).style.transform).toBe('')
+    box.remove()
+  })
+
+  it('вікна клону й екрана не зійшлися — нічого не чіпаємо', () => {
+    const box = windowWith(380, 406)
+    fitScrollWindows([box], [true, true])
+    expect(flow(box).style.transform).toBe('')
+    box.remove()
   })
 })

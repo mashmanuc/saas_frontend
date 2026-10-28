@@ -160,6 +160,90 @@ export function fitMathToContainers(root: HTMLElement): void {
   })
 }
 
+/** Рядки тексту й формул усередині вікна (екранні координати) — межі, по яких вікно можна різати. */
+function lineBoxes(box: HTMLElement): Array<{ top: number; bottom: number }> {
+  const out: Array<{ top: number; bottom: number }> = []
+  const add = (q: DOMRect) => { if (q.height > 0) out.push({ top: q.top, bottom: q.bottom }) }
+  const range = box.ownerDocument.createRange()
+  const walk = (node: Node) => node.childNodes.forEach((n) => {
+    if (n.nodeType !== 3 /* TEXT_NODE */) return walk(n)
+    if (!n.textContent?.trim()) return
+    range.selectNodeContents(n)
+    Array.from(range.getClientRects()).forEach(add)
+  })
+  walk(box)
+  // Формула — один SVG MathJax у рядку тексту; креслення й картинки рядками не вважаємо.
+  box.querySelectorAll(`.${EXPORT_MATH_CLASS} svg`).forEach((el) => add(el.getBoundingClientRect()))
+  return out
+}
+
+/** Вікна прокрутки в корені знімка (сам корінь теж), у порядку документа. */
+export function scrollWindows(root: HTMLElement): HTMLElement[] {
+  return [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))].filter((el) => {
+    const oy = getComputedStyle(el).overflowY
+    return oy === 'auto' || oy === 'scroll'
+  })
+}
+
+const overflows = (el: HTMLElement) => el.scrollHeight > el.clientHeight + 1
+
+/**
+ * Вікно, що на екрані показує все, у знімку теж показує все.
+ *
+ * У знімку формули малює MathJax — він трохи вищий за KaTeX з екрана, і розбір, що на екрані
+ * вміщувався в картку впритул, у клоні виїжджав за край: останній рядок у PDF різався навпіл
+ * (рев'ю Лови 2026-10-28, сторінки 3/4; на стенді в живій картці переповнення не було). Такий вміст
+ * (єдиний дочірній блок вікна) у КЛОНІ стискаємо до вікна — як fitExportRows стискає рядок до рамки.
+ * `boxes` — scrollWindows клону, `liveFits` — чи вміщувалось кожне з них на екрані (у тому ж порядку).
+ */
+export function fitScrollWindows(boxes: HTMLElement[], liveFits: boolean[]): void {
+  if (boxes.length !== liveFits.length) return
+  boxes.forEach((box, i) => {
+    const child = box.children.length === 1 ? (box.children[0] as HTMLElement) : null
+    if (!liveFits[i] || !box.isConnected || !overflows(box) || !child) return
+    const cs = getComputedStyle(box)
+    const room = box.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0)
+    const k = child.offsetHeight > 0 ? room / child.offsetHeight : 1
+    // Помітно більше за вікно — це вже не різниця шрифтів формул; лишаємо trimScrollEdges.
+    if (!(k < 1) || k < 0.8) return
+    child.style.transform = `scale(${k})`
+    child.style.transformOrigin = 'top left'
+  })
+}
+
+/**
+ * Вікно прокрутки у знімку закінчується на межі цілого рядка.
+ *
+ * Довгий розбір, який на екрані й справді прокручують, знімок бере вікном як є — і нижній рядок,
+ * що визирав з-під краю, різався навпіл. У КЛОНІ вікно вкорочуємо до верху такого рядка: прокрутка
+ * й розмір живої картки ті самі, видима частина — та сама, лише без половини рядка. Елемент вищий
+ * за саме вікно не чіпаємо.
+ */
+export function trimScrollEdges(root: HTMLElement): void {
+  for (const box of scrollWindows(root).filter(overflows)) {
+    const r = box.getBoundingClientRect()
+    const sy = box.offsetHeight > 0 ? r.height / box.offsetHeight : 1
+    const top = r.top + box.clientTop * sy
+    const edge = top + box.clientHeight * sy
+    const lines = lineBoxes(box)
+    let cut = edge
+    // Формула вища за текст рядка може сама перетинати новий край — доки є перетин, піднімаємо.
+    for (let i = 0; i < 8; i++) {
+      const next = lines.reduce((m, l) => (l.top < cut - 0.5 && l.bottom > cut + 0.5 ? Math.min(m, l.top) : m), cut)
+      if (next === cut) break
+      cut = next
+    }
+    if (cut >= edge || cut <= top + 1) continue
+    const cs = getComputedStyle(box)
+    const client = (cut - top) / sy
+    const height = cs.boxSizing === 'border-box'
+      ? client + box.clientTop + (parseFloat(cs.borderBottomWidth) || 0)
+      : client - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0)
+    box.style.flex = '0 0 auto'
+    box.style.height = `${height}px`
+  }
+}
+
 /** Яку гілку знімка взяти для кореня (без побічних дій — і для тестів). */
 export function snapshotBranch(rootEl: HTMLElement): 'canvas' | 'svg' | 'dom' {
   if (rootEl.hasAttribute(EXPORT_DOM_ATTR)) return 'dom'
@@ -460,6 +544,7 @@ async function snapshotDom(
   if (signal.aborted) return null
 
   let canvas: HTMLCanvasElement
+  const liveFits = scrollWindows(rootEl).map((el) => !overflows(el))
   const restoreProbe = fixFontProbe(rootEl.ownerDocument)
   try {
     canvas = await html2canvas(rootEl, {
@@ -487,6 +572,9 @@ async function snapshotDom(
         // Обгортка зменшеної копії в КЛОНІ — без масштабу: картка в клоні у своїх пікселях (жива дошка не змінюється)
         const zoomLayer = clonedEl.closest<HTMLElement>(CARD_ZOOM_SELECTOR)
         if (zoomLayer) zoomLayer.style.transform = 'none'
+        // Вікна прокрутки — до [data-export-hide]: поки клон щойно скопійовано, вони йдуть у тому ж
+        // порядку, що й у живому корені.
+        const cloneWindows = scrollWindows(clonedEl)
 
         // 0) Прибрати керування з КЛОНУ (жива дошка не змінюється).
         //    У презентації віджет — статична картинка, тож підказки драга
@@ -531,6 +619,10 @@ async function snapshotDom(
         fitMathToContainers(clonedEl)
         // 4) Рядки з позначкою — у свою рамку за розміром MathJax (не KaTeX з екрана).
         fitExportRows(clonedEl)
+        // 5) Вікна прокрутки (розбір картки), коли формули вже остаточні: що на екрані вміщувалось —
+        //    вміщується й тут; що справді прокручують — по межі цілого рядка.
+        fitScrollWindows(cloneWindows, liveFits)
+        trimScrollEdges(clonedEl)
       },
     })
   } catch (err) {
