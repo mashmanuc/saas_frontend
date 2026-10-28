@@ -92,7 +92,11 @@
     <template v-else>
 
     <!-- Tab switcher -->
-    <div class="content-sidebar__tabs" role="tablist">
+    <div
+      class="content-sidebar__tabs"
+      :class="{ 'content-sidebar__tabs--fab-gap': zbirnykEnabled && !localMode }"
+      role="tablist"
+    >
       <button
         v-if="!localMode"
         class="content-sidebar__tab"
@@ -108,6 +112,16 @@
         :aria-selected="activeTab === 'tools'"
         @click="pickTab('tools')"
       >{{ t('winterboard.contentSidebar.tabTools') }}</button>
+      <!-- «Збірник» (2026-10-28) — лише пілоту zbirnyk з /me: збірник чужий, для всіх не виставляємо -->
+      <button
+        v-if="zbirnykEnabled && !localMode"
+        class="content-sidebar__tab"
+        :class="{ 'content-sidebar__tab--active': activeTab === 'zbirnyk' }"
+        role="tab"
+        :aria-selected="activeTab === 'zbirnyk'"
+        data-testid="sidebar-tab-zbirnyk"
+        @click="pickTab('zbirnyk')"
+      >{{ t('winterboard.contentSidebar.tabZbirnyk') }}</button>
     </div>
 
     <!-- ── МАТЕРІАЛИ tab ── -->
@@ -286,6 +300,11 @@
 
     </template><!-- /materials tab -->
 
+    <!-- ── ЗБІРНИК tab ── -->
+    <template v-else-if="activeTab === 'zbirnyk' && zbirnykEnabled">
+      <ZbirnykTab />
+    </template>
+
     <!-- ── ІНСТРУМЕНТИ tab ── -->
     <template v-else>
       <div class="content-sidebar__tools-tab">
@@ -447,6 +466,7 @@ import TrigCircleTray from './TrigCircleTray.vue'
 // BoardMASH panel Фаза 1: пошук каталогу через insertRegistry SSOT
 // Плитка + «+» (власник 2026-10-21: «для сенсорних дошок») — у всіх списках «Інструментів».
 import InsertTileWithAdd from './InsertTileWithAdd.vue'
+import ZbirnykTab from './ZbirnykTab.vue'
 import { InsertIcon } from './insertIcons'
 import {
   searchInserts, allInserts, insertsByApp, MASH_APPS, visibleInserts, visibleApps,
@@ -568,12 +588,13 @@ const folders = ref<LibraryFolderTreeType[]>([])
 const isLoadingFolders = ref(false)
 const isFoldersPanelOpen = ref(false)
 
-// Tab switcher: 'materials' | 'tools'
+// Tab switcher: 'materials' | 'tools' | 'zbirnyk'
 // Local Workspace: materials-вкладка прихована → стартуємо з «Інструменти».
-const activeTab = ref<'materials' | 'tools'>(props.localMode ? 'tools' : 'materials')
+type SidebarTab = 'materials' | 'tools' | 'zbirnyk'
+const activeTab = ref<SidebarTab>(props.localMode ? 'tools' : 'materials')
 /** Людина сама перемкнула вкладку — далі її вибір не чіпаємо. */
 let tabChosenByUser = false
-function pickTab(tab: 'materials' | 'tools'): void {
+function pickTab(tab: SidebarTab): void {
   tabChosenByUser = true
   activeTab.value = tab
 }
@@ -587,6 +608,9 @@ const { evidenceEnabled } = useEvidenceToolsGate()
 const authStore = useAuthStore()
 const scenesEnabled = computed(() =>
   Boolean((authStore.user as { pilots?: string[] } | null)?.pilots?.includes('math_scenes')))
+// «Збірник» — лише пілоту zbirnyk з /me (власник 2026-10-28: збірник чужий, «не знаю, чи маю право виставляти для всіх»).
+const zbirnykEnabled = computed(() =>
+  Boolean((authStore.user as { pilots?: string[] } | null)?.pilots?.includes('zbirnyk')))
 const gateOpts = computed(() => ({ evidence: evidenceEnabled.value, scenes: scenesEnabled.value }))
 const shownApps = computed(() => visibleApps(gateOpts.value))
 const toolResults = computed(() =>
@@ -867,6 +891,12 @@ function onDrop(e: DragEvent) {
   top: 0;
   z-index: 2;
 }
+
+/* Три вкладки (з «Збірником»): права закінчується перед кнопкою Інтегралика — вона fixed top 74px, right 18px,
+   64×64 (CommandPalette.vue, .cmdp-fab-wrap) і накривала б майже всю третю вкладку (стенд 29.10: клік у центр
+   «Збірника» потрапляв в Інтегралика). Дві вкладки — як було. */
+.content-sidebar__tabs--fab-gap { padding-right: 86px; }
+.content-sidebar__tabs--fab-gap .content-sidebar__tab { font-size: 11px; padding: 0 2px; }
 
 .content-sidebar__tab {
   flex: 1;

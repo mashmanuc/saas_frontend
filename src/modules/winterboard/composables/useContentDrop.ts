@@ -39,6 +39,8 @@ import { getActivePinia } from 'pinia'
 import { useWBStore } from '../board/state/boardStore'
 import { notifyError } from '@/utils/notify'
 import { i18n } from '@/i18n'
+// «Збірник» (2026-10-28): задача банку → картка задачі від сервера (як у генератора уроку) → один asset_add.
+import { ZBIRNYK_TASK_MIME, getZbirnykCard, zbirnykAdding } from '../zbirnyk/zbirnykApi'
 // Phase Calculus (2026-05-15) — derivative + integral cards drop wiring.
 import {
   CALCULUS_DRAG_MIME,
@@ -367,6 +369,12 @@ export function useContentDrop(options: UseContentDropOptions) {
         addAtPosition(mime, raw, screenToCanvas(event.clientX, event.clientY))
         return
       }
+    }
+    // «Збірник» (2026-10-28) — той самий шлях, що й «+».
+    const zbirnykRaw = event.dataTransfer?.getData(ZBIRNYK_TASK_MIME)
+    if (zbirnykRaw) {
+      addAtPosition(ZBIRNYK_TASK_MIME, zbirnykRaw, screenToCanvas(event.clientX, event.clientY))
+      return
     }
 
 
@@ -969,6 +977,35 @@ export function useContentDrop(options: UseContentDropOptions) {
   }
 
   /**
+   * «Збірник» (2026-10-28): картку задачі будує сервер тим самим будівником, що й генератор уроку (`nmt_task`,
+   * 200 % — LAW §9.C), і лише для задач цього збірника; з даних перетягування беремо тільки непрозорий id.
+   * Запис — один штатний `asset_add`. Поки йде запит — плитка показує «Додаю…» і не приймає повторний натиск.
+   * Невдача — тост, не тиша.
+   */
+  async function placeZbirnykTask(refId: string, pos: { x: number; y: number }): Promise<void> {
+    if (zbirnykAdding.has(refId)) return
+    zbirnykAdding.add(refId)
+    try {
+      const card = await getZbirnykCard(refId)
+      if (card?.status !== 'ready') throw new Error('[WB:zbirnyk] collection unavailable')
+      if (!canDraw.value) throw new Error('[WB:zbirnyk] board is not editable any more')
+      const page = getActivePinia() ? useWBStore().currentPage : null
+      onAssetAdd(placeInsidePage({
+        id: `tsk-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+        type: card.type, src: '',
+        x: pos.x - card.w / 2, y: pos.y - card.h / 2, w: card.w, h: card.h,
+        rotation: 0, locked: false, data: card.data,
+      } as unknown as WBAsset, page?.width ?? PAGE_WIDTH, page?.height ?? PAGE_HEIGHT))
+    } catch (err) {
+      console.warn('[WB:zbirnyk] add failed', err)
+      const key = 'winterboard.zbirnyk.addFailed'
+      notifyError(i18n.global?.t?.(key) ?? key)
+    } finally {
+      zbirnykAdding.delete(refId)
+    }
+  }
+
+  /**
    * Place a tool asset at explicit canvas coordinates (used by tray "+" buttons).
    * Same asset-building logic as handleCanvasDrop but without a DragEvent.
    *
@@ -1155,6 +1192,19 @@ export function useContentDrop(options: UseContentDropOptions) {
         : mime === PROTRACTOR_DRAG_MIME ? buildProtractorAsset : buildCompassAsset
       const page = store?.currentPage
       onAssetAdd(placeInsidePage(build(pos, store?.gridSize), page?.width ?? PAGE_WIDTH, page?.height ?? PAGE_HEIGHT))
+      return
+    }
+
+    // «Збірник» (2026-10-28): payload {"id"}; картку задачі дає сервер, asset — після відповіді.
+    if (mime === ZBIRNYK_TASK_MIME) {
+      let refId: unknown = null
+      try {
+        refId = (JSON.parse(payloadStr) as { id?: unknown }).id
+      } catch (err) {
+        console.warn('[WB:zbirnyk] bad payload', err)
+      }
+      if (typeof refId !== 'string' || !refId) return
+      void placeZbirnykTask(refId, pos)
       return
     }
 

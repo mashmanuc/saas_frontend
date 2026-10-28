@@ -7784,6 +7784,19 @@
     }
   },
   "winterboard": {
+    "zbirnyk": {
+      "loading": "Opening the collection…",
+      "loadFailed": "The collection did not open.",
+      "retry": "Try again",
+      "hint": "Press “+” or drag a task onto the board.",
+      "level": "Level {n}",
+      "taskNumber": "No. {n}",
+      "add": "Add to board",
+      "adding": "Adding…",
+      "showAnswer": "Answer",
+      "answer": "Answer: {answer}",
+      "addFailed": "Could not add the task to the board"
+    },
     "mathScene": {
       "title": "Visual scene",
       "missing": "This scene is not available.",
@@ -8543,6 +8556,7 @@
       "tabMaterials": "Materials",
       "listTitle": "My files",
       "tabTools": "Tools",
+      "tabZbirnyk": "Collection",
       "apps": {
         "graphs": "Graphs",
         "graphs3d": "3D graphs",
