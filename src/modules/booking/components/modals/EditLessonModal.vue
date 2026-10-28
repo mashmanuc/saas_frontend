@@ -378,8 +378,8 @@ import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
 import { sanitizeComment } from '@/utils/sanitize'
 import EventDetailsView from './EventDetailsView.vue'
 import StudentPaymentsOverview from '@/modules/dashboard/components/StudentPaymentsOverview.vue'
-import { studentPaymentsApi, type StudentLedger } from '@/modules/dashboard/api/studentPayments'
-import { eventCovered, paymentCoverage, type PaymentCoverage } from '@/modules/dashboard/utils/paymentCoverage'
+import { formatMonth, studentPaymentsApi, type StudentLedger } from '@/modules/dashboard/api/studentPayments'
+import { eventPayment, lessonMonth, paymentCoverage, type PaymentCoverage } from '@/modules/dashboard/utils/paymentCoverage'
 import ConfirmDialog from '@/ui/ConfirmModal.vue'
 import DateTimePicker from '@/components/ui/DateTimePicker.vue'
 import type { ReschedulePreviewResponse } from '@/modules/booking/types/calendarV055'
@@ -395,7 +395,7 @@ const emit = defineEmits<{
   deleted: []
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const store = useCalendarWeekStore()
 const toast = useToast()
 const { handleError } = useErrorHandler()
@@ -459,13 +459,21 @@ const lessonChips = computed(() => {
   if (info?.platform) {
     chips.push({ key: 'platform', tone: 'platform', text: t('calendar.editLesson.chips.platform', { name: info.platform }) })
   } else if (info) {
-    const covered = info.coverage.tracking ? eventCovered(info.coverage, event.id) : null
+    const state = info.coverage.tracking ? eventPayment(info.coverage, event.id) : null
+    const monthly = info.coverage.mode === 'monthly'
     if (!info.coverage.tracking) {
       chips.push({ key: 'payment', tone: 'muted', text: t('dashboard.tutor.payments.balance.none') })
-    } else if (covered === true) {
-      chips.push({ key: 'payment', tone: 'ok', text: t('calendar.editLesson.chips.paid', { n: Math.max(info.coverage.leftLessons, 0) }) })
-    } else if (covered === false) {
+    } else if (state === 'paid') {
+      chips.push({
+        key: 'payment', tone: 'ok',
+        text: monthly ? t('calendar.editLesson.chips.paidMonthly') : t('calendar.editLesson.chips.paid', { n: Math.max(info.coverage.leftLessons, 0) }),
+      })
+    } else if (state === 'unpaid') {
       chips.push({ key: 'payment', tone: 'debt', text: t('calendar.editLesson.chips.unpaid') })
+    } else if (monthly && (state === 'bill' || lessonMonth(event.start) >= info.coverage.month)) {
+      // О9 «платить у кінці місяця»: урок цього чи наступного місяця — у рахунок місяця, не борг
+      const name = formatMonth(lessonMonth(event.start), String(locale.value) === 'en' ? 'en-US' : String(locale.value))
+      chips.push({ key: 'payment', tone: 'muted', text: t('calendar.editLesson.chips.bill', { month: name }) })
     }
   }
   const regularity = REGULARITY_CHIP[event.regularity as string]
@@ -808,7 +816,7 @@ function handleClose() {
 
 .lesson-actions__delete {
   margin-left: auto;
-  color: var(--color-danger);
+  color: var(--danger-bg);
 }
 
 .lesson-chip {
@@ -823,13 +831,13 @@ function handleClose() {
 }
 
 .lesson-chip--ok {
-  border-color: var(--color-success);
-  color: var(--color-success);
+  border-color: var(--success-bg);
+  color: var(--success-bg);
 }
 
 .lesson-chip--debt {
-  border-color: var(--color-danger);
-  color: var(--color-danger);
+  border-color: var(--danger-bg);
+  color: var(--danger-bg);
 }
 
 .lesson-chip--platform {

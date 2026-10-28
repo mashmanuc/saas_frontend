@@ -454,7 +454,11 @@ function paymentLine(relation) {
   const b = paymentsSummary.value?.balances?.[String(relation.student.id)]
   const v = balanceView(b)
   if (v.tone === 'none') return null
-  return { text: t(`dashboard.tutor.payments.balance.${v.key}`, v.params), cls: PAYMENT_TONE_CLASS[v.tone] }
+  // «≈ 1 050 ₴», як у вікні «💰 Оплата», а не «1050»
+  const params = 'amount' in v.params
+    ? { ...v.params, amount: new Intl.NumberFormat(String(locale.value) === 'en' ? 'en-US' : 'uk-UA').format(v.params.amount) }
+    : v.params
+  return { text: t(`dashboard.tutor.payments.balance.${v.key}`, params), cls: PAYMENT_TONE_CLASS[v.tone] }
 }
 
 const paymentsSummaryText = computed(() => {

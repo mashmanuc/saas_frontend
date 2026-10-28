@@ -12,7 +12,7 @@ import { balanceView } from '../../api/studentPayments'
 
 vi.mock('../../api/studentPayments', async (orig) => {
   const real = await orig<typeof import('../../api/studentPayments')>()
-  return { ...real, studentPaymentsApi: { ledger: vi.fn(), record: vi.fn(), remove: vi.fn(), summary: vi.fn(), setLessonCounted: vi.fn() } }
+  return { ...real, studentPaymentsApi: { ledger: vi.fn(), record: vi.fn(), remove: vi.fn(), summary: vi.fn(), setLessonCounted: vi.fn(), setMonthly: vi.fn() } }
 })
 import { studentPaymentsApi } from '../../api/studentPayments'
 
@@ -35,6 +35,17 @@ const $ = (w: ReturnType<typeof dialog>, id: string) => w.find(`[data-testid="${
 const left = (w: ReturnType<typeof dialog>) => $(w, 'payments-overview-left').text().replace(/\s+/g, ' ')
 
 describe('balanceView — що на картці учня', () => {
+  it('О9 «в кінці місяця»: борг лише за минулі місяці; цей місяць — до сплати (з сумою, якщо є ціна); сплачено', () => {
+    const M = { ...NONE, tracking: true, mode: 'monthly' as const, month: '2026-10', left_lessons: -3 }
+    expect(balanceView({ ...M, debt_lessons: 1, debt_amount: 350, month_due_lessons: 2, month_due_amount: 700 }))
+      .toEqual({ tone: 'debt', key: 'monthlyDebt', params: { n: 1, amount: 350 } })
+    expect(balanceView({ ...M, debt_lessons: 0, month_due_lessons: 3, month_due_amount: 1050.4 }))
+      .toEqual({ tone: 'low', key: 'monthlyDueAmount', params: { n: 3, amount: 1050 } })
+    expect(balanceView({ ...M, debt_lessons: 0, month_due_lessons: 2, month_due_amount: null }).key).toBe('monthlyDue')
+    expect(balanceView({ ...M, left_lessons: 0, debt_lessons: 0, month_due_lessons: 0 })).toEqual({ tone: 'ok', key: 'monthlyClear', params: {} })
+    for (const key of ['monthlyDebt', 'monthlyDueAmount', 'monthlyDue', 'monthlyClear']) expect(P.balance[key], key).toBeTruthy()
+  })
+
   it('без оплат — нічого; залишок; останній; закінчились; борг з орієнтовною сумою', () => {
     expect(balanceView(NONE).tone).toBe('none')
     expect(balanceView({ ...NONE, tracking: true, left_lessons: 5 })).toEqual({ tone: 'ok', key: 'left', params: { n: 5 } })
@@ -51,6 +62,7 @@ describe('StudentPaymentsDialog', () => {
     vi.mocked(studentPaymentsApi.record).mockReset()
     vi.mocked(studentPaymentsApi.remove).mockReset()
     vi.mocked(studentPaymentsApi.setLessonCounted).mockReset()
+    vi.mocked(studentPaymentsApi.setMonthly).mockReset()
   })
 
   it('«усі уроки місяця» підставляє кількість з розкладу; запис — сума, уроки, дата, нотатка; залишок оновлено', async () => {
@@ -205,6 +217,91 @@ describe('StudentPaymentsDialog', () => {
     await flushPromises()
     expect($(w, 'student-payment-error').text()).toBe(P.errors.bad_date)
     expect(w.find('[data-testid="student-payments-history"]').exists()).toBe(false)
+    expect(w.emitted('changed')).toBeUndefined()
+    w.unmount()
+  })
+
+  // О9 (власник 2026-10-28: «мама… хоче оплачувати заняття в кінці місяця… і кінець листопада»)
+  const MONTHLY = {
+    ...LEDGER,
+    payments: [{ id: 1, amount: 1400, lessons: 4, paid_on: '2026-10-02', note: '', for_month: '2026-09' }],
+    lessons: [
+      ...[3, 10, 17, 24, 29].map((d, i) => ({ source: 'schedule', id: i + 1, start: `2026-09-${String(d).padStart(2, '0')}T10:00:00Z`, minutes: 60, no_show: false, counted: true })),
+      ...[6, 13, 20].map((d, i) => ({ source: 'schedule', id: i + 6, start: `2026-10-${String(d).padStart(2, '0')}T10:00:00Z`, minutes: 60, no_show: false, counted: true })),
+    ],
+    upcoming: [{ id: 9, start: '2026-10-27T10:00:00Z', minutes: 60 }, { id: 10, start: '2026-11-03T10:00:00Z', minutes: 60 }],
+    balance: { ...NONE, tracking: true, since: '2026-09-01', paid_lessons: 4, done_lessons: 8, left_lessons: -4, last_price: 350,
+      debt_amount: 350, mode: 'monthly', month: '2026-10', debt_lessons: 1, month_due_lessons: 3, month_due_amount: 1050 },
+  }
+
+  it('«Платить у кінці місяця» — галочка вмикає режим і перечитує облік: жовтень — у рахунок, не борг', async () => {
+    vi.mocked(studentPaymentsApi.ledger)
+      .mockResolvedValueOnce(LEDGER as never)
+      .mockResolvedValueOnce({ ...MONTHLY, payments: [], lessons: MONTHLY.lessons.slice(5),
+        balance: { ...MONTHLY.balance, since: '2026-10-01', paid_lessons: 0, done_lessons: 3, left_lessons: -3, last_price: null,
+          debt_amount: 0, debt_lessons: 0, month_due_amount: null } } as never)
+    vi.mocked(studentPaymentsApi.setMonthly).mockResolvedValueOnce({ balance: { ...MONTHLY.balance, since: '2026-10-01' } } as never)
+    const w = dialog()
+    await flushPromises()
+    const box = w.find('[data-testid="student-payments-monthly-toggle"]')
+    expect((box.element as HTMLInputElement).checked).toBe(false)
+    ;(box.element as HTMLInputElement).checked = true
+    await box.trigger('change')
+    await flushPromises()
+    expect(studentPaymentsApi.setMonthly).toHaveBeenCalledWith(7, true)
+    expect(studentPaymentsApi.ledger).toHaveBeenCalledTimes(2)
+    expect((w.find('[data-testid="student-payments-monthly-toggle"]').element as HTMLInputElement).checked).toBe(true)
+    expect($(w, 'payments-overview-month-held').text()).toBe('3')
+    expect($(w, 'payments-overview-bill').text()).toContain(fill(P.overview.billTitle, { month: 'жовтень' }))
+    expect(w.find('[data-testid="payments-overview-unpaid"]').exists()).toBe(false)   // жодного червоного «Не оплачено»
+    expect(left(w)).toContain(P.overview.noPrice)                                     // оплат ще не було — суми не вгадуємо
+    expect($(w, 'student-payments-add-toggle').text()).toContain(fill(P.monthly.addFor, { month: 'жовтень' }))
+    expect(w.emitted('changed')).toHaveLength(1)
+    w.unmount()
+  })
+
+  it('борг за вересень — спершу «Записати оплату за вересень» з уроками й сумою; вибір жовтня підставляє його рахунок', async () => {
+    vi.mocked(studentPaymentsApi.ledger).mockResolvedValueOnce(MONTHLY as never)
+    vi.mocked(studentPaymentsApi.record).mockResolvedValueOnce({
+      payment: { id: 2, amount: 1050, lessons: 3, paid_on: '2026-10-28', note: '', for_month: '2026-10' },
+      balance: { ...MONTHLY.balance, paid_lessons: 7, left_lessons: -1, month_due_lessons: 0, month_due_amount: 0 },
+    } as never)
+    const w = dialog()
+    await flushPromises()
+    expect($(w, 'payments-overview-unpaid').text()).toContain(P.overview.debtTitle)
+    expect(left(w)).toContain(P.overview.debt)
+    const toggle = $(w, 'student-payments-add-toggle')
+    expect(toggle.text()).toContain(fill(P.monthly.addFor, { month: 'вересень' }))
+    await toggle.trigger('click')
+    expect((w.find('input#student-payment-lessons').element as HTMLInputElement).value).toBe('1')
+    expect((w.find('input#student-payment-amount').element as HTMLInputElement).value).toBe('350')
+    expect($(w, 'student-payment-for-month-2026-09').classes()).toContain('pay-month--on')
+    await $(w, 'student-payment-for-month-2026-10').trigger('click')
+    expect((w.find('input#student-payment-lessons').element as HTMLInputElement).value).toBe('3')
+    expect((w.find('input#student-payment-amount').element as HTMLInputElement).value).toBe('1050')
+    await w.find('input#student-payment-date').setValue('2026-10-28')
+    await $(w, 'student-payments-form').trigger('submit')
+    await flushPromises()
+    expect(studentPaymentsApi.record).toHaveBeenCalledWith(7, { amount: '1050', lessons: 3, paid_on: '2026-10-28', note: '', for_month: '2026-10' })
+    expect(studentPaymentsApi.ledger).toHaveBeenCalledTimes(1)        // початок обліку не зсунувся — без зайвого запиту
+    expect($(w, 'student-payments-history').text()).toContain(fill(P.overview.forMonth, { month: 'жовтень' }))
+    // вересень закрито — наступна оплата вже за жовтень (поля порожні)
+    expect($(w, 'student-payments-form').text()).toContain(fill(P.monthly.addFor, { month: 'жовтень' }))
+    expect((w.find('input#student-payment-lessons').element as HTMLInputElement).value).toBe('')
+    w.unmount()
+  })
+
+  it('режим не змінено — причина словами, галочка повертається', async () => {
+    vi.mocked(studentPaymentsApi.ledger).mockResolvedValueOnce(LEDGER as never)
+    vi.mocked(studentPaymentsApi.setMonthly).mockRejectedValueOnce({ response: { status: 400, data: { error: 'bad_mode' } } })
+    const w = dialog()
+    await flushPromises()
+    const box = w.find('[data-testid="student-payments-monthly-toggle"]')
+    ;(box.element as HTMLInputElement).checked = true
+    await box.trigger('change')
+    await flushPromises()
+    expect($(w, 'student-payment-error').text()).toBe(P.errors.bad_mode)
+    expect((box.element as HTMLInputElement).checked).toBe(false)
     expect(w.emitted('changed')).toBeUndefined()
     w.unmount()
   })

@@ -1,7 +1,46 @@
 <template>
   <div class="pov">
+    <!-- О9 «платить у кінці місяця» (власник 2026-10-28): Сплачено · {Місяць}: проведено · До сплати (або Борг за минулі) -->
+    <div v-if="monthly" class="pov__tiles" data-testid="payments-overview-monthly">
+      <div class="pov__tile">
+        <span class="pov__label">{{ $t('dashboard.tutor.payments.overview.paid') }}</span>
+        <b class="pov__value" data-testid="payments-overview-paid">{{ uah(coverage.paidAmount) }}</b>
+        <span class="pov__sub">{{ $t('dashboard.tutor.payments.lessonsShort', { n: coverage.paidLessons }) }}</span>
+      </div>
+      <div class="pov__tile">
+        <span class="pov__label">{{ monthTitle }}</span>
+        <b class="pov__value" data-testid="payments-overview-month-held">{{ billHeld }}</b>
+        <span class="pov__sub">{{ $t('dashboard.tutor.payments.overview.monthHeld') }}</span>
+        <span v-if="billPlanned" class="pov__sub">{{ $t('dashboard.tutor.payments.overview.monthPlanned', { n: billPlanned }) }}</span>
+      </div>
+      <div
+        v-if="coverage.unpaidHeld.length"
+        class="pov__tile pov__tile--debt"
+        data-testid="payments-overview-left"
+      >
+        <span class="pov__label">{{ $t('dashboard.tutor.payments.overview.debt') }}</span>
+        <b class="pov__value">{{ coverage.unpaidHeld.length }}</b>
+        <span class="pov__sub">{{ $t('dashboard.tutor.payments.overview.lessonsWord') }}</span>
+        <span v-if="coverage.lastPrice != null" class="pov__money">≈ {{ uah(coverage.debtMoney) }}</span>
+      </div>
+      <div
+        v-else
+        class="pov__tile"
+        :class="coverage.billMoney ? 'pov__tile--low' : 'pov__tile--ok'"
+        data-testid="payments-overview-left"
+      >
+        <span class="pov__label">{{ $t('dashboard.tutor.payments.overview.due') }}</span>
+        <b class="pov__value pov__value--money">{{ coverage.billMoney != null ? uah(coverage.billMoney) : '—' }}</b>
+        <span class="pov__sub">
+          {{ coverage.billMoney != null
+            ? $t('dashboard.tutor.payments.overview.forMonth', { month: monthName })
+            : $t('dashboard.tutor.payments.overview.noPrice') }}
+        </span>
+      </div>
+    </div>
+
     <!-- Сплачено · Проведено · Лишилось (або Борг) -->
-    <div class="pov__tiles">
+    <div v-else class="pov__tiles">
       <div class="pov__tile">
         <span class="pov__label">{{ $t('dashboard.tutor.payments.overview.paid') }}</span>
         <b class="pov__value" data-testid="payments-overview-paid">{{ uah(coverage.paidAmount) }}</b>
@@ -37,6 +76,7 @@
         <span class="pov__group-title">
           <b>{{ formatDay(group.payment.paid_on) }} · {{ uah(group.payment.amount) }}</b>
           <span class="pov__muted">
+            <template v-if="group.payment.for_month">{{ $t('dashboard.tutor.payments.overview.forMonth', { month: formatMonthName(group.payment.for_month) }) }} ·</template>
             {{ $t('dashboard.tutor.payments.lessonsShort', { n: group.payment.lessons }) }} ·
             {{ $t('dashboard.tutor.payments.overview.perLesson', { price: uah(group.price) }) }}
           </span>
@@ -58,9 +98,27 @@
       </ul>
     </section>
 
-    <!-- Понад оплачене: борг (проведені) і ще не оплачені (у розкладі) -->
+    <!-- О9: уроки цього місяця понад оплачене — рахунок місяця, не борг (без червоного) -->
+    <section v-if="coverage.bill.length" class="pov__group pov__group--bill" data-testid="payments-overview-bill">
+      <header class="pov__group-head">
+        <b>{{ $t('dashboard.tutor.payments.overview.billTitle', { month: monthName }) }}</b>
+        <span v-if="coverage.billMoney" class="pov__muted">≈ {{ uah(coverage.billMoney) }}</span>
+      </header>
+      <ul class="pov__lessons">
+        <li v-for="l in coverage.bill" :key="l.key" class="pov__lesson" :class="{ 'pov__lesson--held': l.held }">
+          <span class="pov__mark" aria-hidden="true">{{ l.held ? '✓' : '○' }}</span>
+          <span class="pov__when">{{ formatLesson(l.start) }}</span>
+          <span class="pov__state">{{ lessonState(l) }}</span>
+          <slot name="lesson-actions" :lesson="l" />
+        </li>
+      </ul>
+    </section>
+
+    <!-- Понад оплачене: борг (проведені) і ще не оплачені (у розкладі); О9 — лише минулі місяці -->
     <section v-if="unpaid.length" class="pov__group pov__group--unpaid" data-testid="payments-overview-unpaid">
-      <header class="pov__group-head"><b>{{ $t('dashboard.tutor.payments.overview.unpaidTitle') }}</b></header>
+      <header class="pov__group-head">
+        <b>{{ $t(monthly ? 'dashboard.tutor.payments.overview.debtTitle' : 'dashboard.tutor.payments.overview.unpaidTitle') }}</b>
+      </header>
       <ul class="pov__lessons">
         <li v-for="l in unpaid" :key="l.key" class="pov__lesson" :class="{ 'pov__lesson--held': l.held }">
           <span class="pov__mark" aria-hidden="true">{{ l.held ? '!' : '○' }}</span>
@@ -93,7 +151,7 @@
  */
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { formatUah } from '../api/studentPayments'
+import { formatMonth, formatUah } from '../api/studentPayments'
 import type { CoveredLesson, PaymentCoverage } from '../utils/paymentCoverage'
 
 const props = defineProps<{ coverage: PaymentCoverage }>()
@@ -101,6 +159,15 @@ const { t, locale } = useI18n()
 
 const groupsNewestFirst = computed(() => [...props.coverage.groups].reverse())
 const unpaid = computed(() => [...props.coverage.unpaidHeld, ...props.coverage.unpaidPlanned])
+const monthly = computed(() => props.coverage.mode === 'monthly')
+const billHeld = computed(() => props.coverage.bill.filter((l) => l.held).length)
+const billPlanned = computed(() => props.coverage.bill.length - billHeld.value)
+const monthName = computed(() => formatMonthName(props.coverage.month))
+const monthTitle = computed(() => monthName.value.charAt(0).toUpperCase() + monthName.value.slice(1))
+
+function formatMonthName(ym: string): string {
+  return formatMonth(ym, String(locale.value) === 'en' ? 'en-US' : String(locale.value))
+}
 
 function lessonState(l: CoveredLesson): string {
   if (l.held && l.noShow) return t('dashboard.tutor.payments.noShow')
@@ -131,12 +198,13 @@ function formatLesson(iso: string): string {
   display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px;
   border: 1px solid var(--border-color); background: var(--bg-secondary);
 }
-.pov__tile--ok { border-color: var(--color-success); }
-.pov__tile--low { border-color: var(--color-warning); }
-.pov__tile--debt { border-color: var(--color-danger); }
-.pov__tile--debt .pov__value { color: var(--color-danger); }
+.pov__tile--ok { border-color: var(--success-bg); }
+.pov__tile--low { border-color: var(--warning-bg); }
+.pov__tile--debt { border-color: var(--danger-bg); }
+.pov__tile--debt .pov__value { color: var(--danger-bg); }
 .pov__label { font-size: 12px; color: var(--text-secondary); }
 .pov__value { font-size: 20px; line-height: 1.2; color: var(--text-primary); }
+.pov__value--money { white-space: nowrap; }
 .pov__sub { font-size: 12px; color: var(--text-secondary); }
 .pov__money { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
 .pov__group { display: flex; flex-direction: column; gap: 6px; }
@@ -148,9 +216,9 @@ function formatLesson(iso: string): string {
 .pov__lesson:last-child { border-bottom: 0; }
 .pov__lesson--undated { color: var(--text-secondary); }
 .pov__mark { text-align: center; color: var(--text-secondary); }
-.pov__lesson--held .pov__mark { color: var(--color-success); }
+.pov__lesson--held .pov__mark { color: var(--success-bg); }
 .pov__state { font-size: 12px; color: var(--text-secondary); }
-.pov__group--unpaid .pov__group-head { color: var(--color-danger); }
-.pov__group--unpaid .pov__lesson--held .pov__mark { color: var(--color-danger); }
+.pov__group--unpaid .pov__group-head { color: var(--danger-bg); }
+.pov__group--unpaid .pov__lesson--held .pov__mark { color: var(--danger-bg); }
 .pov__group--free .pov__when { color: var(--text-secondary); text-decoration: line-through; }
 </style>

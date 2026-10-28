@@ -10,6 +10,20 @@
       <p v-else-if="loadError" class="text-sm text-danger" role="alert">{{ loadError }}</p>
 
       <template v-else-if="ledger && coverage">
+        <!-- О9 (власник 2026-10-28: мама платить у кінці місяця): уроки місяця — у рахунок, борг лише за минулі місяці -->
+        <label class="pay-mode" data-testid="student-payments-monthly">
+          <input
+            type="checkbox"
+            :checked="coverage.mode === 'monthly'"
+            :disabled="modeSaving"
+            data-testid="student-payments-monthly-toggle"
+            @change="setMonthly($event)"
+          />
+          <span>
+            <b>{{ $t('dashboard.tutor.payments.monthly.toggle') }}</b>
+            <span class="pay-mode__hint">{{ $t('dashboard.tutor.payments.monthly.hint') }}</span>
+          </span>
+        </label>
         <!-- 2026-10-28 (власник: «повно однотонних символів, тяжко розібрати»): той самий вигляд, що «Оплати» з розкладу —
              картки «Сплачено / Проведено / Лишилось», кожна оплата з уроками по датах; тут ще «Видалити» й «рахується» -->
         <p v-if="!coverage.tracking" class="text-sm text-muted" data-testid="student-payments-balance">
@@ -62,12 +76,32 @@
           type="button"
           class="pay-add"
           data-testid="student-payments-add-toggle"
-          @click="formOpen = true"
+          @click="openForm(bills[0] ?? null)"
         >
-          ＋ {{ $t('dashboard.tutor.payments.add') }}
+          ＋ {{ bills.length
+            ? $t('dashboard.tutor.payments.monthly.addFor', { month: monthName(bills[0].month) })
+            : $t('dashboard.tutor.payments.add') }}
         </button>
         <form v-else class="space-y-3 rounded-xl border border-border-subtle p-3" data-testid="student-payments-form" @submit.prevent="save">
-          <p class="text-sm font-semibold text-body">{{ $t('dashboard.tutor.payments.add') }}</p>
+          <p class="text-sm font-semibold text-body">
+            {{ isMonthly && forMonth
+              ? $t('dashboard.tutor.payments.monthly.addFor', { month: monthName(forMonth) })
+              : $t('dashboard.tutor.payments.add') }}
+          </p>
+          <!-- О9: за який місяць — минулі з боргом і поточний; натиск підставляє уроки й суму -->
+          <div v-if="isMonthly && monthChoices.length > 1" class="flex flex-wrap gap-2">
+            <button
+              v-for="b in monthChoices"
+              :key="b.month"
+              type="button"
+              class="pay-month"
+              :class="{ 'pay-month--on': b.month === forMonth }"
+              :data-testid="`student-payment-for-month-${b.month}`"
+              @click="openForm(b)"
+            >
+              {{ b.lessons ? $t('dashboard.tutor.payments.monthly.choice', { month: monthName(b.month), n: b.lessons }) : monthName(b.month) }}
+            </button>
+          </div>
           <div class="grid grid-cols-2 gap-3">
             <Input
               id="student-payment-amount"
@@ -88,7 +122,7 @@
               data-testid="student-payment-lessons"
             />
           </div>
-          <div v-if="monthHints.length" class="flex flex-wrap gap-2">
+          <div v-if="!isMonthly && monthHints.length" class="flex flex-wrap gap-2">
             <button
               v-for="h in monthHints"
               :key="h.month"
@@ -141,8 +175,8 @@ import Modal from '../../../ui/Modal.vue'
 import Button from '../../../ui/Button.vue'
 import Input from '../../../ui/Input.vue'
 import PaymentsCoverage from './PaymentsCoverage.vue'
-import { formatUah, studentPaymentsApi, type HeldLessonItem, type StudentLedger } from '../api/studentPayments'
-import { paymentCoverage } from '../utils/paymentCoverage'
+import { formatMonth, formatUah, studentPaymentsApi, type HeldLessonItem, type StudentLedger } from '../api/studentPayments'
+import { monthlyBills, paymentCoverage, type MonthlyBill } from '../utils/paymentCoverage'
 
 const props = defineProps<{ open: boolean; studentId: number | string | null; studentName: string }>()
 const emit = defineEmits<{ close: []; changed: [] }>()
@@ -162,6 +196,33 @@ const togglingKey = ref<string | null>(null)
 /** 2026-10-28: форма «Записати оплату» — відкрита, лише коли оплат ще немає (або вчитель її відкрив) */
 const formOpen = ref(false)
 const coverage = computed(() => (ledger.value ? paymentCoverage(ledger.value) : null))
+/** О9 «платить у кінці місяця»: за який місяць ця оплата ('YYYY-MM') */
+const forMonth = ref('')
+const modeSaving = ref(false)
+const isMonthly = computed(() => coverage.value?.mode === 'monthly')
+/** О9: місяці, за які ще не записано оплату (від найранішого) */
+const bills = computed<MonthlyBill[]>(() => (coverage.value ? monthlyBills(coverage.value) : []))
+/** О9: вибір місяця у формі — неоплачені + поточний (навіть без уроків понад оплачене) */
+const monthChoices = computed<MonthlyBill[]>(() => {
+  const c = coverage.value
+  if (!c || !isMonthly.value) return []
+  return bills.value.some((b) => b.month === c.month)
+    ? bills.value
+    : [...bills.value, { month: c.month, lessons: 0, amount: null, debt: false }]
+})
+
+function monthName(ym: string): string {
+  return formatMonth(ym, String(locale.value) === 'en' ? 'en-US' : String(locale.value))
+}
+
+/** Відкрити форму; О9 — одразу за місяць: уроки й ≈ сума за ціною останньої оплати (вчитель може змінити) */
+function openForm(bill: MonthlyBill | null): void {
+  formOpen.value = true
+  if (!isMonthly.value) return
+  forMonth.value = bill?.month ?? coverage.value?.month ?? ''
+  if (bill && bill.lessons > 0) lessons.value = String(bill.lessons)
+  if (bill && bill.amount != null) amount.value = String(bill.amount)
+}
 
 function today(): string {
   const d = new Date()
@@ -181,6 +242,7 @@ async function load(): Promise<void> {
   try {
     ledger.value = await studentPaymentsApi.ledger(props.studentId)
     formOpen.value = !ledger.value.balance.tracking
+    forMonth.value = ledger.value.balance.mode === 'monthly' ? (ledger.value.balance.month ?? '') : ''
   } catch (err) {
     ledger.value = null
     loadError.value = errorText(err)
@@ -197,6 +259,7 @@ watch(
     lessons.value = ''
     paidOn.value = today()
     note.value = ''
+    forMonth.value = ''
     saveError.value = ''
     confirmId.value = null
     void load()
@@ -250,13 +313,16 @@ async function save(): Promise<void> {
   if (!canSave.value || props.studentId == null || !ledger.value) return
   saving.value = true
   saveError.value = ''
+  let sinceMoved = false
   try {
     const res = await studentPaymentsApi.record(props.studentId, {
       amount: String(amount.value).replace(/\s/g, ''),
       lessons: lessonsNumber.value,
       paid_on: paidOn.value || undefined,
       note: note.value.trim(),
+      ...(isMonthly.value && forMonth.value ? { for_month: forMonth.value } : {}),
     })
+    sinceMoved = res.balance.since !== ledger.value.balance.since
     const payments = [res.payment, ...ledger.value.payments]
       .sort((a, b) => (a.paid_on === b.paid_on ? b.id - a.id : a.paid_on < b.paid_on ? 1 : -1))
     ledger.value = { ...ledger.value, balance: res.balance, payments }
@@ -267,9 +333,50 @@ async function save(): Promise<void> {
   } catch (err) {
     // Видимо у вікні; нічого не записано — виправити й зберегти ще раз
     saveError.value = errorText(err)
+    return
   } finally {
     saving.value = false
   }
+  // Ряд уроків зсунувся (перша оплата, оплата за минулий місяць) — перечитати проведені й наступні уроки
+  if (sinceMoved) await refresh()
+  // О9: наступна оплата — за наступний неоплачений місяць (поля порожні, щоб було видно, що запис відбувся)
+  if (isMonthly.value) forMonth.value = bills.value[0]?.month ?? coverage.value?.month ?? ''
+}
+
+/** Перечитати облік після зміни; не вийшло — сказати, що записане лишилось (щоб не записували вдруге) */
+async function refresh(): Promise<void> {
+  if (props.studentId == null) return
+  try {
+    ledger.value = await studentPaymentsApi.ledger(props.studentId)
+  } catch (err) {
+    console.info('[StudentPaymentsDialog] облік не перечитано:', (err as { response?: { status?: number } })?.response?.status ?? 'network')
+    saveError.value = t('dashboard.tutor.payments.errors.refresh')
+  }
+}
+
+/** О9: «Платить у кінці місяця» — увімкнути / вимкнути */
+async function setMonthly(event: Event): Promise<void> {
+  const box = event.target as HTMLInputElement
+  const monthly = box.checked
+  if (props.studentId == null || !ledger.value) return
+  modeSaving.value = true
+  saveError.value = ''
+  try {
+    const res = await studentPaymentsApi.setMonthly(props.studentId, monthly)
+    ledger.value = { ...ledger.value, balance: res.balance }
+    emit('changed')
+  } catch (err) {
+    // Видимо у вікні; режим не змінився — галочку назад
+    box.checked = !monthly
+    saveError.value = errorText(err)
+    modeSaving.value = false
+    return
+  }
+  await refresh()
+  // як при відкритті: облік є — форма згорнута (спершу видно рахунок місяця); оплат немає й передоплата — відкрита
+  formOpen.value = !ledger.value?.balance.tracking
+  forMonth.value = monthly ? (ledger.value?.balance.month ?? '') : ''
+  modeSaving.value = false
 }
 
 async function remove(paymentId: number): Promise<void> {
@@ -299,12 +406,43 @@ async function remove(paymentId: number): Promise<void> {
   cursor: pointer;
 }
 .pay-count--on {
-  border-color: var(--color-success);
-  color: var(--color-success);
+  border-color: var(--success-bg);
+  color: var(--success-bg);
 }
 .pay-count:disabled {
   opacity: 0.6;
   cursor: default;
+}
+.pay-mode {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.pay-mode input { margin-top: 3px; }
+.pay-mode__hint {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.pay-month {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: none;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.pay-month--on {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
 }
 .pay-add {
   width: 100%;

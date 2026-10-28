@@ -93,6 +93,23 @@ describe('Вікно уроку в розкладі — коротко й з о�
     expect(chip(w, 'payment').text()).toBe('Не оплачено')
   })
 
+  it('О9 «платить у кінці місяця»: урок цього й наступного місяця — «У рахунок за …», не «Не оплачено»', async () => {
+    const ym = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const lessonYm = ym(new Date(future))
+    const name = new Intl.DateTimeFormat('uk', { month: 'long' }).format(new Date(`${lessonYm}-15T12:00:00`))
+    const monthly = (month: string) => {
+      const l = ownLedger([28], 0)
+      return { ...l, payments: [], balance: { ...l.balance, since: `${month}-01`, paid_lessons: 0, last_price: null, mode: 'monthly', month } }
+    }
+    ledger.mockResolvedValue(monthly(lessonYm))
+    let w = await open()
+    expect(chip(w, 'payment').text()).toBe(`У рахунок за ${name}`)
+    const before = new Date(new Date(future).getFullYear(), new Date(future).getMonth() - 1, 15)
+    ledger.mockResolvedValue(monthly(ym(before)))                    // урок — уже в наступному місяці
+    w = await open()
+    expect(chip(w, 'payment').text()).toBe(`У рахунок за ${name}`)
+  })
+
   it('учень з платформи — значок платформи, без «Оплати»; облік недоступний — без значка й кнопки', async () => {
     ledger.mockResolvedValue({ ...ownLedger([]), external_platform: 'Платформа А' })
     let w = await open()

@@ -2414,7 +2414,20 @@
           "unpaidTitle": "Not paid",
           "freeTitle": "Not counted (free)",
           "stateHeld": "held",
-          "statePlanned": "scheduled"
+          "statePlanned": "scheduled",
+          "monthHeld": "held",
+          "monthPlanned": "{n} more scheduled",
+          "due": "To pay",
+          "forMonth": "for {month}",
+          "noPrice": "amount after the first payment",
+          "billTitle": "Bill for {month}",
+          "debtTitle": "Owed for past months"
+        },
+        "monthly": {
+          "toggle": "Pays at the end of the month",
+          "hint": "This month's lessons go on the bill; only past months count as owed",
+          "addFor": "Record payment for {month}",
+          "choice": "{month} · lessons: {n}"
         },
         "pricePreview": "Lesson price: {price}",
         "save": "Record",
@@ -2432,7 +2445,11 @@
           "left": "Prepaid: lessons left — {n}",
           "one": "1 prepaid lesson left",
           "zero": "Prepaid lessons are used up",
-          "debt": "Owes: lessons — {n} (≈ {amount} ₴)"
+          "debt": "Owes: lessons — {n} (≈ {amount} ₴)",
+          "monthlyDebt": "Owed for past months: lessons — {n} (≈ {amount} ₴)",
+          "monthlyDueAmount": "This month: {n} held · to pay ≈ {amount} ₴",
+          "monthlyDue": "This month: lessons held — {n}, pays at month end",
+          "monthlyClear": "Pays at month end · all paid"
         },
         "errors": {
           "bad_amount": "Enter an amount greater than zero.",
@@ -2446,6 +2463,8 @@
           "bad_month": "Unknown month.",
           "bad_source": "Unknown lesson type — refresh the page.",
           "bad_counted": "Couldn't change the mark — refresh the page.",
+          "bad_mode": "Couldn't change the payment mode — refresh the page.",
+          "refresh": "Saved, but the list didn't update — close and reopen the window.",
           "failed": "Couldn't do it. Please try again."
         }
       },
@@ -4487,7 +4506,9 @@
         "weekly": "Weekly",
         "twiceWeekly": "Twice a week",
         "paid": "Paid · lessons left: {n}",
-        "unpaid": "Not paid"
+        "unpaid": "Not paid",
+        "paidMonthly": "Paid",
+        "bill": "Bill for {month}"
       },
       "deleteScopeFollowing": "This and all following lessons of the series — {count} lessons",
       "confirmDeleteFollowingMessage": "Delete lessons with {student} starting {date}? Lessons: {count}. Earlier lessons stay.",
