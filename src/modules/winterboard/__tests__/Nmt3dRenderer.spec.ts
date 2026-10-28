@@ -733,6 +733,31 @@ describe('Nmt3dRenderer — boardMode gate for store→engine sync', () => {
     wrapper.unmount()
   })
 
+  // 28.10: стару камеру (без unit) лише відкриття дошки не переписує — тільки дія вчителя.
+  it('INV-NMT3D-23b: old data.cam — no silent cam write on unmount or plain click; orbit writes it with unit', async () => {
+    const old = { ...makeAsset({ a: 3 }), data: { ...makeAsset({ a: 3 }).data, cam: { yaw: 1.5, pitch: -0.4, scale: 17 } } } as Nmt3dAsset
+    const camEmits = (w: { emitted: (e: string) => unknown[][] | undefined }) =>
+      (w.emitted('update:asset') ?? []).filter(([a]) => (a as Nmt3dAsset).data.cam !== old.data.cam)
+    const w1 = await mountRenderer({ asset: old, boardMode: 'edit' })
+    w1.unmount()
+    expect(camEmits(w1 as never)).toEqual([])
+
+    const w2 = await mountRenderer({ asset: old, boardMode: 'edit' })
+    const stage = w2.find('.nmt3d-stage').element as HTMLElement
+    // Клік без обертання — не дія з камерою.
+    stage.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }))
+    window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }))
+    await nextTick()
+    expect(camEmits(w2 as never)).toEqual([])
+    stage.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }))
+    lastWs!.cam.yaw = 1.8
+    window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }))
+    await nextTick()
+    const emitted = camEmits(w2 as never)
+    expect((emitted[emitted.length - 1][0] as Nmt3dAsset).data.cam).toMatchObject({ yaw: 1.8, unit: 'card' })
+    w2.unmount()
+  })
+
   // ── INV-NMT3D-24: pointerup in replay mode does NOT emit ────────────────────
   it('INV-NMT3D-24: pointerup is silenced in replay mode (no emit loop)', async () => {
     const asset = makeAsset({ a: 3 })

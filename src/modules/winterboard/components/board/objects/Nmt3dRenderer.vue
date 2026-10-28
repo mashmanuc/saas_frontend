@@ -152,6 +152,8 @@ const WHEEL_DEBOUNCE_MS = 150
 // Orbit gestures often end outside the stage div (user drags past the edge) —
 // so checking e.target in pointerup is wrong. Instead track pointerdown origin.
 let _orbitStartedInStage = false
+// Камера на початку жесту: клік без обертання — не дія з камерою (для старої камери важливо, див. byUser).
+let _camAtDown: { yaw: number; pitch: number; scale: number } | null = null
 
 function _camEqual(
   a: { yaw: number; pitch: number; scale: number } | null,
@@ -169,10 +171,16 @@ function camScaleKnown(cam: object | null | undefined): boolean {
   return (cam as { unit?: string } | null | undefined)?.unit === 'card'
 }
 
-/** Capture current ws.cam → emit asset_update with data.cam (if changed + edit mode). */
-function _emitCamIfChanged(): void {
+/**
+ * Capture current ws.cam → emit asset_update with data.cam (if changed + edit mode).
+ * `byUser` — кінець обертання/коліщатка. Стару камеру (без позначки) без дії вчителя не переписуємо:
+ * інакше саме відкриття старої дошки й перехід на іншу сторінку мовчки зберігали б нове наближення.
+ */
+function _emitCamIfChanged(byUser = false): void {
   if (!ws || !ws.cam) return
   if (props.boardMode !== 'edit') return
+  const saved = props.asset.data.cam
+  if (!byUser && saved && !camScaleKnown(saved)) return
   const newCam = {
     yaw: ws.cam.yaw,
     pitch: ws.cam.pitch,
@@ -209,6 +217,7 @@ function _onWindowPointerDown(e: PointerEvent): void {
   if (!ws || !stageRef.value) return
   const target = e.target as Node | null
   _orbitStartedInStage = !!target && stageRef.value.contains(target)
+  _camAtDown = _orbitStartedInStage && ws.cam ? { yaw: ws.cam.yaw, pitch: ws.cam.pitch, scale: ws.cam.scale } : null
 }
 
 function _onWindowPointerUp(_e: PointerEvent): void {
@@ -216,7 +225,7 @@ function _onWindowPointerUp(_e: PointerEvent): void {
   const wasOrbit = _orbitStartedInStage
   _orbitStartedInStage = false
   if (!wasOrbit) return
-  _emitCamIfChanged()
+  _emitCamIfChanged(!_camEqual(_camAtDown, ws.cam))
 }
 
 function _onStageWheel(_e: WheelEvent): void {
@@ -226,7 +235,7 @@ function _onStageWheel(_e: WheelEvent): void {
   }
   _wheelDebounceTimer = window.setTimeout(() => {
     _wheelDebounceTimer = null
-    _emitCamIfChanged()
+    _emitCamIfChanged(true)
   }, WHEEL_DEBOUNCE_MS)
 }
 

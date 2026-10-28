@@ -3299,8 +3299,12 @@
         }
         const dx = p.x - last.x, dy = p.y - last.y;
         if (dragMode === 'orbit') {
-          this.cam.yaw   += dx * 0.012;
-          this.cam.pitch  = clamp(this.cam.pitch + dy * 0.012, -1.2, 1.2);
+          // Обертання — за рухом миші на екрані (як до сцени в пікселях картки): інакше на малому масштабі
+          // дошки той самий жест крутив тіло в рази сильніше.
+          const r = this.host.getBoundingClientRect();
+          const s = r.width > 0 ? r.width / this._stageSize().W : 1;
+          this.cam.yaw   += dx * s * 0.012;
+          this.cam.pitch  = clamp(this.cam.pitch + dy * s * 0.012, -1.2, 1.2);
           this._render();
         } else if (dragMode === 'handle' && dragHandle) {
           const dx2 = p.x - last.x, dy2 = p.y - last.y;

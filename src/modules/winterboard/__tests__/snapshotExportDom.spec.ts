@@ -251,6 +251,8 @@ describe('snapshotElement — картка в зменшеній обгортц�
     expect(await snapshotElement(root, new AbortController().signal)).not.toBeNull()
     expect(h2c.sizes).toEqual([[890, 400]])
     expect(layer.style.transform).toBe('none')
+    // Тінь виділеної картки html2canvas заливав поверх тексту (бузкові прямокутники в PDF).
+    expect(root.style.boxShadow).toBe('none')
     layer.remove()
   })
 
