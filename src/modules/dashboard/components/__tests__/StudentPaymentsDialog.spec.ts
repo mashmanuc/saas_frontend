@@ -291,6 +291,23 @@ describe('StudentPaymentsDialog', () => {
     w.unmount()
   })
 
+  it('видалено оплату за вересень — облік перечитано: вересневі уроки вже не борг', async () => {
+    const OCT_ONLY = { ...MONTHLY, payments: [], lessons: MONTHLY.lessons.slice(5),
+      balance: { ...MONTHLY.balance, since: '2026-10-01', paid_lessons: 0, done_lessons: 3, left_lessons: -3, debt_lessons: 0, debt_amount: 0 } }
+    vi.mocked(studentPaymentsApi.ledger).mockResolvedValueOnce(MONTHLY as never).mockResolvedValueOnce(OCT_ONLY as never)
+    vi.mocked(studentPaymentsApi.remove).mockResolvedValueOnce({ balance: OCT_ONLY.balance } as never)
+    const w = dialog()
+    await flushPromises()
+    expect($(w, 'payments-overview-unpaid').exists()).toBe(true)
+    await $(w, 'student-payment-delete-1').trigger('click')
+    await $(w, 'student-payment-delete-yes-1').trigger('click')
+    await flushPromises()
+    expect(studentPaymentsApi.ledger).toHaveBeenCalledTimes(2)
+    expect(w.find('[data-testid="payments-overview-unpaid"]').exists()).toBe(false)
+    expect($(w, 'payments-overview-bill').exists()).toBe(true)
+    w.unmount()
+  })
+
   it('режим не змінено — причина словами, галочка повертається', async () => {
     vi.mocked(studentPaymentsApi.ledger).mockResolvedValueOnce(LEDGER as never)
     vi.mocked(studentPaymentsApi.setMonthly).mockRejectedValueOnce({ response: { status: 400, data: { error: 'bad_mode' } } })

@@ -384,9 +384,12 @@ async function remove(paymentId: number): Promise<void> {
   saveError.value = ''
   try {
     const res = await studentPaymentsApi.remove(paymentId)
+    const sinceMoved = res.balance.since !== ledger.value.balance.since
     ledger.value = { ...ledger.value, balance: res.balance, payments: ledger.value.payments.filter((p) => p.id !== paymentId) }
     confirmId.value = null
     emit('changed')
+    // Ряд уроків зсунувся (видалено найранішу оплату) — перечитати, інакше старі уроки показало б боргом
+    if (sinceMoved) await refresh()
   } catch (err) {
     saveError.value = errorText(err)
   }
