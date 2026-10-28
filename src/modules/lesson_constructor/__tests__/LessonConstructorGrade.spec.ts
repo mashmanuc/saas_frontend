@@ -253,8 +253,9 @@ describe('вибір теми за класом — дані', () => {
       }
     }
     const six = gradeTracks(6, LABELS)[0].units
+    // 28.10: «Відношення» стало добіркою (шістка з банку) — перша в розділі.
     expect(six.find((u) => u.title === 'Відношення і пропорції')!.topics.map((id) => LABELS[id])).toEqual([
-      'Пропорції: невідомий член', 'Пряма пропорційність', 'Обернена пропорційність'])
+      'Відношення', 'Пропорції: невідомий член', 'Пряма пропорційність', 'Обернена пропорційність'])
     const five = gradeTracks(5, LABELS)[0].units
     expect(five.find((u) => u.title === 'Геометричні фігури і величини')!.topics).toContain('basic-geometry-figures.angles')
   })
