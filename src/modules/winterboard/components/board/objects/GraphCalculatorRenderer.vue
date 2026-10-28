@@ -497,7 +497,7 @@ useExportCapture(
 
 let calc: InstanceType<typeof GraphCalculator> | null = null
 // Масштаб дошки змінився — та сама картка з новою роздільністю (composables/cardZoom.ts).
-useCardZoomRefresh(() => calc?.refreshResolution())
+useCardZoomRefresh(() => calc?.refreshResolution(), () => calc?.renderNow())
 /** Phase G3 hotfix: original engine.setParamValue (pre-monkey-patch). Used
  *  by onParamDrag to bypass monkey-patch (avoids double-emit).
  *  Set у mountEngine. */

@@ -19,6 +19,8 @@
 export const CARD_CANVAS_MAX_SIDE = 4096
 /** Нижня межа роздільності відносно 100 % — дрібніше картку ніхто не читає. */
 const MIN_RESOLUTION = 0.25
+/** Позначка «готуємо експорт» (composables/cardZoom.ts CARD_EXPORT_ATTR): на цей час — як на 100 %. */
+const CARD_EXPORT_ATTR = 'data-card-export'
 
 /**
  * Підганяє полотно під картку й повертає логічні розміри.
@@ -27,6 +29,8 @@ const MIN_RESOLUTION = 0.25
  *   view — скільки екранних пікселів займає піксель картки (масштаб показу).
  */
 export function fitCardCanvas(container, canvas, ctx) {
+  // Знімок для PDF/PNG не має залежати від масштабу дошки: поки йде підготовка експорту — не нижче 100 %.
+  const floor = container.closest?.(`[${CARD_EXPORT_ATTR}]`) ? 1 : MIN_RESOLUTION
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
   const rect = container.getBoundingClientRect()
   // happy-dom і display:none дають clientWidth 0 — тоді як раніше, з прямокутника.
@@ -35,7 +39,7 @@ export function fitCardCanvas(container, canvas, ctx) {
   const view = rect.width > 0 ? rect.width / w : 1
   const lw = w * dpr
   const lh = h * dpr
-  const k = Math.min(Math.max(view, MIN_RESOLUTION), CARD_CANVAS_MAX_SIDE / Math.max(lw, lh))
+  const k = Math.min(Math.max(view, floor), CARD_CANVAS_MAX_SIDE / Math.max(lw, lh))
   const bw = Math.max(1, Math.round(lw * k))
   const bh = Math.max(1, Math.round(lh * k))
   if (canvas.width !== bw || canvas.height !== bh) {

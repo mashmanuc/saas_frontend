@@ -3,6 +3,7 @@
 // екранні пікселі вказівника → логічні.
 import { describe, it, expect, afterEach } from 'vitest'
 import { CARD_CANVAS_MAX_SIDE, fitCardCanvas, toCanvasPx } from '../vendor/cardCanvas.js'
+import { CARD_EXPORT_ATTR } from '../composables/cardZoom'
 
 function box(cardW: number, cardH: number, view: number) {
   const container = document.createElement('div')
@@ -72,5 +73,27 @@ describe('toCanvasPx', () => {
     const canvas = document.createElement('canvas')
     Object.defineProperty(canvas, 'getBoundingClientRect', { value: () => ({ left: 0, top: 0, width: 0, height: 0 }) })
     expect(toCanvasPx(canvas, 1280, 2)).toBe(2)
+  })
+})
+
+// Підготовка експорту (composables/cardZoom prepareCardExport): позначка на <html> — полотно як на 100 %.
+describe('fitCardCanvas — підготовка експорту', () => {
+  afterEach(() => document.documentElement.removeAttribute(CARD_EXPORT_ATTR))
+
+  it('на 18 % — чверть роздільності; з позначкою експорту — повна; позначку знято — знову чверть', () => {
+    Object.defineProperty(window, 'devicePixelRatio', { value: 1, configurable: true })
+    const at18 = box(640, 360, 0.18)
+    document.body.appendChild(at18.container)
+    fitCardCanvas(at18.container, at18.canvas, at18.ctx)
+    expect(at18.canvas.width).toBe(160)
+    document.documentElement.setAttribute(CARD_EXPORT_ATTR, '')
+    fitCardCanvas(at18.container, at18.canvas, at18.ctx)
+    expect([at18.canvas.width, at18.canvas.height]).toEqual([640, 360])
+    // CSS-розмір і логічне полотно ті самі — змінюється лише кількість пікселів.
+    expect(at18.canvas.style.width).toBe('640px')
+    document.documentElement.removeAttribute(CARD_EXPORT_ATTR)
+    fitCardCanvas(at18.container, at18.canvas, at18.ctx)
+    expect(at18.canvas.width).toBe(160)
+    at18.container.remove()
   })
 })

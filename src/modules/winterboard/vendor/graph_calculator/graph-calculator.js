@@ -587,6 +587,13 @@ const __GC = (function () {
       if (!this._destroyed) this._resize();
     }
 
+    /** Те саме, але одразу — підготовка експорту не чекає кадру (у фоновій вкладці його немає). */
+    renderNow() {
+      if (this._destroyed) return;
+      this._resize();
+      this._render();
+    }
+
     /** Скільки логічних пікселів полотна в одному екранному. */
     _screenPx() {
       return toCanvasPx(this.canvas, this._lw, this._dpr || 1);

@@ -60,6 +60,8 @@ export interface CalculusCardInstance {
   setFitEnabled(on: boolean): void
   /** Масштаб дошки змінився — та сама картка з новою роздільністю (`cardCanvas.js`). */
   refreshResolution(): void
+  /** Те саме, але одразу (підготовка експорту, `prepareCardExport`). */
+  renderNow(): void
   setZoomLabels(labels: { zoomIn?: string; zoomOut?: string; home?: string; fit?: string }): void
   onFitRequest?: (() => void) | null
   setOption<K extends keyof CalculusOpts>(key: K, value: CalculusOpts[K]): void

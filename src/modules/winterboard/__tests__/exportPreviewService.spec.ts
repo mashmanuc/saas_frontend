@@ -196,20 +196,42 @@ describe('exportPreviewService — captureAll', () => {
 
   it('abort propagates to in-flight captures (cancellation)', async () => {
     let aborted = false
+    const ctrl = new AbortController()
     exportPreviewService.register('slow', (signal) =>
       new Promise((resolve) => {
         signal.addEventListener('abort', () => {
           aborted = true
           resolve(null)
         }, { once: true })
+        // Trigger abort mid-flight — коли знімання вже йде (до нього є підготовка полотен карток).
+        setTimeout(() => ctrl.abort(), 10)
       }),
     )
-    const ctrl = new AbortController()
-    const promise = exportPreviewService.captureAll(['slow'], ctrl.signal, { timeoutMs: 5_000 })
-    // Trigger abort mid-flight
-    setTimeout(() => ctrl.abort(), 10)
-    await promise
+    await exportPreviewService.captureAll(['slow'], ctrl.signal, { timeoutMs: 5_000 })
     expect(aborted).toBe(true)
+  })
+
+  // Стенд 2026-10-28: на 18 % графік/інтеграл/коло у PDF були розмиті — полотно тримає роздільність показу.
+  it('полотна карток на час знімання — у роздільності 100 %, після (і при збої, і при скасуванні) — назад', async () => {
+    const events: string[] = []
+    const onEvent = () => events.push(document.documentElement.hasAttribute('data-card-export') ? 'on' : 'off')
+    window.addEventListener('wb:card-export-resolution', onEvent)
+    let during = false
+    exportPreviewService.register('ok', async () => {
+      during = document.documentElement.hasAttribute('data-card-export')
+      return { blob: new Blob(), width: 1, height: 1 }
+    })
+    exportPreviewService.register('boom', async () => { throw new Error('boom') })
+    await exportPreviewService.captureAll(['ok', 'boom'], new AbortController().signal)
+    expect(during).toBe(true)
+    expect(document.documentElement.hasAttribute('data-card-export')).toBe(false)
+    expect(events).toEqual(['on', 'off'])
+
+    const ctrl = new AbortController()
+    ctrl.abort()
+    await exportPreviewService.captureAll(['ok'], ctrl.signal)
+    expect(document.documentElement.hasAttribute('data-card-export')).toBe(false)
+    window.removeEventListener('wb:card-export-resolution', onEvent)
   })
 
   it('onProgress callback fires for each completed widget', async () => {

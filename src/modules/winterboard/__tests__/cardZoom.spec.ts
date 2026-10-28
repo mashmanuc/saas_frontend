@@ -6,7 +6,7 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { ZOOM_SCALED_CARD_TYPES, cardZoomStyle, provideCardZoom, useCardZoom, useCardZoomRefresh } from '../composables/cardZoom'
+import { CARD_EXPORT_ATTR, ZOOM_SCALED_CARD_TYPES, cardZoomStyle, prepareCardExport, provideCardZoom, useCardZoom, useCardZoomRefresh } from '../composables/cardZoom'
 
 const read = (rel: string) => readFileSync(resolve(__dirname, '..', rel), 'utf-8').replace(/\r\n/g, '\n')
 
@@ -85,7 +85,35 @@ describe('проводка: які картки масштабуються і д
     ['components/board/objects/CalculusRenderer.vue', 'card'],
     ['components/board/objects/GraphCalculatorRenderer.vue', 'calc'],
   ])('%s просить нову роздільність при зміні масштабу', (file, inst) => {
-    expect(read(file)).toContain(`useCardZoomRefresh(() => ${inst}?.refreshResolution())`)
+    expect(read(file)).toContain(`useCardZoomRefresh(() => ${inst}?.refreshResolution()`)
+  })
+})
+
+// Стенд 2026-10-28: на 18 % графік/інтеграл у PDF були розмиті. Сервіс експорту ставить позначку й просить
+// картки перемалюватись ОДРАЗУ (у фоновій вкладці кадрів немає), потім знімає — і знову.
+describe('prepareCardExport', () => {
+  it('позначка на час знімання; картки перемальовуються одразу двічі; після розмонтування — тиша', async () => {
+    const refresh = vi.fn()
+    const now = vi.fn()
+    const Card = defineComponent({ setup() { useCardZoomRefresh(refresh, now); return () => h('i') } })
+    const w = mount(Card)
+    const restore = prepareCardExport()
+    expect(document.documentElement.hasAttribute(CARD_EXPORT_ATTR)).toBe(true)
+    expect(now).toHaveBeenCalledTimes(1)
+    restore()
+    expect(document.documentElement.hasAttribute(CARD_EXPORT_ATTR)).toBe(false)
+    expect(now).toHaveBeenCalledTimes(2)
+    expect(refresh).not.toHaveBeenCalled()
+    w.unmount()
+    prepareCardExport()()
+    expect(now).toHaveBeenCalledTimes(2)
+  })
+
+  it('рушії мають «одразу» — і викликається саме воно', () => {
+    expect(read('components/board/objects/CalculusRenderer.vue')).toContain('() => card?.renderNow())')
+    expect(read('components/board/objects/GraphCalculatorRenderer.vue')).toContain('() => calc?.renderNow())')
+    expect(read('vendor/calculus/calculus.js')).toContain('renderNow() {')
+    expect(read('vendor/graph_calculator/graph-calculator.js')).toContain('renderNow() {')
   })
 })
 

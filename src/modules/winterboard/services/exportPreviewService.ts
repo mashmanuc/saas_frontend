@@ -22,6 +22,7 @@
  *   - Export click → captureAll(assetIds, signal) → uploadAll(...)
  */
 import { winterboardApi } from '../api/winterboardApi'
+import { prepareCardExport } from '../composables/cardZoom'
 
 /** Capture function shape. Returns Blob+dims or null on failure/abort. */
 export type WidgetCaptureFn = (signal: AbortSignal) => Promise<{
@@ -274,18 +275,24 @@ class ExportPreviewService {
     let done = 0
     const total = targets.length
 
-    await Promise.all(
-      targets.map((assetId) =>
-        limit(async () => {
-          if (signal.aborted) return
-          const result = await this.captureOne(assetId, signal, opts.timeoutMs)
-          if (result) captured.set(assetId, result)
-          else failed.push(assetId)
-          done++
-          opts.onProgress?.(done, total)
-        }),
-      ),
-    )
+    // Полотна карток (графік, інтеграл, коло) — у роздільності 100 % на час знімання, потім назад.
+    const restore = prepareCardExport()
+    try {
+      await Promise.all(
+        targets.map((assetId) =>
+          limit(async () => {
+            if (signal.aborted) return
+            const result = await this.captureOne(assetId, signal, opts.timeoutMs)
+            if (result) captured.set(assetId, result)
+            else failed.push(assetId)
+            done++
+            opts.onProgress?.(done, total)
+          }),
+        ),
+      )
+    } finally {
+      restore()
+    }
 
     return { captured, failed, skipped }
   }

@@ -11,7 +11,7 @@
  * масштаб змінюється, розмір картки (`clientWidth`) той самий і ResizeObserver
  * мовчить, тож рендерер сам просить нову роздільність (`refreshResolution`).
  */
-import { inject, provide, watch, type InjectionKey, type Ref } from 'vue'
+import { inject, onBeforeUnmount, provide, watch, type InjectionKey, type Ref } from 'vue'
 
 /** Типи карток, яких WBCanvas масштабує обгорткою. */
 export const ZOOM_SCALED_CARD_TYPES: ReadonlySet<string> = new Set([
@@ -91,9 +91,40 @@ export function useCardZoom(): Readonly<Ref<number>> | null {
  * оновлення обгортка ще має старий `scale()` (стенд 2026-10-01: графік лишався з
  * роздільністю 35 % на 100 % — розмитий).
  */
-export function useCardZoomRefresh(refresh: () => void): void {
+export function useCardZoomRefresh(refresh: () => void, renderNow: () => void = refresh): void {
   const zoom = inject(CARD_ZOOM, null)
   if (zoom) watch(zoom, () => refresh(), { flush: 'post' })
+  // Підготовка експорту (prepareCardExport) — нова роздільність ОДРАЗУ (знімання не чекає кадру: у фоновій
+  // вкладці кадрів немає), без зміни даних картки.
+  if (typeof window === 'undefined') return
+  const onExport = () => renderNow()
+  window.addEventListener(CARD_EXPORT_EVENT, onExport)
+  onBeforeUnmount(() => window.removeEventListener(CARD_EXPORT_EVENT, onExport))
+}
+
+/**
+ * Позначка «готуємо експорт» на `<html>`: полотна карток (`vendor/cardCanvas.js`, той самий рядок) на цей час
+ * малюються в роздільності 100 %, хоч би який масштаб дошки. Без неї на 18 % інтеграл/графік/коло у PDF
+ * були розмиті (стенд 2026-10-28) — полотно тримає роздільність показу.
+ */
+export const CARD_EXPORT_ATTR = 'data-card-export'
+/** Подія: позначку поставлено/знято — картки перемальовуються (useCardZoomRefresh). */
+export const CARD_EXPORT_EVENT = 'wb:card-export-resolution'
+
+/**
+ * Сервіс експорту — ДО знімання: позначка + перемальовування карток (одразу, синхронно). Повертає «прибрати»
+ * (у finally — і при збої, і при скасуванні). Дані карток, камера, масштаб дошки, операції й запис не змінюються;
+ * функції знімання віджетів лишаються тонкими (INV-EP-8).
+ */
+export function prepareCardExport(): () => void {
+  if (typeof document === 'undefined') return () => {}
+  const root = document.documentElement
+  root.setAttribute(CARD_EXPORT_ATTR, '')
+  window.dispatchEvent(new Event(CARD_EXPORT_EVENT))
+  return () => {
+    root.removeAttribute(CARD_EXPORT_ATTR)
+    window.dispatchEvent(new Event(CARD_EXPORT_EVENT))
+  }
 }
 
 /**

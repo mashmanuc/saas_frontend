@@ -167,7 +167,7 @@ useExportCapture(
 
 let card: CalculusCardInstance | null = null
 // Масштаб дошки змінився — та сама картка з новою роздільністю (composables/cardZoom.ts).
-useCardZoomRefresh(() => card?.refreshResolution())
+useCardZoomRefresh(() => card?.refreshResolution(), () => card?.renderNow())
 let bundleReady = false
 let snapshotTimer: ReturnType<typeof setTimeout> | null = null
 const SNAPSHOT_DEBOUNCE_MS = 150
