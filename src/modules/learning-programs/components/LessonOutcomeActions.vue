@@ -74,7 +74,8 @@ const props = defineProps<{
 const emit = defineEmits<{ (e: 'changed'): void }>()
 const { t, te } = useI18n({ useScope: 'global' })
 
-const usage = ref<'whole' | 'unknown'>('whole')
+// Підготовка уроку не доводить, що всі задачі розв'язали: це явне підтвердження вчителя.
+const usage = ref<'whole' | 'unknown'>('unknown')
 const busy = ref<string>('')
 const done = ref<'' | 'next' | 'repeat' | 'not_held' | 'review'>('')
 const offerReview = ref(false)

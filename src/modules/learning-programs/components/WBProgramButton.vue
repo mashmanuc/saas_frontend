@@ -15,18 +15,8 @@
     :title="t('learningPrograms.board.title')"
     @click="openModal"
   >🧭 {{ t('learningPrograms.board.button') }}</button>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="wb-program-overlay"
-      role="dialog"
-      aria-modal="true"
-      :aria-label="t('learningPrograms.board.title')"
-      data-testid="wb-program-modal"
-      @click.self="open = false"
-    >
-      <div class="wb-program">
-        <button type="button" class="wb-program__close" :aria-label="t('common.close')" @click="open = false">✕</button>
+  <Modal :open="open" :title="t('learningPrograms.board.title')" size="lg" stacked @close="open = false">
+      <div class="wb-program" data-testid="wb-program-modal">
         <p v-if="loading" class="wb-program__muted">{{ t('loader.loading') }}</p>
         <p v-else-if="failed" class="wb-program__muted" role="alert">{{ t('learningPrograms.errors.load') }}</p>
         <template v-else-if="ctx">
@@ -49,20 +39,21 @@
           </template>
         </template>
       </div>
-    </div>
-  </Teleport>
+  </Modal>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import LearnerProgramPanel from './LearnerProgramPanel.vue'
 import { learningProgramsApi, type Learner } from '../api/learningProgramsApi'
 import { useProgramsAvailability } from '../composables/useProgramsAvailability'
+import Modal from '@/ui/Modal.vue'
 
 const props = defineProps<{ boardId: string }>()
+const emit = defineEmits<{ (e: 'open-change', value: boolean): void }>()
 const { t } = useI18n({ useScope: 'global' })
 const router = useRouter()
 const auth = useAuthStore()
@@ -75,33 +66,50 @@ const loading = ref(false)
 const failed = ref(false)
 const ctx = ref<Ctx | null>(null)
 const chosen = ref<string | null>(null)
+let contextSeq = 0
 
-async function fetchCtx(): Promise<Ctx | null> {
-  return learningProgramsApi.forBoard(props.boardId)
-}
+// Лише локальний бар'єр клавіш: відкриття програми не пише ops і не змінює інструмент дошки.
+watch(open, (value) => {
+  emit('open-change', value)
+  if (!value) contextSeq += 1
+}, { flush: 'sync' })
+onBeforeUnmount(() => { contextSeq += 1; emit('open-change', false) })
 
-onMounted(async () => {
+watch(() => props.boardId, async (id, _old, onCleanup) => {
+  open.value = false
+  ctx.value = null
+  chosen.value = null
+  visible.value = false
+  const seq = ++contextSeq
+  let current = true
+  onCleanup(() => { current = false })
   if (!(await availability.ensure(auth.user?.id, auth.user?.role))) return
+  if (!current) return
   try {
-    const c = await fetchCtx()
-    visible.value = !!c?.board_learner
+    const c = await learningProgramsApi.forBoard(id)
+    if (current && seq === contextSeq) visible.value = !!c?.board_learner
   } catch {
-    visible.value = false            // урок без учня / не мій — кнопки немає (сервер 404)
+    if (current && seq === contextSeq) visible.value = false // урок без учня / не мій — кнопки немає
   }
-})
+}, { immediate: true })
 
 async function openModal() {
+  const seq = ++contextSeq
+  const board = props.boardId
   open.value = true
   loading.value = true
   failed.value = false
+  ctx.value = null
   chosen.value = null
   try {
-    ctx.value = await fetchCtx()     // свіжий контекст: учня на уроці могли змінити
+    const fresh = await learningProgramsApi.forBoard(board) // свіжий контекст учня
+    if (seq !== contextSeq || !open.value || board !== props.boardId) return
+    ctx.value = fresh
     if (ctx.value?.programs.length === 1) chosen.value = ctx.value.programs[0].id
   } catch {
-    failed.value = true
+    if (seq === contextSeq) failed.value = true
   } finally {
-    loading.value = false
+    if (seq === contextSeq) loading.value = false
   }
 }
 
@@ -117,19 +125,8 @@ function openList() {
 
 <style scoped>
 .wb-program-btn { width: auto; padding: 0 10px; gap: 4px; font-size: 13px; font-weight: 600; white-space: nowrap; }
-.wb-program-overlay {
-  position: fixed; inset: 0; z-index: 9000; background: rgba(15, 23, 42, 0.55);
-  display: flex; align-items: center; justify-content: center; padding: 16px;
-}
 .wb-program {
-  position: relative; width: min(100%, 760px); max-height: calc(100vh - 32px); overflow-y: auto;
-  background: var(--card-bg, #ffffff); color: var(--text-primary, #0f172a);
-  border: 1px solid var(--border-color, #e2e8f0); border-radius: 16px; padding: 28px 24px 22px;
   display: flex; flex-direction: column; gap: 14px;
-}
-.wb-program__close {
-  position: absolute; top: 10px; right: 12px; width: 32px; height: 32px; border: 0; background: none;
-  font-size: 18px; cursor: pointer; color: var(--text-secondary, #475569);
 }
 .wb-program__learner { margin: 0; font-size: 13px; color: var(--text-secondary, #475569); text-transform: uppercase; letter-spacing: 0.05em; }
 .wb-program__muted { margin: 0; color: var(--text-secondary, #475569); }

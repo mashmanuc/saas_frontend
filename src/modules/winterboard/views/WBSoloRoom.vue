@@ -173,6 +173,7 @@
         <WBProgramButton
           v-if="isSessionOwner && sessionId && !isLocalWorkspace && !constructorMode"
           :board-id="sessionId"
+          @open-change="programDialogOpen = $event"
         />
         <!-- Solo → Classroom fork: "Запросити учня" — приховано в constructor mode.
              Local Workspace (ТЗ §4): кнопка видима, клік → CloudUpsellModal. -->
@@ -3233,6 +3234,8 @@ const boardClipboard = useBoardClipboard({
 
 // ─── Keyboard shortcuts (AGENT-B: useKeyboard) ─────────────────────────────
 
+// Програма поверх дошки — клавіші керують лише вікном, не прихованими об'єктами уроку.
+const programDialogOpen = ref(false)
 useKeyboard({
   onToolChange: (tool: WBToolType) => store.setTool(tool),
   onUndo: () => handleUndo(),
@@ -3248,7 +3251,7 @@ useKeyboard({
   onCopy: () => boardClipboard.copySelected(),
   onPaste: () => boardClipboard.pasteInternal(),
   onCut: () => boardClipboard.cutSelected(),
-})
+}, { disabled: () => programDialogOpen.value })
 
 // ─── Select All (Ctrl+A) ────────────────────────────────────────────────────
 
@@ -4919,6 +4922,7 @@ onMounted(async () => {
 
 // ── Keyboard shortcuts ──
 function onGlobalKeyDown(e: KeyboardEvent) {
+  if (programDialogOpen.value) return
   // Document viewer keyboard navigation (works in edit mode)
   if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
     const tag = (e.target as HTMLElement)?.tagName?.toLowerCase()

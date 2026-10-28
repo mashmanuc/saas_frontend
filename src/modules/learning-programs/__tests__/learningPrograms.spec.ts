@@ -104,9 +104,19 @@ describe('useProgramsAvailability', () => {
 })
 
 describe('LessonOutcomeActions', () => {
+  it('без явного підтвердження «усі» не оголошує підготовлені задачі розв’язаними', async () => {
+    post.mockResolvedValue({ route_revision: 5 })
+    const w = mount(LessonOutcomeActions, { props: { program: PROGRAM, lesson: LESSON }, global: { plugins: [i18n()] } })
+    await w.get('[data-testid=lp-held-next]').trigger('click')
+    await flushPromises()
+    expect(post.mock.calls[0][1].materials_used[0].usage).toBe('unknown')
+    w.unmount()
+  })
+
   it('«Відбувся — ще раз» → пропозиція повторення → «Додати» шле add_review з темою заняття', async () => {
     post.mockResolvedValueOnce({ route_revision: 5 }).mockResolvedValueOnce({ route_revision: 6 })
     const w = mount(LessonOutcomeActions, { props: { program: PROGRAM, lesson: LESSON }, global: { plugins: [i18n()] } })
+    await w.get('[data-testid=lp-usage-whole]').setValue(true)
     await w.get('[data-testid=lp-held-repeat]').trigger('click')
     await flushPromises()
     expect(post.mock.calls[0][1].materials_used).toEqual([
@@ -215,6 +225,24 @@ const settle = async () => { await flushPromises(); await vi.advanceTimersByTime
 const writes = () => post.mock.calls.filter(([url]) => String(url).endsWith('/preparations/'))
 
 describe('підготовка: команда й її результат окремо (review Лови F3b/F4b)', () => {
+  it('оновлення тієї самої програми після підготовки не прибирає «Відкрити урок»', async () => {
+    vi.useFakeTimers()
+    get.mockImplementation((url: string) => Promise.resolve(url.endsWith('/capabilities/') ? CAPS
+      : { status: 'prepared', material_ref: { provider: 'winterboard.board', id: 'board-1' }, shortage: [] }))
+    post.mockImplementation((url: string, body: any) => Promise.resolve(url.endsWith('/preview/')
+      ? previewOf('t') : { request_id: body.request_id, status: 'prepared' }))
+    const w = mountPrepare('l')
+    await settle()
+    await w.get('[data-testid=lp-prepare-go]').trigger('click'); await flushPromises()
+    expect(w.find('[data-testid=lp-open-prepared]').exists()).toBe(true)
+    // Батьківський екран перечитав DTO після події prepared: той самий id, новий об'єкт.
+    await w.setProps({ program: { id: 'p', route_revision: 2 } as any }); await settle()
+    expect(w.find('[data-testid=lp-open-prepared]').exists()).toBe(true)
+    expect(writes()).toHaveLength(1)
+    w.unmount()
+    vi.useRealTimers()
+  })
+
   it('прийнята підготовка + збій читання стану → повтор тим самим request_id, урок той самий', async () => {
     vi.useFakeTimers()
     let reads = 0

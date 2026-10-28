@@ -130,7 +130,8 @@ const shortageText = computed(() => {
 const openRoute = computed(() => materialRoute(preparedRef.value
   ? { provider: 'winterboard.prepare', id: preparedRef.value.id } : null))
 
-watch(() => [props.open, props.program?.id, props.lesson?.lesson_id], async ([open]) => {
+// Перечитаний DTO тієї самої програми не є іншим вікном: зберігаємо готовий результат.
+watch([() => props.open, () => props.program?.id, () => props.lesson?.lesson_id], async ([open]) => {
   const token = opened = opening.start()
   if (timer) clearTimeout(timer)
   previewSeq += 1

@@ -208,6 +208,7 @@
         <WBProgramButton
           v-if="classroomRole.isTeacher.value && resolvedSessionId"
           :board-id="resolvedSessionId"
+          @open-change="programDialogOpen = $event"
         />
         <!-- Повний екран (teacher only) — та сама кнопка, що в WBSoloRoom, з тією
              самою поведінкою (CLASSROOM_REMOTE_VISION крок 2): fullscreen +
@@ -1614,6 +1615,8 @@ const boardClipboard = useBoardClipboard({
 
 // ─── Keyboard shortcuts ─────────────────────────────────────────────────────
 
+// Той самий локальний бар'єр, що у Solo: показ програми не керує дошкою класу.
+const programDialogOpen = ref(false)
 useKeyboard({
   onToolChange: (tool: WBToolType) => {
     if (!isDrawingDisabled.value) store.setTool(tool)
@@ -1631,7 +1634,7 @@ useKeyboard({
   onCopy: () => boardClipboard.copySelected(),
   onPaste: () => boardClipboard.pasteInternal(),
   onCut: () => boardClipboard.cutSelected(),
-})
+}, { disabled: () => programDialogOpen.value })
 
 // ─── Select All (Ctrl+A) ────────────────────────────────────────────────────
 
