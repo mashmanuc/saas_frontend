@@ -9168,6 +9168,7 @@
       "assetRenamed": "File renamed",
       "renameError": "Failed to rename file",
       "renameAsset": "Rename",
+      "downloadAsset": "Download",
       "storage": {
         "myFiles": "My files",
         "pasted": "Pasted",

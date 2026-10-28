@@ -57,6 +57,16 @@
         data-testid="move-asset-btn"
         @click="pick('move')"
       >⇢ {{ t('winterboard.library.moveToFolder') }}</button>
+      <!-- 2026-10-29 (власник: «чого користувач назад не може скачати собі PDF-файл?»): файл — на компʼютер -->
+      <button
+        v-if="asset.cdn_url"
+        type="button"
+        role="menuitem"
+        class="lib-asset-menu__item"
+        data-action="download"
+        data-testid="download-asset-btn"
+        @click="onDownload"
+      >⬇ {{ t('winterboard.library.downloadAsset') }}</button>
       <div class="lib-asset-menu__sep" role="separator" />
       <button
         type="button"
@@ -73,10 +83,11 @@
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { LibraryAsset } from '../../types/library'
+import { downloadAsset } from './downloadAsset'
 
 type Action = 'read-material' | 'toggle-favorite' | 'rename' | 'move' | 'delete'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   asset: LibraryAsset
   canReadMaterial?: boolean
   canMove?: boolean
@@ -137,6 +148,12 @@ function pick(action: Action): void {
   const rect = triggerRef.value?.getBoundingClientRect() ?? new DOMRect()
   close()
   emit('action', action, rect)
+}
+
+// Завантаження не потребує картки чи списку — меню робить це саме, тож пункт є в обох видах «Матеріалів».
+function onDownload(): void {
+  close()
+  void downloadAsset(props.asset)
 }
 
 onBeforeUnmount(() => listen(false))

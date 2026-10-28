@@ -8721,6 +8721,7 @@
       "assetRenamed": "Файл перейменовано",
       "renameError": "Не вдалося перейменувати файл",
       "renameAsset": "Перейменувати",
+      "downloadAsset": "Завантажити",
       "storage": {
         "myFiles": "Мої файли",
         "pasted": "Скопійовані",
