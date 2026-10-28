@@ -1,26 +1,32 @@
 /**
- * Один намір дії — один ключ повтору (review Лови F3). Поки сервер не відповів (відповідь загубилася в мережі),
- * повторне натискання тієї самої дії з тими самими параметрами йде з ТИМ САМИМ ключем і точно тим самим тілом —
- * сервер упізнає повтор і не створить другого уроку / підсумку / зміни. Нові параметри або відповідь сервера
- * (успіх чи відмова) завершують намір: наступне натискання — новий намір. Автоматичних повторів немає.
+ * Один намір дії — один ключ повтору (review Лови F3). Поки сервер не дав визначеної відповіді (відповідь загубилася
+ * в мережі), повторне натискання тієї самої дії з тими самими параметрами йде з ТИМ САМИМ ключем і точно тим самим
+ * тілом — сервер упізнає повтор і не створить другого уроку / підсумку / зміни. Відповідь сервера (успіх чи відмова)
+ * завершує саме свій намір; нові параметри — окремий намір. Незавершені наміри з іншими параметрами не губляться:
+ * повернення до них — знову той самий ключ (review F3b: завершення однієї спроби не стирає ключ іншої).
+ * Автоматичних повторів немає.
  */
 import { errorStatus } from './api/learningProgramsApi'
 
 export interface Intent<B> { sig: string; key: string; body: B }
 
 export function createIntent<B>() {
-  let pending: Intent<B> | null = null
+  const pending = new Map<string, Intent<B>>()
   return {
     take(sig: string, build: (key: string) => B): Intent<B> {
-      if (!pending || pending.sig !== sig) {
+      let intent = pending.get(sig)
+      if (!intent) {
         const key = crypto.randomUUID()
-        pending = { sig, key, body: build(key) }
+        intent = { sig, key, body: build(key) }
+        pending.set(sig, intent)
       }
-      return pending
+      return intent
     },
-    /** Викликати після спроби: без помилки або з відповіддю сервера — намір завершено; без відповіді — лишається. */
-    settle(error?: unknown) {
-      if (error === undefined || errorStatus(error) !== null) pending = null
+    /** Після спроби: без помилки або з відповіддю сервера — цей намір завершено; без відповіді — лишається. */
+    settle(intent: Intent<B>, error?: unknown) {
+      if ((error === undefined || errorStatus(error) !== null) && pending.get(intent.sig) === intent) {
+        pending.delete(intent.sig)
+      }
     },
   }
 }

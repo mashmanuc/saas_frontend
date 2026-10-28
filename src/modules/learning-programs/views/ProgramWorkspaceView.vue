@@ -188,9 +188,9 @@ async function propose(sig: string, build: () => object) {
   const intent = planIntent.take(sig, build)
   try {
     await learningProgramsApi.sendProposal(p.value.id, intent.body, intent.key)
-    planIntent.settle()
+    planIntent.settle(intent)
   } catch (e) {
-    planIntent.settle(e)
+    planIntent.settle(intent, e)
     notice.value = !answered(e) ? t('learningPrograms.errors.noAnswer')
       : errorCode(e) === 'revision_conflict' ? t('learningPrograms.errors.revisionConflict') : t('learningPrograms.errors.generic')
   } finally {

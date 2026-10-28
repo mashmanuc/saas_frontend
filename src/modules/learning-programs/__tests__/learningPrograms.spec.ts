@@ -203,3 +203,100 @@ describe('мережеві регресії (review Лови F3/F4)', () => {
     vi.useRealTimers()
   })
 })
+
+const CAPS = { status: 'available', level: { codes: ['balanced'], default: 'balanced' }, volume: { min: 1, max: 30, default: 10 } }
+const previewOf = (unit: string) => ({ can_prepare: true, context: { unit_refs: [unit], role: 'PRACTICE', route_revision: 1 },
+  warnings: [], shortage: [] })
+const mountPrepare = (lessonId: string) => mount(PrepareLessonDialog, {
+  props: { open: true, program: { id: 'p', route_revision: 1 } as any, lesson: { lesson_id: lessonId, title: lessonId } as any },
+  global: { plugins: [i18n()], stubs: { Modal: { template: '<div><slot/><slot name="footer"/></div>' } } },
+})
+const settle = async () => { await flushPromises(); await vi.advanceTimersByTimeAsync(300); await flushPromises() }
+const writes = () => post.mock.calls.filter(([url]) => String(url).endsWith('/preparations/'))
+
+describe('підготовка: команда й її результат окремо (review Лови F3b/F4b)', () => {
+  it('прийнята підготовка + збій читання стану → повтор тим самим request_id, урок той самий', async () => {
+    vi.useFakeTimers()
+    let reads = 0
+    get.mockImplementation((url: string) => {
+      if (url.endsWith('/capabilities/')) return Promise.resolve(CAPS)
+      reads++
+      return reads === 1 ? Promise.reject({ response: { status: 503, data: { error: 'unavailable' } } })
+        : Promise.resolve({ status: 'prepared', material_ref: { provider: 'winterboard.board', id: 'board-1' }, shortage: [] })
+    })
+    post.mockImplementation((url: string, body: any) => Promise.resolve(url.endsWith('/preview/')
+      ? previewOf('t') : { request_id: body.request_id, status: 'prepared' }))
+    const w = mountPrepare('l')
+    await settle()
+    await w.get('[data-testid=lp-prepare-go]').trigger('click'); await flushPromises()
+    expect(w.text()).toContain('Запит прийнято, але результат не дійшов')
+    await w.get('[data-testid=lp-prepare-go]').trigger('click'); await flushPromises()
+    expect(writes()).toHaveLength(2)
+    expect(writes()[1][1]).toEqual(writes()[0][1])
+    expect(w.find('[data-testid=lp-open-prepared]').exists()).toBe(true)
+    vi.useRealTimers()
+  })
+
+  it('«ще готується» — не дозвіл на новий урок: наступне натискання з тим самим request_id', async () => {
+    vi.useFakeTimers()
+    let reads = 0
+    get.mockImplementation((url: string) => Promise.resolve(url.endsWith('/capabilities/') ? CAPS
+      : ++reads === 1 ? { status: 'requested', material_ref: null, shortage: [] }
+        : { status: 'prepared', material_ref: { provider: 'winterboard.board', id: 'board-1' }, shortage: [] }))
+    post.mockImplementation((url: string, body: any) => Promise.resolve(url.endsWith('/preview/')
+      ? previewOf('t') : { request_id: body.request_id, status: 'requested' }))
+    const w = mountPrepare('l')
+    await settle()
+    await w.get('[data-testid=lp-prepare-go]').trigger('click'); await flushPromises()
+    expect(w.text()).toContain('Урок ще готується')
+    await w.get('[data-testid=lp-prepare-go]').trigger('click'); await flushPromises()
+    expect(writes()[1][1].request_id).toBe(writes()[0][1].request_id)
+    vi.useRealTimers()
+  })
+
+  it('закрили підготовку A й відкрили B: результат, перегляд і «зайнято» від A у вікні B не з\'являються', async () => {
+    vi.useFakeTimers()
+    const oldWrite = deferred(), oldPreview = deferred()
+    get.mockImplementation((url: string) => Promise.resolve(url.endsWith('/capabilities/') ? CAPS
+      : { status: 'prepared', material_ref: { provider: 'winterboard.board', id: 'board-a' }, shortage: [] }))
+    let previews = 0
+    post.mockImplementation((url: string) => {
+      if (!url.endsWith('/preview/')) return oldWrite.promise
+      previews++
+      return previews === 1 ? Promise.resolve(previewOf('a')) : previews === 2 ? oldPreview.promise : Promise.resolve(previewOf('b'))
+    })
+    const w = mountPrepare('A')
+    await settle()
+    await w.get('[data-testid=lp-prepare-go]').trigger('click'); await flushPromises()   // підготовка A висить
+    await w.findAll('.pld__step')[1].trigger('click'); await settle()                     // і друга перевірка A
+    await w.setProps({ open: false }); await flushPromises()
+    await w.setProps({ open: true, lesson: { lesson_id: 'B', title: 'B' } as any }); await flushPromises()
+    oldPreview.resolve({ can_prepare: false, context: { unit_refs: ['a'], role: 'PRACTICE', route_revision: 1 },
+      warnings: [], shortage: [{ available: 1, requested: 11 }] })
+    oldWrite.resolve({ request_id: 'x', status: 'prepared' })
+    await flushPromises()
+    expect(w.find('[data-testid=lp-preview-fail]').exists()).toBe(false)
+    expect(w.find('[data-testid=lp-open-prepared]').exists()).toBe(false)
+    await settle()
+    expect(w.find('[data-testid=lp-preview-ok]').exists()).toBe(true)
+    expect(w.find('[data-testid=lp-open-prepared]').exists()).toBe(false)
+    expect(w.get('[data-testid=lp-prepare-go]').attributes('disabled')).toBeUndefined()
+    expect(w.emitted('prepared')).toHaveLength(1)                 // програма оновлюється: урок A лишається своїм
+    vi.useRealTimers()
+  })
+})
+
+describe('createIntent', () => {
+  it('завершення одного наміру не стирає ключ іншого; повернення до незавершеного — той самий ключ', async () => {
+    const { createIntent } = await import('../intent')
+    const box = createIntent<{ n: number }>()
+    const a = box.take('A', () => ({ n: 1 }))
+    const b = box.take('B', () => ({ n: 2 }))
+    box.settle(b)
+    expect(box.take('A', () => ({ n: 3 })).key).toBe(a.key)
+    box.settle(a, new Error('мережа'))                            // без відповіді — лишається
+    expect(box.take('A', () => ({ n: 4 })).key).toBe(a.key)
+    box.settle(a, { response: { status: 409 } })
+    expect(box.take('A', () => ({ n: 5 })).key).not.toBe(a.key)
+  })
+})

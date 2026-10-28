@@ -12984,6 +12984,8 @@
       "ready": "Enough tasks: there will be {n}.",
       "shortage": "Not enough tasks: {available} available, {requested} needed. Reduce the number or pick another difficulty.",
       "done": "The lesson is ready.",
+      "stillPreparing": "The lesson is still being prepared. Press «Prepare lesson» a bit later — no second lesson will be made.",
+      "resultUnknown": "The request was accepted, but the result did not arrive. Press «Prepare lesson» again — you will get the same lesson, not a second one.",
       "go": "Prepare lesson"
     },
     "profile": {

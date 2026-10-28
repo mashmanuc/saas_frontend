@@ -104,10 +104,10 @@ async function save() {
   const intent = createIntentKey.take(JSON.stringify(params), () => bodies.create(params))
   try {
     const created = await learningProgramsApi.create(intent.body, intent.key)
-    createIntentKey.settle()
+    createIntentKey.settle(intent)
     emit('created', created)
   } catch (e) {
-    createIntentKey.settle(e)
+    createIntentKey.settle(intent, e)
     const code = errorCode(e)
     failed.value = !answered(e) ? t('learningPrograms.errors.noAnswer')
       : code === 'learner_not_active' ? t('learningPrograms.errors.learnerNotActive')

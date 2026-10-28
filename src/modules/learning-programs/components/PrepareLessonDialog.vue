@@ -107,7 +107,10 @@ let timer: ReturnType<typeof setTimeout> | null = null
 // Одна підготовка — один request_id (review F3): після втраченої відповіді повторне «Підготувати» з тими самими
 // параметрами — той самий запит; сервер упізнає повтор і другого уроку не створює.
 const prepareIntent = createIntent<ReturnType<typeof bodies.prepare>>()
-const capsLoads = latestOnly()
+// Відкриття вікна для конкретного заняття (review F4b): закриття чи інше заняття робить старі відповіді
+// (можливості, перегляд, підготовка) чужими — вони не чіпають екран поточного заняття.
+const opening = latestOnly()
+let opened = 0
 
 const reasonText = (key: string | null) => reasonKeyText(key, t, te)
 // Учителю — лише зрозуміле: скільки задач не беремо (антиповтор). Службова примітка даних програми не показується.
@@ -127,24 +130,29 @@ const shortageText = computed(() => {
 const openRoute = computed(() => materialRoute(preparedRef.value
   ? { provider: 'winterboard.prepare', id: preparedRef.value.id } : null))
 
-watch(() => [props.open, props.lesson?.lesson_id], async ([open]) => {
-  if (!open || !props.program || !props.lesson) return
-  const token = capsLoads.start()
+watch(() => [props.open, props.program?.id, props.lesson?.lesson_id], async ([open]) => {
+  const token = opened = opening.start()
+  if (timer) clearTimeout(timer)
+  previewSeq += 1
   caps.value = null
   preview.value = null
+  previewing.value = false
+  preparing.value = false
   result.value = ''
   preparedRef.value = null
+  loadingCaps.value = false
+  if (!open || !props.program || !props.lesson) return
   loadingCaps.value = true
   try {
     const fresh = await learningProgramsApi.capabilities(props.program.id, props.lesson.lesson_id)
-    if (!capsLoads.isCurrent(token)) return
+    if (!opening.isCurrent(token)) return
     caps.value = fresh
     if (fresh.level) profile.value = fresh.level.default
     if (fresh.volume) count.value = fresh.volume.default
   } catch {
-    if (capsLoads.isCurrent(token)) caps.value = { status: 'unsupported', reason_key: 'load_failed', level: null, volume: null }
+    if (opening.isCurrent(token)) caps.value = { status: 'unsupported', reason_key: 'load_failed', level: null, volume: null }
   } finally {
-    if (capsLoads.isCurrent(token)) loadingCaps.value = false
+    if (opening.isCurrent(token)) loadingCaps.value = false
   }
 }, { immediate: true })
 
@@ -156,37 +164,52 @@ watch([profile, count, caps], () => {
 
 async function runPreview() {
   if (!props.program || !props.lesson) return
+  const token = opened
   const mine = ++previewSeq
+  const here = () => mine === previewSeq && opening.isCurrent(token)
   previewing.value = true
   try {
     const p = await learningProgramsApi.previewGeneration(props.program.id, props.lesson.lesson_id, profile.value, count.value)
-    if (mine === previewSeq) preview.value = p
+    if (here()) preview.value = p
   } catch (e) {
-    if (mine === previewSeq) {
+    if (here()) {
       preview.value = { can_prepare: false, context: { unit_refs: [], role: '', route_revision: 0 }, shortage: [],
         warnings: [{ reason_key: errorCode(e) ?? 'load_failed' }] }
     }
   } finally {
-    if (mine === previewSeq) previewing.value = false
+    if (here()) previewing.value = false
   }
 }
 
 async function go() {
   if (!props.program || !props.lesson || preparing.value) return
-  preparing.value = true
-  result.value = ''
+  const token = opened
+  const here = () => opening.isCurrent(token)
   const program = props.program
   const lessonId = props.lesson.lesson_id
   const sig = JSON.stringify([program.id, lessonId, profile.value, count.value, program.route_revision])
   const intent = prepareIntent.take(sig, (requestId) => bodies.prepare(program, profile.value, count.value, requestId))
+  preparing.value = true
+  result.value = ''
+  let accepted = false
   try {
     await learningProgramsApi.sendPrepare(program.id, lessonId, intent.body)
+    accepted = true
     const st = await learningProgramsApi.preparation(intent.key)
-    prepareIntent.settle()
+    // Ще готується — намір не завершено (review F3b): повторне натискання — той самий request_id, сервер
+    // поверне ту саму підготовку, другого уроку не буде.
+    if (st.status === 'requested') {
+      if (here()) result.value = t('learningPrograms.prepare.stillPreparing')
+      return
+    }
+    prepareIntent.settle(intent)
+    // Програму оновлюємо завжди: прийнята підготовка лишається у СВОЄМУ занятті. Вікно іншого заняття
+    // (закрили й відкрили інше, review F4b) її результату не показує.
+    if (st.status === 'prepared') emit('prepared')
+    if (!here()) return
     if (st.status === 'prepared') {
       result.value = 'prepared'
       preparedRef.value = st.material_ref
-      emit('prepared')
     } else {
       const s = st.shortage?.[0]
       result.value = s && s.available !== null
@@ -194,13 +217,17 @@ async function go() {
         : reasonText(st.reason_key)
     }
   } catch (e) {
-    prepareIntent.settle(e)
-    const code = errorCode(e)
-    result.value = !answered(e) ? t('learningPrograms.errors.noAnswer')
-      : code === 'revision_conflict' ? t('learningPrograms.errors.revisionConflict') : reasonText(code)
+    // Команду прийнято, а результат не прочитано: помилка читання стану — не відмова створити урок (review F3b).
+    // Намір лишається до визначеного результату; повтор — той самий request_id.
+    if (!accepted) prepareIntent.settle(intent, e)
+    const code = accepted ? null : errorCode(e)
     if (code === 'revision_conflict') emit('prepared')
+    if (!here()) return
+    result.value = accepted ? t('learningPrograms.prepare.resultUnknown')
+      : !answered(e) ? t('learningPrograms.errors.noAnswer')
+        : code === 'revision_conflict' ? t('learningPrograms.errors.revisionConflict') : reasonText(code)
   } finally {
-    preparing.value = false
+    if (here()) preparing.value = false
   }
 }
 

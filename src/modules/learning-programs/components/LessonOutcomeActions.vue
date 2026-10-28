@@ -108,13 +108,13 @@ async function record(attendance: 'held' | 'not_held', action: PedagogicalAction
     props.lesson.lesson_id, { attendance, action, materials, calendarRef: props.calendarRef ?? null }, eventId))
   try {
     const r = await learningProgramsApi.sendOutcome(props.program.id, props.lesson.lesson_id, intent.body)
-    outcomeIntent.settle()
+    outcomeIntent.settle(intent)
     revision = r.route_revision
     done.value = attendance === 'held' ? (action as 'next' | 'repeat') : 'not_held'
     offerReview.value = done.value === 'repeat' && !!props.lesson.unit_refs?.length
     emit('changed')
   } catch (e) {
-    outcomeIntent.settle(e)
+    outcomeIntent.settle(intent, e)
     error.value = errorText(e)
     if (errorCode(e) === 'revision_conflict') emit('changed')
   } finally {
@@ -131,12 +131,12 @@ async function addReview() {
     () => bodies.addReview({ ...props.program, route_revision: latestRevision() }, props.lesson.lesson_id, refs))
   try {
     await learningProgramsApi.sendProposal(props.program.id, intent.body, intent.key)
-    reviewIntent.settle()
+    reviewIntent.settle(intent)
     offerReview.value = false
     done.value = 'review'
     emit('changed')
   } catch (e) {
-    reviewIntent.settle(e)
+    reviewIntent.settle(intent, e)
     error.value = errorText(e)
   } finally {
     busy.value = ''
