@@ -5,7 +5,7 @@ import { CURRICULUM, VERIFIED_TOPICS } from '../curriculum'
 // Шість добірок із наявних задач банку (Крокор, 28.10): теми вже були в програмі — додаються лише як добірки.
 const six = [
   'real-numbers.divisibility', 'ratios-percents-word-problems.percent', 'ratios-percents-word-problems.ratio',
-  'plane-vectors-coordinates.coordinates', 'plane-vectors-coordinates.dot-product', 'space-vectors-coordinates.dot-product',
+  'plane-vectors-coordinates.vectors', 'plane-vectors-coordinates.coordinates', 'plane-vectors-coordinates.dot-product', 'space-vectors-coordinates.dot-product',
 ]
 
 describe('Подільність, відсотки, відношення й вектори в генераторі', () => {

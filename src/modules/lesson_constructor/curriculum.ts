@@ -127,6 +127,7 @@ export const VERIFIED_TOPICS = [
   "linear-quadratic-rational-equations.two-variables",
   "plane-vectors-coordinates.coordinates",
   "plane-vectors-coordinates.dot-product",
+  "plane-vectors-coordinates.vectors",
   "polynomials.abbreviated-multiplication.identities",
   "polynomials.factorization.progression",
   "polynomials.monomials.add-subtract",
