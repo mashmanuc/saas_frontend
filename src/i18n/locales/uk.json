@@ -2902,6 +2902,20 @@
       "deleteWarningDetails": "Цю дію неможливо скасувати",
       "deleteScopeTitle": "Що видалити",
       "deleteScopeOne": "Лише цей урок",
+      "actions": {
+        "payments": "Оплати",
+        "change": "Змінити",
+        "reschedule": "Перенести",
+        "delete": "Видалити",
+        "back": "Назад"
+      },
+      "chips": {
+        "platform": "З платформи: {name}",
+        "weekly": "Щотижня",
+        "twiceWeekly": "Двічі на тиждень",
+        "paid": "Оплачено · лишилось уроків: {n}",
+        "unpaid": "Не оплачено"
+      },
       "deleteScopeFollowing": "Цей і всі наступні уроки серії — уроків: {count}",
       "confirmDeleteFollowingMessage": "Видалити уроки з {student}, починаючи з {date}? Уроків: {count}. Попередні уроки лишаться.",
       "deletedFollowing": "Уроків видалено: {count}",
@@ -3255,6 +3269,20 @@
         "date": "Дата оплати",
         "note": "Нотатка",
         "notePlaceholder": "Наприклад, за жовтень",
+        "overview": {
+          "empty": "Оплат ще не записано. Записати оплату — «Мої учні» → «💰 Оплата».",
+          "paid": "Сплачено",
+          "held": "Проведено",
+          "left": "Лишилось",
+          "debt": "Борг",
+          "lessonsWord": "уроків",
+          "perLesson": "{price} за урок",
+          "undated": "ще без дати в розкладі — уроків: {n}",
+          "unpaidTitle": "Не оплачено",
+          "freeTitle": "Не рахуються (безкоштовні)",
+          "stateHeld": "проведено",
+          "statePlanned": "у розкладі"
+        },
         "pricePreview": "Ціна уроку: {price}",
         "save": "Записати",
         "saving": "Записую…",

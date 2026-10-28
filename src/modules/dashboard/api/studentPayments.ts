@@ -43,6 +43,8 @@ export interface StudentLedger {
   payments: StudentPaymentItem[]
   /** проведені уроки з першої оплати (порожньо, поки оплат немає) */
   lessons: HeldLessonItem[]
+  /** 2026-10-28: наступні нескасовані уроки розкладу за часом (до 20) — для «За що заплачено»; старий сервер — без поля */
+  upcoming?: { id: number; start: string; minutes: number }[]
   balance: PaymentBalance
   /** уроків учня в розкладі за поточний і наступний місяць: { 'YYYY-MM': n } */
   month_lessons: Record<string, number>

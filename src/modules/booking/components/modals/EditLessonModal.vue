@@ -1,9 +1,10 @@
 <template>
   <Teleport to="body">
     <div v-if="visible" class="modal-overlay" @click.self="handleClose" data-testid="event-modal">
-      <div ref="modalRef" class="modal-container modal-large" role="dialog" aria-labelledby="edit-modal-title" aria-modal="true">
+      <div ref="modalRef" class="modal-container modal-compact" role="dialog" aria-labelledby="edit-modal-title" aria-modal="true">
         <div class="modal-header">
-          <h2 id="edit-modal-title" data-testid="event-modal-title">{{ $t('calendar.editLesson.title') }}</h2>
+          <!-- 2026-10-28: у заголовку — з ким урок, а не «Редагувати урок» -->
+          <h2 id="edit-modal-title" data-testid="event-modal-title">{{ eventDetails?.event?.clientName || $t('calendar.editLesson.title') }}</h2>
           <Button variant="ghost" iconOnly aria-label="Закрити" data-testid="event-modal-close" @click="handleClose">
             <XIcon class="w-5 h-5" />
           </Button>
@@ -17,21 +18,6 @@
 
         <!-- Content -->
         <div v-else-if="eventDetails" class="modal-content">
-          <!-- Tabs -->
-          <div class="tabs-container">
-            <button
-              v-for="tab in tabs"
-              :key="tab.id"
-              :class="['tab-btn', { active: activeTab === tab.id, disabled: tab.disabled }]"
-              :data-testid="`event-tab-${tab.id}`"
-              @click="!tab.disabled && (activeTab = tab.id)"
-              :disabled="tab.disabled"
-            >
-              <component :is="tab.icon" class="w-4 h-4" />
-              {{ tab.label }}
-            </button>
-          </div>
-
           <!-- Tab Content -->
           <div class="tab-content">
             <!-- Update Tab -->
@@ -40,7 +26,67 @@
                 v-if="!isEditing"
                 :event="eventDetails.event"
                 :dictionaries="eventDetails.dictionaries"
-              />
+              >
+                <template v-if="lessonChips.length" #chips>
+                  <span
+                    v-for="chip in lessonChips"
+                    :key="chip.key"
+                    :class="['lesson-chip', `lesson-chip--${chip.tone}`]"
+                    :data-testid="`event-chip-${chip.key}`"
+                  >{{ chip.text }}</span>
+                </template>
+              </EventDetailsView>
+
+              <!-- 2026-10-28 (власник: «які кнопки там треба, які не треба»): дії одним рядком замість вкладок;
+                   «Закрити» — хрестик угорі; «Перенести» й «Видалити» — лише коли можна -->
+              <div v-if="!isEditing" class="lesson-actions">
+                <Button
+                  v-if="paymentsStudentId"
+                  variant="outline"
+                  size="sm"
+                  data-testid="event-payments-button"
+                  @click="paymentsOpen = true"
+                >
+                  💳 {{ $t('calendar.editLesson.actions.payments') }}
+                </Button>
+                <Button
+                  v-if="canEdit"
+                  variant="outline"
+                  size="sm"
+                  data-testid="event-edit-button"
+                  @click="isEditing = true"
+                >
+                  <template #iconLeft>
+                    <EditIcon class="w-4 h-4" />
+                  </template>
+                  {{ $t('calendar.editLesson.actions.change') }}
+                </Button>
+                <Button
+                  v-if="canReschedule"
+                  variant="outline"
+                  size="sm"
+                  data-testid="event-tab-reschedule"
+                  @click="activeTab = 'reschedule'"
+                >
+                  <template #iconLeft>
+                    <CalendarIcon class="w-4 h-4" />
+                  </template>
+                  {{ $t('calendar.editLesson.actions.reschedule') }}
+                </Button>
+                <Button
+                  v-if="canDelete"
+                  variant="ghost"
+                  size="sm"
+                  class="lesson-actions__delete"
+                  data-testid="event-tab-delete"
+                  @click="activeTab = 'delete'"
+                >
+                  <template #iconLeft>
+                    <TrashIcon class="w-4 h-4" />
+                  </template>
+                  {{ $t('calendar.editLesson.actions.delete') }}
+                </Button>
+              </div>
 
               <div v-else class="edit-form">
                 <!-- Student (readonly) -->
@@ -103,26 +149,7 @@
               </fieldset>
 
               <!-- Actions -->
-              <div class="modal-actions">
-                <Button
-                  v-if="!isEditing"
-                  variant="outline"
-                  @click="handleClose"
-                >
-                  {{ $t('common.close') }}
-                </Button>
-                <Button
-                  v-if="!isEditing && canEdit"
-                  variant="primary"
-                  data-testid="event-edit-button"
-                  @click="isEditing = true"
-                >
-                  <template #iconLeft>
-                    <EditIcon class="w-4 h-4" />
-                  </template>
-                  {{ $t('calendar.editLesson.edit') }}
-                </Button>
-
+              <div v-if="isEditing" class="modal-actions">
                 <template v-if="isEditing">
                   <Button
                     variant="outline"
@@ -156,6 +183,7 @@
               <EventDetailsView
                 :event="eventDetails.event"
                 :dictionaries="eventDetails.dictionaries"
+                :actions="false"
               />
 
               <!-- Серія (2026-10-22): «Лише цей урок» або «Цей і всі наступні» — лише коли після цього уроку є ще -->
@@ -177,8 +205,8 @@
               </div>
 
               <div class="modal-actions">
-                <Button variant="outline" @click="handleClose">
-                  {{ $t('common.cancel') }}
+                <Button variant="outline" data-testid="event-back-button" @click="activeTab = 'update'">
+                  {{ $t('calendar.editLesson.actions.back') }}
                 </Button>
                 <Button
                   variant="danger"
@@ -208,7 +236,7 @@
                 <EventDetailsView
                   :event="eventDetails.event"
                   :dictionaries="eventDetails.dictionaries"
-                  compact
+                  :actions="false"
                 />
               </div>
 
@@ -273,8 +301,8 @@
 
               <!-- Actions -->
               <div class="modal-actions">
-                <Button variant="outline" @click="handleClose">
-                  {{ $t('common.cancel') }}
+                <Button variant="outline" @click="activeTab = 'update'; previewResult = null">
+                  {{ $t('calendar.editLesson.actions.back') }}
                 </Button>
                 <Button
                   v-if="previewResult"
@@ -301,6 +329,16 @@
             <p>{{ error }}</p>
           </div>
         </div>
+
+        <!-- 2026-10-28 «Оплати»: лише показ — за що заплачено, скільки лишилось, коли платили -->
+        <StudentPaymentsOverview
+          stacked
+          :open="paymentsOpen"
+          :student-id="paymentsStudentId"
+          :student-name="eventDetails?.event?.clientName ?? ''"
+          :ledger="paymentInfo?.ledger ?? null"
+          @close="paymentsOpen = false"
+        />
 
         <!-- Confirm Delete Dialog -->
         <ConfirmDialog
@@ -339,6 +377,9 @@ import { useFocusTrap } from '@/composables/useFocusTrap'
 import { useErrorHandler } from '@/modules/booking/composables/useErrorHandler'
 import { sanitizeComment } from '@/utils/sanitize'
 import EventDetailsView from './EventDetailsView.vue'
+import StudentPaymentsOverview from '@/modules/dashboard/components/StudentPaymentsOverview.vue'
+import { studentPaymentsApi, type StudentLedger } from '@/modules/dashboard/api/studentPayments'
+import { eventCovered, paymentCoverage, type PaymentCoverage } from '@/modules/dashboard/utils/paymentCoverage'
 import ConfirmDialog from '@/ui/ConfirmModal.vue'
 import DateTimePicker from '@/components/ui/DateTimePicker.vue'
 import type { ReschedulePreviewResponse } from '@/modules/booking/types/calendarV055'
@@ -391,26 +432,49 @@ const rescheduleForm = ref({
   targetStart: '',
 })
 
-const tabs = computed(() => [
-  {
-    id: 'update' as const,
-    label: t('calendar.editLesson.tabs.update'),
-    icon: EditIcon,
-    disabled: false,
-  },
-  {
-    id: 'delete' as const,
-    label: t('calendar.editLesson.tabs.delete'),
-    icon: TrashIcon,
-    disabled: false,
-  },
-  {
-    id: 'reschedule' as const,
-    label: t('calendar.editLesson.tabs.reschedule'),
-    icon: CalendarIcon,
-    disabled: !eventDetails.value?.event?.can_reschedule,
-  },
-])
+const canReschedule = computed(() => Boolean(eventDetails.value?.event?.can_reschedule))
+
+// 2026-10-28 «Оплати» й значки: облік оплат учня (той самий, що «💰 Оплата» в «Моїх учнях»). Учень «З платформи» —
+// поза обліком (О2): значок «З платформи», без кнопки. Облік недоступний — ні значка, ні кнопки, вікно як було.
+const paymentsOpen = ref(false)
+const paymentInfo = ref<{ studentId: number; platform: string; coverage: PaymentCoverage; ledger: StudentLedger } | null>(null)
+const paymentsStudentId = computed(() => (paymentInfo.value && !paymentInfo.value.platform ? paymentInfo.value.studentId : null))
+async function loadPaymentInfo(studentId: number | null | undefined) {
+  paymentInfo.value = null
+  if (!studentId) return
+  try {
+    const ledger = await studentPaymentsApi.ledger(studentId)
+    paymentInfo.value = { studentId, platform: ledger.external_platform || '', coverage: paymentCoverage(ledger), ledger }
+  } catch (err: any) {
+    console.info('[EditLessonModal] облік оплат недоступний:', err?.response?.status ?? 'network')
+  }
+}
+
+const REGULARITY_CHIP: Record<string, string> = { once_a_week: 'weekly', twice_a_week: 'twiceWeekly' }
+const lessonChips = computed(() => {
+  const event = eventDetails.value?.event
+  if (!event) return []
+  const chips: { key: string; tone: string; text: string }[] = []
+  const info = paymentInfo.value
+  if (info?.platform) {
+    chips.push({ key: 'platform', tone: 'platform', text: t('calendar.editLesson.chips.platform', { name: info.platform }) })
+  } else if (info) {
+    const covered = info.coverage.tracking ? eventCovered(info.coverage, event.id) : null
+    if (!info.coverage.tracking) {
+      chips.push({ key: 'payment', tone: 'muted', text: t('dashboard.tutor.payments.balance.none') })
+    } else if (covered === true) {
+      chips.push({ key: 'payment', tone: 'ok', text: t('calendar.editLesson.chips.paid', { n: Math.max(info.coverage.leftLessons, 0) }) })
+    } else if (covered === false) {
+      chips.push({ key: 'payment', tone: 'debt', text: t('calendar.editLesson.chips.unpaid') })
+    }
+  }
+  const regularity = REGULARITY_CHIP[event.regularity as string]
+  if (regularity) chips.push({ key: 'regularity', tone: 'muted', text: t(`calendar.editLesson.chips.${regularity}`) })
+  if (event.doneStatus === 'not_done_client_missed' || event.doneStatus === 'done_client_missed') {
+    chips.push({ key: 'noShow', tone: 'debt', text: t('dashboard.tutor.payments.noShow') })
+  }
+  return chips
+})
 
 const canEdit = computed(() => {
   if (!eventDetails.value) return false
@@ -471,6 +535,8 @@ watch(
   async (visible) => {
     if (visible) {
       await loadEventDetails()
+      void loadPaymentInfo(eventDetails.value?.event?.studentId)
+      paymentsOpen.value = false
       activeTab.value = 'update'
       deleteScope.value = 'one'
       editScope.value = 'one'
@@ -478,6 +544,8 @@ watch(
       previewResult.value = null
     } else {
       eventDetails.value = null
+      paymentInfo.value = null
+      paymentsOpen.value = false
       error.value = null
     }
   },
@@ -726,6 +794,49 @@ function handleClose() {
   max-width: 56rem;
 }
 
+/* 2026-10-28: вікно уроку — за вмістом, а не на пів-екрана */
+.modal-compact {
+  max-width: 30rem;
+}
+
+.lesson-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.lesson-actions__delete {
+  margin-left: auto;
+  color: var(--color-danger);
+}
+
+.lesson-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.lesson-chip--ok {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.lesson-chip--debt {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.lesson-chip--platform {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
 .modal-header {
   display: flex;
   align-items: center;
@@ -802,7 +913,8 @@ function handleClose() {
 }
 
 .tab-content {
-  min-height: 300px;
+  /* 2026-10-28: без вкладок висота — за вмістом (порожнеча під кнопками зникла) */
+  min-height: 0;
 }
 
 .space-y-4 > * + * {

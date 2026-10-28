@@ -2402,6 +2402,20 @@
         "date": "Payment date",
         "note": "Note",
         "notePlaceholder": "For example, for October",
+        "overview": {
+          "empty": "No payments recorded yet. Record a payment in “My students” → “💰 Payment”.",
+          "paid": "Paid",
+          "held": "Held",
+          "left": "Left",
+          "debt": "Owed",
+          "lessonsWord": "lessons",
+          "perLesson": "{price} per lesson",
+          "undated": "not scheduled yet — lessons: {n}",
+          "unpaidTitle": "Not paid",
+          "freeTitle": "Not counted (free)",
+          "stateHeld": "held",
+          "statePlanned": "scheduled"
+        },
         "pricePreview": "Lesson price: {price}",
         "save": "Record",
         "saving": "Recording…",
@@ -4461,6 +4475,20 @@
       "deleteWarningDetails": "This action cannot be undone",
       "deleteScopeTitle": "What to delete",
       "deleteScopeOne": "Only this lesson",
+      "actions": {
+        "payments": "Payments",
+        "change": "Change",
+        "reschedule": "Reschedule",
+        "delete": "Delete",
+        "back": "Back"
+      },
+      "chips": {
+        "platform": "From platform: {name}",
+        "weekly": "Weekly",
+        "twiceWeekly": "Twice a week",
+        "paid": "Paid · lessons left: {n}",
+        "unpaid": "Not paid"
+      },
       "deleteScopeFollowing": "This and all following lessons of the series — {count} lessons",
       "confirmDeleteFollowingMessage": "Delete lessons with {student} starting {date}? Lessons: {count}. Earlier lessons stay.",
       "deletedFollowing": "Lessons deleted: {count}",
