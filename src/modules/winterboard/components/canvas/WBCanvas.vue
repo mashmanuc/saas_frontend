@@ -1151,7 +1151,7 @@ import {
   RENDERER_DEFAULTS,
 } from '../../services/capabilityRegistry'
 import type { CompanionResolution } from '../../services/capabilityRegistry'
-import { buildTaskCompanion, matchesTaskCompanion } from '../../services/taskCompanion'
+import { buildTaskCompanion, matchesTaskCompanion, taskSolidData } from '../../services/taskCompanion'
 // Хвиля 5 North Ship: подія «створено навчальний об'єкт» → scene-секція в AST
 // уроку (TASK_LIVE_OBJECTS §1). Fire-and-forget, дошку не блокує.
 import { recordCompanionScene } from '@/modules/ship/sceneRecorder'
@@ -1479,16 +1479,6 @@ function toGraphSrc(eq: string): string {
 }
 
 /** Будує data для companion WBAsset з extracted_data fingerprint. */
-// Реальні шаблони nmt-templates.js (TPL.*) — звірено 2026-08-04. Ключ поза
-// цим списком = порожня картка на дошці І в презентації (прогін №4).
-const NMT3D_TEMPLATE_KEYS = new Set([
-  'cone', 'cube', 'cuboid', 'cylinder', 'prism3', 'prism4', 'prism6',
-  'pyramid3', 'pyramid4', 'sphere', 'tetrahedron', 'truncCone',
-  // Композитні сцени «вписано/описано» (A-T3) — одна параметрична фігура,
-  // а не дві поруч: розмір внутрішнього тіла випливає із зовнішнього.
-  'sphere_in_cube', 'cube_in_sphere',
-])
-
 /** Вікно картки аналізу під функцію; x₀ / a, b — обов'язково у вікні.
  *  Немає явної функції — старе типове `{cx: 0, cy: 0, scale: 50}`. */
 function calculusViewportFor(expr: string, must: number[]): Record<string, unknown> {
@@ -1541,61 +1531,9 @@ function buildCompanionData(
                viewport: { cx: 0, cy: 0, scale: 50 } }
     }
 
-    case 'nmt3d': {
-      // Map extracted_data.shape → Nmt3dData.templateKey (version 1 format).
-      // extracted_data comes from enrich_fingerprints (e.g. {shape:"pyramid"}).
-      //
-      // ⛔ БЕЗ ФОЛБЕКА. Раніше тут стояло `?? 'cube'` — і 50 задач банку, де
-      // екстрактор не розпізнав тіло (shape=None), отримували КУБА-САМОЗВАНЦЯ:
-      // «об'єм правильного тетраедра» → куб, «перпендикуляр і похила» → куб.
-      // Будь-який фолбек-об'єкт бреше учневі, тому shape відсутній → companion
-      // не створюється (ТЗ D-4 крок 1, п.1.1).
-      const solidShape = d.shape as string | undefined
-      const baseShape  = (d.base_shape as string | undefined)
-      if (!solidShape) {
-        console.warn('[WB] nmt3d companion skipped — екстрактор не розпізнав тіло', { d })
-        return null
-      }
-      const SHAPE_TO_TEMPLATE: Record<string, string | null> = {
-        // hexagon-піраміди шаблона НЕМАЄ (pyramid6 не існує в nmt-templates) —
-        // чесний null: краще без 3D, ніж каркас із хибною основою.
-        pyramid:  baseShape === 'triangle' ? 'pyramid3'
-          : baseShape === 'hexagon' ? null : 'pyramid4',
-        prism:    baseShape === 'hexagon' ? 'prism6' : 'prism4',
-        cylinder: 'cylinder',
-        cone:     'cone',
-        sphere:   'sphere',
-        cube:     'cube',
-        cuboid:   'cuboid',
-        // 2026-08-04 (власник): точний шаблон замість generic pyramid3.
-        tetrahedron: 'tetrahedron',
-        // A-T3: shape для композитів приходить із BE вже як пара «X_in_Y».
-        // Без цих рядків companion мовчки не рендериться (грабля тетраедра, D-4).
-        sphere_in_cube: 'sphere_in_cube',
-        cube_in_sphere: 'cube_in_sphere',
-        // Прогін №4 (2026-08-04): 52 задачі банку мають shape='parallelepiped',
-        // якого не було в мапі — фолбек «як є» створював ПОРОЖНЮ картку
-        // (Workspace не знає такого шаблона) і пустушка їхала аж у колоду.
-        parallelepiped: 'cuboid',
-        rectangular_parallelepiped: 'cuboid',
-        // Реальний ключ зрізаного конуса — truncCone ('frustumCone' не існує).
-        frustum_cone: 'truncCone',
-        // Шаблона зрізаної ПІРАМІДИ немає взагалі → чесний null (14 задач).
-        frustum_pyramid: null,
-      }
-      // Невідомий shape НЕ пропускається «як є»: templateKey поза реальним
-      // списком шаблонів = порожній об'єкт на дошці й у презентації.
-      const templateKey = SHAPE_TO_TEMPLATE[solidShape] ?? null
-      if (!templateKey || !NMT3D_TEMPLATE_KEYS.has(templateKey)) {
-        console.warn('[WB] nmt3d companion skipped — немає шаблона', { solidShape, baseShape })
-        return null
-      }
-      return {
-        version:     1,
-        templateKey,
-        mode:        'adapt' as const,
-      }
-    }
+    case 'nmt3d':
+      // Форма, основа, пропорції й лінії з умови — taskCompanion.taskSolidData (без фолбека, ТЗ D-4).
+      return taskSolidData(d)
 
     case 'calculus_card': {
       // Реальна функція задачі з extracted_data.equations (RHS, mathjs), а не hardcoded.

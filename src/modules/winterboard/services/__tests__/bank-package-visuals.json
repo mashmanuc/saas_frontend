@@ -1,0 +1,10431 @@
+{
+ "tasks": [
+  {
+   "id": "nmt-oa-3705",
+   "topic": "exp_expressions",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "2*3^x"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 0.07407407407407407
+    },
+    {
+     "x": -1.0,
+     "y": 0.6666666666666666
+    },
+    {
+     "x": -0.5,
+     "y": 1.1547005383792515
+    },
+    {
+     "x": 0.0,
+     "y": 2.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 2.8844991406148166
+    },
+    {
+     "x": 1.0,
+     "y": 6.0
+    },
+    {
+     "x": 1.5,
+     "y": 10.392304845413264
+    },
+    {
+     "x": 2.0,
+     "y": 18.0
+    },
+    {
+     "x": 4.0,
+     "y": 162.0
+    },
+    {
+     "x": 5.0,
+     "y": 486.0
+    },
+    {
+     "x": 9.0,
+     "y": 39366.0
+    },
+    {
+     "x": 32.0,
+     "y": 3706040377703682.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-sc-3914",
+   "topic": "exp_expressions",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3915",
+   "topic": "exp_expressions",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "3^x"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 0.037037037037037035
+    },
+    {
+     "x": -1.0,
+     "y": 0.3333333333333333
+    },
+    {
+     "x": -0.5,
+     "y": 0.5773502691896257
+    },
+    {
+     "x": 0.0,
+     "y": 1.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 1.4422495703074083
+    },
+    {
+     "x": 1.0,
+     "y": 3.0
+    },
+    {
+     "x": 1.5,
+     "y": 5.196152422706632
+    },
+    {
+     "x": 2.0,
+     "y": 9.0
+    },
+    {
+     "x": 4.0,
+     "y": 81.0
+    },
+    {
+     "x": 5.0,
+     "y": 243.0
+    },
+    {
+     "x": 9.0,
+     "y": 19683.0
+    },
+    {
+     "x": 32.0,
+     "y": 1853020188851841.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-sc-3916",
+   "topic": "exp_expressions",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "2^(-x)"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 8.0
+    },
+    {
+     "x": -1.0,
+     "y": 2.0
+    },
+    {
+     "x": -0.5,
+     "y": 1.4142135623730951
+    },
+    {
+     "x": 0.0,
+     "y": 1.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 0.7937005259840998
+    },
+    {
+     "x": 1.0,
+     "y": 0.5
+    },
+    {
+     "x": 1.5,
+     "y": 0.3535533905932738
+    },
+    {
+     "x": 2.0,
+     "y": 0.25
+    },
+    {
+     "x": 4.0,
+     "y": 0.0625
+    },
+    {
+     "x": 5.0,
+     "y": 0.03125
+    },
+    {
+     "x": 9.0,
+     "y": 0.001953125
+    },
+    {
+     "x": 32.0,
+     "y": 2.3283064365386963e-10
+    }
+   ]
+  },
+  {
+   "id": "nmt-sc-3918",
+   "topic": "exp_expressions",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "2^x"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 0.125
+    },
+    {
+     "x": -1.0,
+     "y": 0.5
+    },
+    {
+     "x": -0.5,
+     "y": 0.7071067811865476
+    },
+    {
+     "x": 0.0,
+     "y": 1.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 1.2599210498948732
+    },
+    {
+     "x": 1.0,
+     "y": 2.0
+    },
+    {
+     "x": 1.5,
+     "y": 2.8284271247461903
+    },
+    {
+     "x": 2.0,
+     "y": 4.0
+    },
+    {
+     "x": 4.0,
+     "y": 16.0
+    },
+    {
+     "x": 5.0,
+     "y": 32.0
+    },
+    {
+     "x": 9.0,
+     "y": 512.0
+    },
+    {
+     "x": 32.0,
+     "y": 4294967296.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-sc-3920",
+   "topic": "exp_expressions",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "3^x"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 0.037037037037037035
+    },
+    {
+     "x": -1.0,
+     "y": 0.3333333333333333
+    },
+    {
+     "x": -0.5,
+     "y": 0.5773502691896257
+    },
+    {
+     "x": 0.0,
+     "y": 1.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 1.4422495703074083
+    },
+    {
+     "x": 1.0,
+     "y": 3.0
+    },
+    {
+     "x": 1.5,
+     "y": 5.196152422706632
+    },
+    {
+     "x": 2.0,
+     "y": 9.0
+    },
+    {
+     "x": 4.0,
+     "y": 81.0
+    },
+    {
+     "x": 5.0,
+     "y": 243.0
+    },
+    {
+     "x": 9.0,
+     "y": 19683.0
+    },
+    {
+     "x": 32.0,
+     "y": 1853020188851841.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-sc-3926",
+   "topic": "exp_expressions",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "2^x - 1"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": -0.875
+    },
+    {
+     "x": -1.0,
+     "y": -0.5
+    },
+    {
+     "x": -0.5,
+     "y": -0.2928932188134525
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 0.2599210498948732
+    },
+    {
+     "x": 1.0,
+     "y": 1.0
+    },
+    {
+     "x": 1.5,
+     "y": 1.82842712474619
+    },
+    {
+     "x": 2.0,
+     "y": 3.0
+    },
+    {
+     "x": 4.0,
+     "y": 15.0
+    },
+    {
+     "x": 5.0,
+     "y": 31.0
+    },
+    {
+     "x": 9.0,
+     "y": 511.0
+    },
+    {
+     "x": 32.0,
+     "y": 4294967295.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-sc-3927",
+   "topic": "exp_expressions",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "2^x"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 0.125
+    },
+    {
+     "x": -1.0,
+     "y": 0.5
+    },
+    {
+     "x": -0.5,
+     "y": 0.7071067811865476
+    },
+    {
+     "x": 0.0,
+     "y": 1.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 1.2599210498948732
+    },
+    {
+     "x": 1.0,
+     "y": 2.0
+    },
+    {
+     "x": 1.5,
+     "y": 2.8284271247461903
+    },
+    {
+     "x": 2.0,
+     "y": 4.0
+    },
+    {
+     "x": 4.0,
+     "y": 16.0
+    },
+    {
+     "x": 5.0,
+     "y": 32.0
+    },
+    {
+     "x": 9.0,
+     "y": 512.0
+    },
+    {
+     "x": 32.0,
+     "y": 4294967296.0
+    }
+   ]
+  },
+  {
+   "id": "gen3-exponential-log-equations-simple_exp_solve-3102956",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "gen3-exponential-log-equations-simple_exp_solve-3100564",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "gen3-exponential-log-equations-simple_exp_solve-3100153",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "gen3-exponential-log-equations-simple_exp_solve-3101172",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "gen3-exponential-log-trig-expressions-exp_equation-11153",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1048",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1049",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1050",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1051",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1052",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1053",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1054",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1055",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1056",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1062",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1063",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1064",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1072",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1082",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1087",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1088",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1093",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1098",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1107",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3269",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3271",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3272",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2285",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2286",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2293",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2301",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2302",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1047",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1057",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1058",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1059",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1060",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1061",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1068",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1069",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1074",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1076",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1083",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1084",
+   "topic": "exp_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1972",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1973",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1974",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1977",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1978",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1981",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1982",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1983",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1984",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1985",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1986",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1989",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1975",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1976",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1979",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1980",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1987",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1988",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1995",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1996",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2002",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2031",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2032",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2039",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2003",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2004",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2005",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2018",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2033",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2036",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2038",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2043",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2052",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2053",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2070",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2071",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2008",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2009",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2010",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2011",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2012",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2013",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2025",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2026",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2027",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2057",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2058",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2067",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2014",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2015",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2016",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2017",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2020",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2021",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2022",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2023",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2040",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2041",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2042",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2048",
+   "topic": "exp_inequalities",
+   "handled": false
+  },
+  {
+   "id": "gen3-exponential-log-equations-log_base10_direct-3200992",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "gen3-exponential-log-trig-expressions-log_exact-12027",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3279",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3709",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-662",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-663",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-666",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-672",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-674",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-685",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-066",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-1536",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "gen3-exp-log-trig-functions-log_of_power-711377",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "gen3-exponential-log-equations-log_root_base-3100099",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3214",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3218",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-664",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-665",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-667",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-668",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-669",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-670",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-671",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-673",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "gen3-exponential-log-equations-log_combo_sum-3100370",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "gen3-exponential-log-equations-log_diff_eval-3100499",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3213",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3215",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3217",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3280",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3282",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3568",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3707",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-677",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-678",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-679",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3211",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3212",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3216",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3281",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-682",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-683",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-684",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-687",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-688",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-689",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-690",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-691",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-1378",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-1800",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-433",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "у задачі немає функції y = …",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3380",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "ln(x)/ln(2)"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": null
+    },
+    {
+     "x": -1.0,
+     "y": null
+    },
+    {
+     "x": -0.5,
+     "y": null
+    },
+    {
+     "x": 0.0,
+     "y": null
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": -1.584962500721156
+    },
+    {
+     "x": 1.0,
+     "y": 0.0
+    },
+    {
+     "x": 1.5,
+     "y": 0.5849625007211562
+    },
+    {
+     "x": 2.0,
+     "y": 1.0
+    },
+    {
+     "x": 4.0,
+     "y": 2.0
+    },
+    {
+     "x": 5.0,
+     "y": 2.321928094887362
+    },
+    {
+     "x": 9.0,
+     "y": 3.169925001442312
+    },
+    {
+     "x": 32.0,
+     "y": 5.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-3381",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "ln(x)/ln(5)"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": null
+    },
+    {
+     "x": -1.0,
+     "y": null
+    },
+    {
+     "x": -0.5,
+     "y": null
+    },
+    {
+     "x": 0.0,
+     "y": null
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": -0.6826061944859853
+    },
+    {
+     "x": 1.0,
+     "y": 0.0
+    },
+    {
+     "x": 1.5,
+     "y": 0.25192963641259225
+    },
+    {
+     "x": 2.0,
+     "y": 0.43067655807339306
+    },
+    {
+     "x": 4.0,
+     "y": 0.8613531161467861
+    },
+    {
+     "x": 5.0,
+     "y": 1.0
+    },
+    {
+     "x": 9.0,
+     "y": 1.3652123889719705
+    },
+    {
+     "x": 32.0,
+     "y": 2.1533827903669653
+    }
+   ]
+  },
+  {
+   "id": "nmt-sc-060",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "ln(2*x - 8)/ln(3)"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": null
+    },
+    {
+     "x": -1.0,
+     "y": null
+    },
+    {
+     "x": -0.5,
+     "y": null
+    },
+    {
+     "x": 0.0,
+     "y": null
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": null
+    },
+    {
+     "x": 1.0,
+     "y": null
+    },
+    {
+     "x": 1.5,
+     "y": null
+    },
+    {
+     "x": 2.0,
+     "y": null
+    },
+    {
+     "x": 4.0,
+     "y": null
+    },
+    {
+     "x": 5.0,
+     "y": 0.6309297535714574
+    },
+    {
+     "x": 9.0,
+     "y": 2.0959032742893844
+    },
+    {
+     "x": 32.0,
+     "y": 3.6640330098757947
+    }
+   ]
+  },
+  {
+   "id": "nmt-sc-1191",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "ln(x - 4)/ln(2)"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": null
+    },
+    {
+     "x": -1.0,
+     "y": null
+    },
+    {
+     "x": -0.5,
+     "y": null
+    },
+    {
+     "x": 0.0,
+     "y": null
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": null
+    },
+    {
+     "x": 1.0,
+     "y": null
+    },
+    {
+     "x": 1.5,
+     "y": null
+    },
+    {
+     "x": 2.0,
+     "y": null
+    },
+    {
+     "x": 4.0,
+     "y": null
+    },
+    {
+     "x": 5.0,
+     "y": 0.0
+    },
+    {
+     "x": 9.0,
+     "y": 2.321928094887362
+    },
+    {
+     "x": 32.0,
+     "y": 4.807354922057604
+    }
+   ]
+  },
+  {
+   "id": "nmt-sc-1530",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "ln(3*x - 15)/ln(2)"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": null
+    },
+    {
+     "x": -1.0,
+     "y": null
+    },
+    {
+     "x": -0.5,
+     "y": null
+    },
+    {
+     "x": 0.0,
+     "y": null
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": null
+    },
+    {
+     "x": 1.0,
+     "y": null
+    },
+    {
+     "x": 1.5,
+     "y": null
+    },
+    {
+     "x": 2.0,
+     "y": null
+    },
+    {
+     "x": 4.0,
+     "y": null
+    },
+    {
+     "x": 5.0,
+     "y": null
+    },
+    {
+     "x": 9.0,
+     "y": 3.584962500721156
+    },
+    {
+     "x": 32.0,
+     "y": 6.339850002884624
+    }
+   ]
+  },
+  {
+   "id": "nmt-sc-231",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "ln(x + 7)/ln(5)"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 0.8613531161467861
+    },
+    {
+     "x": -1.0,
+     "y": 1.1132827525593783
+    },
+    {
+     "x": -0.5,
+     "y": 1.1630160830936893
+    },
+    {
+     "x": 0.0,
+     "y": 1.2090619551221675
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 1.237966465992386
+    },
+    {
+     "x": 1.0,
+     "y": 1.2920296742201791
+    },
+    {
+     "x": 1.5,
+     "y": 1.329697869649195
+    },
+    {
+     "x": 2.0,
+     "y": 1.3652123889719705
+    },
+    {
+     "x": 4.0,
+     "y": 1.4898961024049782
+    },
+    {
+     "x": 5.0,
+     "y": 1.5439593106327714
+    },
+    {
+     "x": 9.0,
+     "y": 1.7227062322935722
+    },
+    {
+     "x": 32.0,
+     "y": 2.276298835653068
+    }
+   ]
+  },
+  {
+   "id": "nmt-sc-2603",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "ln(x)/ln(2) - 3"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": null
+    },
+    {
+     "x": -1.0,
+     "y": null
+    },
+    {
+     "x": -0.5,
+     "y": null
+    },
+    {
+     "x": 0.0,
+     "y": null
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": -4.584962500721156
+    },
+    {
+     "x": 1.0,
+     "y": -3.0
+    },
+    {
+     "x": 1.5,
+     "y": -2.415037499278844
+    },
+    {
+     "x": 2.0,
+     "y": -2.0
+    },
+    {
+     "x": 4.0,
+     "y": -1.0
+    },
+    {
+     "x": 5.0,
+     "y": -0.6780719051126377
+    },
+    {
+     "x": 9.0,
+     "y": 0.16992500144231237
+    },
+    {
+     "x": 32.0,
+     "y": 2.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-sc-2700",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "ln(x)/ln(2)"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": null
+    },
+    {
+     "x": -1.0,
+     "y": null
+    },
+    {
+     "x": -0.5,
+     "y": null
+    },
+    {
+     "x": 0.0,
+     "y": null
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": -1.584962500721156
+    },
+    {
+     "x": 1.0,
+     "y": 0.0
+    },
+    {
+     "x": 1.5,
+     "y": 0.5849625007211562
+    },
+    {
+     "x": 2.0,
+     "y": 1.0
+    },
+    {
+     "x": 4.0,
+     "y": 2.0
+    },
+    {
+     "x": 5.0,
+     "y": 2.321928094887362
+    },
+    {
+     "x": 9.0,
+     "y": 3.169925001442312
+    },
+    {
+     "x": 32.0,
+     "y": 5.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-sc-2701",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "ln(x)/ln(3)"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": null
+    },
+    {
+     "x": -1.0,
+     "y": null
+    },
+    {
+     "x": -0.5,
+     "y": null
+    },
+    {
+     "x": 0.0,
+     "y": null
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": -1.0
+    },
+    {
+     "x": 1.0,
+     "y": 0.0
+    },
+    {
+     "x": 1.5,
+     "y": 0.3690702464285426
+    },
+    {
+     "x": 2.0,
+     "y": 0.6309297535714574
+    },
+    {
+     "x": 4.0,
+     "y": 1.2618595071429148
+    },
+    {
+     "x": 5.0,
+     "y": 1.464973520717927
+    },
+    {
+     "x": 9.0,
+     "y": 2.0
+    },
+    {
+     "x": 32.0,
+     "y": 3.154648767857287
+    }
+   ]
+  },
+  {
+   "id": "nmt-sc-2704",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "ln(x)/ln(2)"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": null
+    },
+    {
+     "x": -1.0,
+     "y": null
+    },
+    {
+     "x": -0.5,
+     "y": null
+    },
+    {
+     "x": 0.0,
+     "y": null
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": -1.584962500721156
+    },
+    {
+     "x": 1.0,
+     "y": 0.0
+    },
+    {
+     "x": 1.5,
+     "y": 0.5849625007211562
+    },
+    {
+     "x": 2.0,
+     "y": 1.0
+    },
+    {
+     "x": 4.0,
+     "y": 2.0
+    },
+    {
+     "x": 5.0,
+     "y": 2.321928094887362
+    },
+    {
+     "x": 9.0,
+     "y": 3.169925001442312
+    },
+    {
+     "x": 32.0,
+     "y": 5.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-sc-2708",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "ln(x)/ln(3)"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": null
+    },
+    {
+     "x": -1.0,
+     "y": null
+    },
+    {
+     "x": -0.5,
+     "y": null
+    },
+    {
+     "x": 0.0,
+     "y": null
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": -1.0
+    },
+    {
+     "x": 1.0,
+     "y": 0.0
+    },
+    {
+     "x": 1.5,
+     "y": 0.3690702464285426
+    },
+    {
+     "x": 2.0,
+     "y": 0.6309297535714574
+    },
+    {
+     "x": 4.0,
+     "y": 1.2618595071429148
+    },
+    {
+     "x": 5.0,
+     "y": 1.464973520717927
+    },
+    {
+     "x": 9.0,
+     "y": 2.0
+    },
+    {
+     "x": 32.0,
+     "y": 3.154648767857287
+    }
+   ]
+  },
+  {
+   "id": "nmt-sc-2863",
+   "topic": "logarithms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "functions"
+    ],
+    "entities": [],
+    "intents": [
+     "show_graph"
+    ],
+    "extracted_data": {
+     "equations": [
+      "ln(x^2 - 6*x + 8)/ln(10)"
+     ]
+    }
+   },
+   "reason": "графік функції з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 1.5440680443502757
+    },
+    {
+     "x": -1.0,
+     "y": 1.1760912590556813
+    },
+    {
+     "x": -0.5,
+     "y": 1.0511525224473812
+    },
+    {
+     "x": 0.0,
+     "y": 0.9030899869919435
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 0.786120180054919
+    },
+    {
+     "x": 1.0,
+     "y": 0.47712125471966244
+    },
+    {
+     "x": 1.5,
+     "y": 0.09691001300805642
+    },
+    {
+     "x": 2.0,
+     "y": null
+    },
+    {
+     "x": 4.0,
+     "y": null
+    },
+    {
+     "x": 5.0,
+     "y": 0.47712125471966244
+    },
+    {
+     "x": 9.0,
+     "y": 1.5440680443502757
+    },
+    {
+     "x": 32.0,
+     "y": 2.9242792860618816
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-1119",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1120",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1121",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1122",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1123",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1126",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1133",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1134",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1135",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1136",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3283",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3286",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1137",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1138",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1152",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1156",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1157",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1158",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2344",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2346",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2352",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2362",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-629",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1127",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1128",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1129",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1130",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1131",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1132",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1141",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1142",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1149",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1150",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1151",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1153",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1180",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1181",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1182",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3284",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3287",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3288",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2345",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2349",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2356",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2361",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1145",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1146",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1161",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1162",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1171",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1172",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1179",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1222",
+   "topic": "log_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2087",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2088",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2089",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2090",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2093",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2094",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2095",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2096",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2099",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2100",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2101",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2102",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2091",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2092",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2097",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2098",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2104",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2119",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2120",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2138",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2172",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2111",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2112",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2113",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2114",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2115",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2116",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2126",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2127",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2128",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2135",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2144",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2145",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2121",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2122",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2123",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2125",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2131",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2132",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2133",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2134",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2151",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2161",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2162",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2168",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2141",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2142",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2143",
+   "topic": "log_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3391",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3394",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-1166",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-1249",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2191",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2196",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2197",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2209",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2210",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2743",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2744",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2749",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "gen3-linear-quadratic-rational-equations-rational_zero_sum-610625",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-1325",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2193",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2198",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2211",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "gen3-linear-quadratic-rational-equations-rational_zero_sum-610497",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "gen3-linear-quadratic-rational-equations-rational_zero_sum-610485",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "gen3-linear-quadratic-rational-equations-rational_zero_sum-610545",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-943",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2745",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2751",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2754",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-603",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-783",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-933",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3244",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-884",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-885",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-894",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-896",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-897",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-898",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-900",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-907",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-911",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-912",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2192",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3247",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3248",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3250",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3392",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3393",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-864",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-892",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-893",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-895",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-899",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-905",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-906",
+   "topic": "rational_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1378",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1379",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1425",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1444",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3659",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3661",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-1369",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-1623",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2137",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-244",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-269",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-334",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1435",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1448",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-1279",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-319",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1365",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1367",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1368",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1381",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1385",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1404",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1405",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1406",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1407",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1408",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1410",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1411",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1389",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1394",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1397",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1398",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1412",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1414",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1415",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1416",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1417",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1419",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1420",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1426",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1366",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1369",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1370",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1377",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1387",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1388",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-1424",
+   "topic": "abs_equations",
+   "handled": false
+  },
+  {
+   "id": "gen3-inequalities-systems-abs_boundary-410467",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "gen3-inequalities-systems-abs_count-410417",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2263",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2264",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2265",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2266",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2267",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2306",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2307",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2308",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2310",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3660",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2325",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2176",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-3454",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-3753",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2304",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2311",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2313",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2314",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2315",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2324",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2316",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2317",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2319",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2320",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2321",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-3242",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2177",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-sc-2236",
+   "topic": "abs_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2175",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2178",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2179",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2180",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2184",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2185",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2187",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2189",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2190",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2191",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2197",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2198",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2292",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2329",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2330",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2331",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2332",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2333",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2334",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2336",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2337",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2338",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2339",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "nmt-oa-2340",
+   "topic": "trig_inequalities",
+   "handled": false
+  },
+  {
+   "id": "gen3-integral-antiderivative_coeff-6002979",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "gen3-integral-antiderivative_coeff-6010887",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "gen3-integral-antiderivative_coeff-6002079",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "gen3-integral-antiderivative_coeff-6001975",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2443",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2444",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2445",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2446",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2454",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2457",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2908",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2909",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2917",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "gen3-integral-antiderivative_point-6400084",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2456",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2911",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2916",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "gen3-integral-antiderivative_point-6400034",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "gen3-integral-antiderivative_point-6400129",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "gen3-integral-antiderivative_point-6400126",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3658",
+   "topic": "antiderivative",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "первісна без меж — визначеного інтеграла немає",
+   "probes": []
+  },
+  {
+   "id": "gen3-integral-definite_integral_linear-6100037",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "-10*x - 1"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 4.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 29.0
+    },
+    {
+     "x": -1.0,
+     "y": 9.0
+    },
+    {
+     "x": -0.5,
+     "y": 4.0
+    },
+    {
+     "x": 0.0,
+     "y": -1.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": -4.333333333333333
+    },
+    {
+     "x": 1.0,
+     "y": -11.0
+    },
+    {
+     "x": 1.5,
+     "y": -16.0
+    },
+    {
+     "x": 2.0,
+     "y": -21.0
+    },
+    {
+     "x": 4.0,
+     "y": -41.0
+    },
+    {
+     "x": 5.0,
+     "y": -51.0
+    },
+    {
+     "x": 9.0,
+     "y": -91.0
+    },
+    {
+     "x": 32.0,
+     "y": -321.0
+    },
+    {
+     "x": 0.0,
+     "y": -1.0
+    },
+    {
+     "x": 4.0,
+     "y": -41.0
+    },
+    {
+     "x": 2.0,
+     "y": -21.0
+    }
+   ]
+  },
+  {
+   "id": "gen3-integral-definite_integral_linear-6100130",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "29 - 10*x"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 22.0,
+      "b": 30.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 59.0
+    },
+    {
+     "x": -1.0,
+     "y": 39.0
+    },
+    {
+     "x": -0.5,
+     "y": 34.0
+    },
+    {
+     "x": 0.0,
+     "y": 29.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 25.666666666666668
+    },
+    {
+     "x": 1.0,
+     "y": 19.0
+    },
+    {
+     "x": 1.5,
+     "y": 14.0
+    },
+    {
+     "x": 2.0,
+     "y": 9.0
+    },
+    {
+     "x": 4.0,
+     "y": -11.0
+    },
+    {
+     "x": 5.0,
+     "y": -21.0
+    },
+    {
+     "x": 9.0,
+     "y": -61.0
+    },
+    {
+     "x": 32.0,
+     "y": -291.0
+    },
+    {
+     "x": 22.0,
+     "y": -191.0
+    },
+    {
+     "x": 30.0,
+     "y": -271.0
+    },
+    {
+     "x": 26.0,
+     "y": -231.0
+    }
+   ]
+  },
+  {
+   "id": "gen3-integral-definite_integral_linear-6100042",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "3 - 6*x"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 1.0,
+      "b": 4.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 21.0
+    },
+    {
+     "x": -1.0,
+     "y": 9.0
+    },
+    {
+     "x": -0.5,
+     "y": 6.0
+    },
+    {
+     "x": 0.0,
+     "y": 3.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 1.0
+    },
+    {
+     "x": 1.0,
+     "y": -3.0
+    },
+    {
+     "x": 1.5,
+     "y": -6.0
+    },
+    {
+     "x": 2.0,
+     "y": -9.0
+    },
+    {
+     "x": 4.0,
+     "y": -21.0
+    },
+    {
+     "x": 5.0,
+     "y": -27.0
+    },
+    {
+     "x": 9.0,
+     "y": -51.0
+    },
+    {
+     "x": 32.0,
+     "y": -189.0
+    },
+    {
+     "x": 1.0,
+     "y": -3.0
+    },
+    {
+     "x": 4.0,
+     "y": -21.0
+    },
+    {
+     "x": 2.5,
+     "y": -12.0
+    }
+   ]
+  },
+  {
+   "id": "gen3-integral-definite_integral_linear-6100074",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "6*x + 7"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": -11.0,
+      "b": -5.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": -11.0
+    },
+    {
+     "x": -1.0,
+     "y": 1.0
+    },
+    {
+     "x": -0.5,
+     "y": 4.0
+    },
+    {
+     "x": 0.0,
+     "y": 7.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 9.0
+    },
+    {
+     "x": 1.0,
+     "y": 13.0
+    },
+    {
+     "x": 1.5,
+     "y": 16.0
+    },
+    {
+     "x": 2.0,
+     "y": 19.0
+    },
+    {
+     "x": 4.0,
+     "y": 31.0
+    },
+    {
+     "x": 5.0,
+     "y": 37.0
+    },
+    {
+     "x": 9.0,
+     "y": 61.0
+    },
+    {
+     "x": 32.0,
+     "y": 199.0
+    },
+    {
+     "x": -11.0,
+     "y": -59.0
+    },
+    {
+     "x": -5.0,
+     "y": -23.0
+    },
+    {
+     "x": -8.0,
+     "y": -41.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-078",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "(x^2 + 4*x + 4)/(x + 2)"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 2.0,
+      "b": 5.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": -1.0
+    },
+    {
+     "x": -1.0,
+     "y": 1.0
+    },
+    {
+     "x": -0.5,
+     "y": 1.5
+    },
+    {
+     "x": 0.0,
+     "y": 2.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 2.3333333333333335
+    },
+    {
+     "x": 1.0,
+     "y": 3.0
+    },
+    {
+     "x": 1.5,
+     "y": 3.5
+    },
+    {
+     "x": 2.0,
+     "y": 4.0
+    },
+    {
+     "x": 4.0,
+     "y": 6.0
+    },
+    {
+     "x": 5.0,
+     "y": 7.0
+    },
+    {
+     "x": 9.0,
+     "y": 11.0
+    },
+    {
+     "x": 32.0,
+     "y": 34.0
+    },
+    {
+     "x": 2.0,
+     "y": 4.0
+    },
+    {
+     "x": 5.0,
+     "y": 7.0
+    },
+    {
+     "x": 3.5,
+     "y": 5.5
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-101",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "(x^2 - 25)/(x - 5)"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 1.0,
+      "b": 4.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 2.0
+    },
+    {
+     "x": -1.0,
+     "y": 4.0
+    },
+    {
+     "x": -0.5,
+     "y": 4.5
+    },
+    {
+     "x": 0.0,
+     "y": 5.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 5.333333333333333
+    },
+    {
+     "x": 1.0,
+     "y": 6.0
+    },
+    {
+     "x": 1.5,
+     "y": 6.5
+    },
+    {
+     "x": 2.0,
+     "y": 7.0
+    },
+    {
+     "x": 4.0,
+     "y": 9.0
+    },
+    {
+     "x": 5.0,
+     "y": null
+    },
+    {
+     "x": 9.0,
+     "y": 14.0
+    },
+    {
+     "x": 32.0,
+     "y": 37.0
+    },
+    {
+     "x": 1.0,
+     "y": 6.0
+    },
+    {
+     "x": 4.0,
+     "y": 9.0
+    },
+    {
+     "x": 2.5,
+     "y": 7.5
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-2943",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "3*x^2 + 2"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 2.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 29.0
+    },
+    {
+     "x": -1.0,
+     "y": 5.0
+    },
+    {
+     "x": -0.5,
+     "y": 2.75
+    },
+    {
+     "x": 0.0,
+     "y": 2.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 2.3333333333333335
+    },
+    {
+     "x": 1.0,
+     "y": 5.0
+    },
+    {
+     "x": 1.5,
+     "y": 8.75
+    },
+    {
+     "x": 2.0,
+     "y": 14.0
+    },
+    {
+     "x": 4.0,
+     "y": 50.0
+    },
+    {
+     "x": 5.0,
+     "y": 77.0
+    },
+    {
+     "x": 9.0,
+     "y": 245.0
+    },
+    {
+     "x": 32.0,
+     "y": 3074.0
+    },
+    {
+     "x": 0.0,
+     "y": 2.0
+    },
+    {
+     "x": 2.0,
+     "y": 14.0
+    },
+    {
+     "x": 1.0,
+     "y": 5.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-2944",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "x^(-2)"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 1.0,
+      "b": 3.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 0.1111111111111111
+    },
+    {
+     "x": -1.0,
+     "y": 1.0
+    },
+    {
+     "x": -0.5,
+     "y": 4.0
+    },
+    {
+     "x": 0.0,
+     "y": null
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 9.0
+    },
+    {
+     "x": 1.0,
+     "y": 1.0
+    },
+    {
+     "x": 1.5,
+     "y": 0.4444444444444444
+    },
+    {
+     "x": 2.0,
+     "y": 0.25
+    },
+    {
+     "x": 4.0,
+     "y": 0.0625
+    },
+    {
+     "x": 5.0,
+     "y": 0.04
+    },
+    {
+     "x": 9.0,
+     "y": 0.012345679012345678
+    },
+    {
+     "x": 32.0,
+     "y": 0.0009765625
+    },
+    {
+     "x": 1.0,
+     "y": 1.0
+    },
+    {
+     "x": 3.0,
+     "y": 0.1111111111111111
+    },
+    {
+     "x": 2.0,
+     "y": 0.25
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-2945",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "2*x - 1"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 3.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": -7.0
+    },
+    {
+     "x": -1.0,
+     "y": -3.0
+    },
+    {
+     "x": -0.5,
+     "y": -2.0
+    },
+    {
+     "x": 0.0,
+     "y": -1.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": -0.3333333333333333
+    },
+    {
+     "x": 1.0,
+     "y": 1.0
+    },
+    {
+     "x": 1.5,
+     "y": 2.0
+    },
+    {
+     "x": 2.0,
+     "y": 3.0
+    },
+    {
+     "x": 4.0,
+     "y": 7.0
+    },
+    {
+     "x": 5.0,
+     "y": 9.0
+    },
+    {
+     "x": 9.0,
+     "y": 17.0
+    },
+    {
+     "x": 32.0,
+     "y": 63.0
+    },
+    {
+     "x": 0.0,
+     "y": -1.0
+    },
+    {
+     "x": 3.0,
+     "y": 5.0
+    },
+    {
+     "x": 1.5,
+     "y": 2.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-2947",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "cos(x)"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 1.5707963267948966
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": -0.9899924966004454
+    },
+    {
+     "x": -1.0,
+     "y": 0.5403023058681398
+    },
+    {
+     "x": -0.5,
+     "y": 0.8775825618903728
+    },
+    {
+     "x": 0.0,
+     "y": 1.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 0.9449569463147377
+    },
+    {
+     "x": 1.0,
+     "y": 0.5403023058681398
+    },
+    {
+     "x": 1.5,
+     "y": 0.0707372016677029
+    },
+    {
+     "x": 2.0,
+     "y": -0.4161468365471424
+    },
+    {
+     "x": 4.0,
+     "y": -0.6536436208636119
+    },
+    {
+     "x": 5.0,
+     "y": 0.28366218546322625
+    },
+    {
+     "x": 9.0,
+     "y": -0.9111302618846769
+    },
+    {
+     "x": 32.0,
+     "y": 0.8342233605065102
+    },
+    {
+     "x": 0.0,
+     "y": 1.0
+    },
+    {
+     "x": 1.5707963267949,
+     "y": -3.38076867830836e-15
+    },
+    {
+     "x": 0.78539816339745,
+     "y": 0.7071067811865464
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-2948",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "sin(x)"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 3.141592653589793
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": -0.1411200080598672
+    },
+    {
+     "x": -1.0,
+     "y": -0.8414709848078965
+    },
+    {
+     "x": -0.5,
+     "y": -0.479425538604203
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 0.32719469679615226
+    },
+    {
+     "x": 1.0,
+     "y": 0.8414709848078965
+    },
+    {
+     "x": 1.5,
+     "y": 0.9974949866040544
+    },
+    {
+     "x": 2.0,
+     "y": 0.9092974268256817
+    },
+    {
+     "x": 4.0,
+     "y": -0.7568024953079282
+    },
+    {
+     "x": 5.0,
+     "y": -0.9589242746631385
+    },
+    {
+     "x": 9.0,
+     "y": 0.4121184852417566
+    },
+    {
+     "x": 32.0,
+     "y": 0.5514266812416906
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "x": 3.14159265358979,
+     "y": 3.2384626433832794e-15
+    },
+    {
+     "x": 1.570796326794895,
+     "y": 1.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-2962",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "x^3 + x"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": -1.0,
+      "b": 1.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": -30.0
+    },
+    {
+     "x": -1.0,
+     "y": -2.0
+    },
+    {
+     "x": -0.5,
+     "y": -0.625
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 0.37037037037037035
+    },
+    {
+     "x": 1.0,
+     "y": 2.0
+    },
+    {
+     "x": 1.5,
+     "y": 4.875
+    },
+    {
+     "x": 2.0,
+     "y": 10.0
+    },
+    {
+     "x": 4.0,
+     "y": 68.0
+    },
+    {
+     "x": 5.0,
+     "y": 130.0
+    },
+    {
+     "x": 9.0,
+     "y": 738.0
+    },
+    {
+     "x": 32.0,
+     "y": 32800.0
+    },
+    {
+     "x": -1.0,
+     "y": -2.0
+    },
+    {
+     "x": 1.0,
+     "y": 2.0
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-3311",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "x^2"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 3.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 9.0
+    },
+    {
+     "x": -1.0,
+     "y": 1.0
+    },
+    {
+     "x": -0.5,
+     "y": 0.25
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 0.1111111111111111
+    },
+    {
+     "x": 1.0,
+     "y": 1.0
+    },
+    {
+     "x": 1.5,
+     "y": 2.25
+    },
+    {
+     "x": 2.0,
+     "y": 4.0
+    },
+    {
+     "x": 4.0,
+     "y": 16.0
+    },
+    {
+     "x": 5.0,
+     "y": 25.0
+    },
+    {
+     "x": 9.0,
+     "y": 81.0
+    },
+    {
+     "x": 32.0,
+     "y": 1024.0
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "x": 3.0,
+     "y": 9.0
+    },
+    {
+     "x": 1.5,
+     "y": 2.25
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-3312",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "1/sqrt(x)"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 1.0,
+      "b": 4.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": null
+    },
+    {
+     "x": -1.0,
+     "y": null
+    },
+    {
+     "x": -0.5,
+     "y": null
+    },
+    {
+     "x": 0.0,
+     "y": null
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 1.7320508075688772
+    },
+    {
+     "x": 1.0,
+     "y": 1.0
+    },
+    {
+     "x": 1.5,
+     "y": 0.816496580927726
+    },
+    {
+     "x": 2.0,
+     "y": 0.7071067811865476
+    },
+    {
+     "x": 4.0,
+     "y": 0.5
+    },
+    {
+     "x": 5.0,
+     "y": 0.4472135954999579
+    },
+    {
+     "x": 9.0,
+     "y": 0.3333333333333333
+    },
+    {
+     "x": 32.0,
+     "y": 0.1767766952966369
+    },
+    {
+     "x": 1.0,
+     "y": 1.0
+    },
+    {
+     "x": 4.0,
+     "y": 0.5
+    },
+    {
+     "x": 2.5,
+     "y": 0.6324555320336759
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-3314",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "sin(x)"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 1.5707963267948966
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": -0.1411200080598672
+    },
+    {
+     "x": -1.0,
+     "y": -0.8414709848078965
+    },
+    {
+     "x": -0.5,
+     "y": -0.479425538604203
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 0.32719469679615226
+    },
+    {
+     "x": 1.0,
+     "y": 0.8414709848078965
+    },
+    {
+     "x": 1.5,
+     "y": 0.9974949866040544
+    },
+    {
+     "x": 2.0,
+     "y": 0.9092974268256817
+    },
+    {
+     "x": 4.0,
+     "y": -0.7568024953079282
+    },
+    {
+     "x": 5.0,
+     "y": -0.9589242746631385
+    },
+    {
+     "x": 9.0,
+     "y": 0.4121184852417566
+    },
+    {
+     "x": 32.0,
+     "y": 0.5514266812416906
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "x": 1.5707963267949,
+     "y": 1.0
+    },
+    {
+     "x": 0.78539816339745,
+     "y": 0.7071067811865487
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-334",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "(x^2 + 4*x + 4)/(x + 2)"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 3.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": -1.0
+    },
+    {
+     "x": -1.0,
+     "y": 1.0
+    },
+    {
+     "x": -0.5,
+     "y": 1.5
+    },
+    {
+     "x": 0.0,
+     "y": 2.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 2.3333333333333335
+    },
+    {
+     "x": 1.0,
+     "y": 3.0
+    },
+    {
+     "x": 1.5,
+     "y": 3.5
+    },
+    {
+     "x": 2.0,
+     "y": 4.0
+    },
+    {
+     "x": 4.0,
+     "y": 6.0
+    },
+    {
+     "x": 5.0,
+     "y": 7.0
+    },
+    {
+     "x": 9.0,
+     "y": 11.0
+    },
+    {
+     "x": 32.0,
+     "y": 34.0
+    },
+    {
+     "x": 0.0,
+     "y": 2.0
+    },
+    {
+     "x": 3.0,
+     "y": 5.0
+    },
+    {
+     "x": 1.5,
+     "y": 3.5
+    }
+   ]
+  },
+  {
+   "id": "gen3-integral-derivative_plus_integral-6200045",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "2*x + 5"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": -7.0,
+      "b": -6.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": -1.0
+    },
+    {
+     "x": -1.0,
+     "y": 3.0
+    },
+    {
+     "x": -0.5,
+     "y": 4.0
+    },
+    {
+     "x": 0.0,
+     "y": 5.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 5.666666666666667
+    },
+    {
+     "x": 1.0,
+     "y": 7.0
+    },
+    {
+     "x": 1.5,
+     "y": 8.0
+    },
+    {
+     "x": 2.0,
+     "y": 9.0
+    },
+    {
+     "x": 4.0,
+     "y": 13.0
+    },
+    {
+     "x": 5.0,
+     "y": 15.0
+    },
+    {
+     "x": 9.0,
+     "y": 23.0
+    },
+    {
+     "x": 32.0,
+     "y": 69.0
+    },
+    {
+     "x": -7.0,
+     "y": -9.0
+    },
+    {
+     "x": -6.0,
+     "y": -7.0
+    },
+    {
+     "x": -6.5,
+     "y": -8.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-349",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "3*x^2 - 4"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 2.0,
+      "b": 4.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 23.0
+    },
+    {
+     "x": -1.0,
+     "y": -1.0
+    },
+    {
+     "x": -0.5,
+     "y": -3.25
+    },
+    {
+     "x": 0.0,
+     "y": -4.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": -3.6666666666666665
+    },
+    {
+     "x": 1.0,
+     "y": -1.0
+    },
+    {
+     "x": 1.5,
+     "y": 2.75
+    },
+    {
+     "x": 2.0,
+     "y": 8.0
+    },
+    {
+     "x": 4.0,
+     "y": 44.0
+    },
+    {
+     "x": 5.0,
+     "y": 71.0
+    },
+    {
+     "x": 9.0,
+     "y": 239.0
+    },
+    {
+     "x": 32.0,
+     "y": 3068.0
+    },
+    {
+     "x": 2.0,
+     "y": 8.0
+    },
+    {
+     "x": 4.0,
+     "y": 44.0
+    },
+    {
+     "x": 3.0,
+     "y": 23.0
+    }
+   ]
+  },
+  {
+   "id": "gen3-integral-derivative_plus_integral-6200038",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "10 - 2*x"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 6.0,
+      "b": 10.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 16.0
+    },
+    {
+     "x": -1.0,
+     "y": 12.0
+    },
+    {
+     "x": -0.5,
+     "y": 11.0
+    },
+    {
+     "x": 0.0,
+     "y": 10.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 9.333333333333334
+    },
+    {
+     "x": 1.0,
+     "y": 8.0
+    },
+    {
+     "x": 1.5,
+     "y": 7.0
+    },
+    {
+     "x": 2.0,
+     "y": 6.0
+    },
+    {
+     "x": 4.0,
+     "y": 2.0
+    },
+    {
+     "x": 5.0,
+     "y": 0.0
+    },
+    {
+     "x": 9.0,
+     "y": -8.0
+    },
+    {
+     "x": 32.0,
+     "y": -54.0
+    },
+    {
+     "x": 6.0,
+     "y": -2.0
+    },
+    {
+     "x": 10.0,
+     "y": -10.0
+    },
+    {
+     "x": 8.0,
+     "y": -6.0
+    }
+   ]
+  },
+  {
+   "id": "gen3-integral-derivative_plus_integral-6200150",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "2*x - 20"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 1.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": -26.0
+    },
+    {
+     "x": -1.0,
+     "y": -22.0
+    },
+    {
+     "x": -0.5,
+     "y": -21.0
+    },
+    {
+     "x": 0.0,
+     "y": -20.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": -19.333333333333332
+    },
+    {
+     "x": 1.0,
+     "y": -18.0
+    },
+    {
+     "x": 1.5,
+     "y": -17.0
+    },
+    {
+     "x": 2.0,
+     "y": -16.0
+    },
+    {
+     "x": 4.0,
+     "y": -12.0
+    },
+    {
+     "x": 5.0,
+     "y": -10.0
+    },
+    {
+     "x": 9.0,
+     "y": -2.0
+    },
+    {
+     "x": 32.0,
+     "y": 44.0
+    },
+    {
+     "x": 0.0,
+     "y": -20.0
+    },
+    {
+     "x": 1.0,
+     "y": -18.0
+    },
+    {
+     "x": 0.5,
+     "y": -19.0
+    }
+   ]
+  },
+  {
+   "id": "gen3-integral-derivative_plus_integral-6200089",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "14*x - 5"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": -10.0,
+      "b": -3.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": -47.0
+    },
+    {
+     "x": -1.0,
+     "y": -19.0
+    },
+    {
+     "x": -0.5,
+     "y": -12.0
+    },
+    {
+     "x": 0.0,
+     "y": -5.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": -0.3333333333333333
+    },
+    {
+     "x": 1.0,
+     "y": 9.0
+    },
+    {
+     "x": 1.5,
+     "y": 16.0
+    },
+    {
+     "x": 2.0,
+     "y": 23.0
+    },
+    {
+     "x": 4.0,
+     "y": 51.0
+    },
+    {
+     "x": 5.0,
+     "y": 65.0
+    },
+    {
+     "x": 9.0,
+     "y": 121.0
+    },
+    {
+     "x": 32.0,
+     "y": 443.0
+    },
+    {
+     "x": -10.0,
+     "y": -145.0
+    },
+    {
+     "x": -3.0,
+     "y": -47.0
+    },
+    {
+     "x": -6.5,
+     "y": -96.0
+    }
+   ]
+  },
+  {
+   "id": "gen3-integral-physics_displacement-6301093",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "3 - 20*x"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 7.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 63.0
+    },
+    {
+     "x": -1.0,
+     "y": 23.0
+    },
+    {
+     "x": -0.5,
+     "y": 13.0
+    },
+    {
+     "x": 0.0,
+     "y": 3.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": -3.6666666666666665
+    },
+    {
+     "x": 1.0,
+     "y": -17.0
+    },
+    {
+     "x": 1.5,
+     "y": -27.0
+    },
+    {
+     "x": 2.0,
+     "y": -37.0
+    },
+    {
+     "x": 4.0,
+     "y": -77.0
+    },
+    {
+     "x": 5.0,
+     "y": -97.0
+    },
+    {
+     "x": 9.0,
+     "y": -177.0
+    },
+    {
+     "x": 32.0,
+     "y": -637.0
+    },
+    {
+     "x": 0.0,
+     "y": 3.0
+    },
+    {
+     "x": 7.0,
+     "y": -137.0
+    },
+    {
+     "x": 3.5,
+     "y": -67.0
+    }
+   ]
+  },
+  {
+   "id": "gen3-integral-physics_displacement-6300038",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "6*x + 1"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 5.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": -17.0
+    },
+    {
+     "x": -1.0,
+     "y": -5.0
+    },
+    {
+     "x": -0.5,
+     "y": -2.0
+    },
+    {
+     "x": 0.0,
+     "y": 1.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 3.0
+    },
+    {
+     "x": 1.0,
+     "y": 7.0
+    },
+    {
+     "x": 1.5,
+     "y": 10.0
+    },
+    {
+     "x": 2.0,
+     "y": 13.0
+    },
+    {
+     "x": 4.0,
+     "y": 25.0
+    },
+    {
+     "x": 5.0,
+     "y": 31.0
+    },
+    {
+     "x": 9.0,
+     "y": 55.0
+    },
+    {
+     "x": 32.0,
+     "y": 193.0
+    },
+    {
+     "x": 0.0,
+     "y": 1.0
+    },
+    {
+     "x": 5.0,
+     "y": 31.0
+    },
+    {
+     "x": 2.5,
+     "y": 16.0
+    }
+   ]
+  },
+  {
+   "id": "gen3-integral-physics_displacement-6300044",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "8*x + 3"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 5.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": -21.0
+    },
+    {
+     "x": -1.0,
+     "y": -5.0
+    },
+    {
+     "x": -0.5,
+     "y": -1.0
+    },
+    {
+     "x": 0.0,
+     "y": 3.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 5.666666666666667
+    },
+    {
+     "x": 1.0,
+     "y": 11.0
+    },
+    {
+     "x": 1.5,
+     "y": 15.0
+    },
+    {
+     "x": 2.0,
+     "y": 19.0
+    },
+    {
+     "x": 4.0,
+     "y": 35.0
+    },
+    {
+     "x": 5.0,
+     "y": 43.0
+    },
+    {
+     "x": 9.0,
+     "y": 75.0
+    },
+    {
+     "x": 32.0,
+     "y": 259.0
+    },
+    {
+     "x": 0.0,
+     "y": 3.0
+    },
+    {
+     "x": 5.0,
+     "y": 43.0
+    },
+    {
+     "x": 2.5,
+     "y": 23.0
+    }
+   ]
+  },
+  {
+   "id": "gen3-integral-physics_displacement-6300145",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "14 - 12*x"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 8.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 50.0
+    },
+    {
+     "x": -1.0,
+     "y": 26.0
+    },
+    {
+     "x": -0.5,
+     "y": 20.0
+    },
+    {
+     "x": 0.0,
+     "y": 14.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 10.0
+    },
+    {
+     "x": 1.0,
+     "y": 2.0
+    },
+    {
+     "x": 1.5,
+     "y": -4.0
+    },
+    {
+     "x": 2.0,
+     "y": -10.0
+    },
+    {
+     "x": 4.0,
+     "y": -34.0
+    },
+    {
+     "x": 5.0,
+     "y": -46.0
+    },
+    {
+     "x": 9.0,
+     "y": -94.0
+    },
+    {
+     "x": 32.0,
+     "y": -370.0
+    },
+    {
+     "x": 0.0,
+     "y": 14.0
+    },
+    {
+     "x": 8.0,
+     "y": -82.0
+    },
+    {
+     "x": 4.0,
+     "y": -34.0
+    }
+   ]
+  },
+  {
+   "id": "gen3-integral-power_area_from_zero-5906867",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "x^3"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 16.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": -27.0
+    },
+    {
+     "x": -1.0,
+     "y": -1.0
+    },
+    {
+     "x": -0.5,
+     "y": -0.125
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 0.037037037037037035
+    },
+    {
+     "x": 1.0,
+     "y": 1.0
+    },
+    {
+     "x": 1.5,
+     "y": 3.375
+    },
+    {
+     "x": 2.0,
+     "y": 8.0
+    },
+    {
+     "x": 4.0,
+     "y": 64.0
+    },
+    {
+     "x": 5.0,
+     "y": 125.0
+    },
+    {
+     "x": 9.0,
+     "y": 729.0
+    },
+    {
+     "x": 32.0,
+     "y": 32768.0
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "x": 16.0,
+     "y": 4096.0
+    },
+    {
+     "x": 8.0,
+     "y": 512.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-014",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "площа між двома кривими — картка інтеграла показує одну функцію й вісь Ox",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-070",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "площа між двома кривими — картка інтеграла показує одну функцію й вісь Ox",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2913",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "площа між двома кривими — картка інтеграла показує одну функцію й вісь Ox",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2914",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "площа між двома кривими — картка інтеграла показує одну функцію й вісь Ox",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2915",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "площа між двома кривими — картка інтеграла показує одну функцію й вісь Ox",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2949",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "x^2"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 2.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 9.0
+    },
+    {
+     "x": -1.0,
+     "y": 1.0
+    },
+    {
+     "x": -0.5,
+     "y": 0.25
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 0.1111111111111111
+    },
+    {
+     "x": 1.0,
+     "y": 1.0
+    },
+    {
+     "x": 1.5,
+     "y": 2.25
+    },
+    {
+     "x": 2.0,
+     "y": 4.0
+    },
+    {
+     "x": 4.0,
+     "y": 16.0
+    },
+    {
+     "x": 5.0,
+     "y": 25.0
+    },
+    {
+     "x": 9.0,
+     "y": 81.0
+    },
+    {
+     "x": 32.0,
+     "y": 1024.0
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "x": 2.0,
+     "y": 4.0
+    },
+    {
+     "x": 1.0,
+     "y": 1.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-2951",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "x^3"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 2.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": -27.0
+    },
+    {
+     "x": -1.0,
+     "y": -1.0
+    },
+    {
+     "x": -0.5,
+     "y": -0.125
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 0.037037037037037035
+    },
+    {
+     "x": 1.0,
+     "y": 1.0
+    },
+    {
+     "x": 1.5,
+     "y": 3.375
+    },
+    {
+     "x": 2.0,
+     "y": 8.0
+    },
+    {
+     "x": 4.0,
+     "y": 64.0
+    },
+    {
+     "x": 5.0,
+     "y": 125.0
+    },
+    {
+     "x": 9.0,
+     "y": 729.0
+    },
+    {
+     "x": 32.0,
+     "y": 32768.0
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "x": 2.0,
+     "y": 8.0
+    },
+    {
+     "x": 1.0,
+     "y": 1.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-2952",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "площа між двома кривими — картка інтеграла показує одну функцію й вісь Ox",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3313",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "calculus"
+    ],
+    "entities": [],
+    "intents": [
+     "show_integral_area"
+    ],
+    "extracted_data": {
+     "equations": [
+      "x^2"
+     ],
+     "calculus": {
+      "mode": "integral",
+      "a": 0.0,
+      "b": 6.0
+     }
+    }
+   },
+   "reason": "функція й межі з умови",
+   "probes": [
+    {
+     "x": -3.0,
+     "y": 9.0
+    },
+    {
+     "x": -1.0,
+     "y": 1.0
+    },
+    {
+     "x": -0.5,
+     "y": 0.25
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "x": 0.3333333333333333,
+     "y": 0.1111111111111111
+    },
+    {
+     "x": 1.0,
+     "y": 1.0
+    },
+    {
+     "x": 1.5,
+     "y": 2.25
+    },
+    {
+     "x": 2.0,
+     "y": 4.0
+    },
+    {
+     "x": 4.0,
+     "y": 16.0
+    },
+    {
+     "x": 5.0,
+     "y": 25.0
+    },
+    {
+     "x": 9.0,
+     "y": 81.0
+    },
+    {
+     "x": 32.0,
+     "y": 1024.0
+    },
+    {
+     "x": 0.0,
+     "y": 0.0
+    },
+    {
+     "x": 6.0,
+     "y": 36.0
+    },
+    {
+     "x": 3.0,
+     "y": 9.0
+    }
+   ]
+  },
+  {
+   "id": "nmt-oa-3438",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "площа між двома кривими — картка інтеграла показує одну функцію й вісь Ox",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-381",
+   "topic": "definite_integral",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "площа між двома кривими — картка інтеграла показує одну функцію й вісь Ox",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-volume-cube-16982",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-volume-cuboid-10026",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cuboid",
+     "solid_dims": {
+      "length": 5.0,
+      "width": 6.0,
+      "height": 7.0
+     }
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2780",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3343",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3485",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3511",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cuboid",
+     "solid_dims": {
+      "length": 4.0,
+      "width": 5.0,
+      "height": 6.0
+     }
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3519",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3595",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3596",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2563",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2564",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3227",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-cube_volume_from_face-3707941",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3479",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3483",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3727",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3728",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3095",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3198",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-cube_volume_from_face-3700132",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-cube_volume_from_face-3701084",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-cube_volume_from_face-3700070",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-parallelepiped_diagonal-3502006",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cuboid",
+     "solid_dims": {
+      "length": 10.0,
+      "width": 10.0,
+      "height": 23.0
+     },
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2782",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube",
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2566",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube",
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2807",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube",
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2812",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cuboid",
+     "solid_dims": {
+      "length": 3.0,
+      "width": 4.0,
+      "height": 12.0
+     },
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3068",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cuboid",
+     "solid_dims": {
+      "length": 3.0,
+      "width": 4.0,
+      "height": 12.0
+     },
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3099",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube",
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3659",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cube",
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-parallelepiped_diagonal-3508819",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cuboid",
+     "solid_dims": {
+      "length": 2.0,
+      "width": 8.0,
+      "height": 16.0
+     },
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-parallelepiped_diagonal-3501972",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cuboid",
+     "solid_dims": {
+      "length": 5.0,
+      "width": 10.0,
+      "height": 10.0
+     },
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-parallelepiped_diagonal-3501034",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cuboid",
+     "solid_dims": {
+      "length": 3.0,
+      "width": 6.0,
+      "height": 22.0
+     },
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-total_surface_three_faces-3900022",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cuboid",
+     "solid_dims": {
+      "length": 3.316625,
+      "width": 1.507557,
+      "height": 3.316625
+     }
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-total_surface_three_faces-3900065",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cuboid",
+     "solid_dims": {
+      "length": 13.038405,
+      "width": 2.607681,
+      "height": 1.917412
+     }
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-total_surface_three_faces-3900081",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cuboid",
+     "solid_dims": {
+      "length": 2.555631,
+      "width": 7.434563,
+      "height": 4.304221
+     }
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-total_surface_three_faces-3900115",
+   "topic": "cube_cuboid",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cuboid",
+     "solid_dims": {
+      "length": 7.383579,
+      "width": 6.907219,
+      "height": 4.198506
+     }
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-prism_lateral_area-3800060",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи призми в умові не заданий (лише периметр чи площа)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3084",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи призми в умові не заданий (лише периметр чи площа)",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-prism_lateral_area-3800141",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи призми в умові не заданий (лише периметр чи площа)",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-prism_lateral_area-3800097",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи призми в умові не заданий (лише периметр чи площа)",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-prism_lateral_area-3800021",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи призми в умові не заданий (лише периметр чи площа)",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-prism_lateral_arithmetic-4000058",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "основа — неправильний многокутник, шаблон малює лише правильний",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-prism_lateral_arithmetic-4000033",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "основа — неправильний многокутник, шаблон малює лише правильний",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-prism_lateral_arithmetic-4000021",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "основа — неправильний многокутник, шаблон малює лише правильний",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-prism_lateral_arithmetic-4000032",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "основа — неправильний многокутник, шаблон малює лише правильний",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-regular_quad_diagonal-3610794",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "prism",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 24.0,
+      "height": 23.0
+     },
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2785",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "prism",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 5.0,
+      "height": 8.0
+     }
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2791",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "prism",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 6.0,
+      "height": 6.0
+     },
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3086",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "prism",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 4.0,
+      "height": 2.0
+     },
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3203",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "prism",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 5.0,
+      "height": 8.0
+     }
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-regular_quad_diagonal-3602971",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "prism",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 24.0,
+      "height": 12.0
+     },
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-regular_quad_diagonal-3605890",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "prism",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 20.0,
+      "height": 17.0
+     },
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-prism-regular_quad_diagonal-3600980",
+   "topic": "prisms",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "prism",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 4.0,
+      "height": 7.0
+     },
+     "solid_marks": [
+      "diagonal"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-pyramid-height_from_volume_base-30294",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи піраміди в умові не заданий (лише площа основи)",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-volume-pyramid-12071",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 6.0,
+      "height": 18.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-044",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 24.0,
+      "height": 9.0
+     },
+     "solid_marks": [
+      "apothem",
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2799",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 6.0,
+      "height": 4.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3487",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи піраміди в умові не заданий (лише площа основи)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3512",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи піраміди в умові не заданий (лише площа основи)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3731",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 8.0,
+      "height": 9.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3733",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи піраміди в умові не заданий (лише площа основи)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2575",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 4.0,
+      "height": 9.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2739",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 6.0,
+      "height": 5.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3106",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи піраміди в умові не заданий (лише площа основи)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3205",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": null,
+   "reason": "тип основи піраміди в умові не заданий (лише площа основи)",
+   "probes": []
+  },
+  {
+   "id": "gen3-pyramid-apothem_from_height_side-31963",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 18.0,
+      "height": 12.0
+     },
+     "solid_marks": [
+      "apothem",
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-pyramid-height_from_apothem_side-31076",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 70.0,
+      "height": 84.0
+     },
+     "solid_marks": [
+      "apothem",
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-pyramid-lateral_edge_from_apothem_side-30001",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 6.0,
+      "height": 2.645751
+     },
+     "solid_marks": [
+      "apothem"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-pyramid-side_from_lateral_apothem-31048",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 22.0,
+      "height": 58.983048
+     },
+     "solid_marks": [
+      "apothem"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2795",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 6.0,
+      "height": 4.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2796",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 6.0,
+      "height": 4.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2797",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 6.0,
+      "height": 4.0
+     },
+     "solid_marks": [
+      "apothem",
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2798",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 8.0,
+      "height": 3.0
+     },
+     "solid_marks": [
+      "apothem",
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2813",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 10.0,
+      "height": 10.908712
+     },
+     "solid_marks": [
+      "apothem"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2814",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 10.0,
+      "height": 10.908712
+     },
+     "solid_marks": [
+      "apothem"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3478",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 8.0,
+      "height": 7.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3488",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 10.0,
+      "height": 12.0
+     },
+     "solid_marks": [
+      "apothem",
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-pyramid-lateral_area_from_apothem_side-10990",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 10.0,
+      "height": 8.660254
+     },
+     "solid_marks": [
+      "apothem"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-pyramid_full_area_from_apothem_side-40157",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 35.0,
+      "height": 27.97767
+     },
+     "solid_marks": [
+      "apothem"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-pyramid-lateral_area_from_apothem_side-30283",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 35.0,
+      "height": 38.180492
+     },
+     "solid_marks": [
+      "apothem"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-pyramid_full_area_from_apothem_side-40152",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 16.0,
+      "height": 23.685439
+     },
+     "solid_marks": [
+      "apothem"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-pyramid-lateral_area_from_apothem_side-30232",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 4.0,
+      "height": 41.952354
+     },
+     "solid_marks": [
+      "apothem"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-pyramid_full_area_from_apothem_side-40194",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 32.0,
+      "height": 28.861739
+     },
+     "solid_marks": [
+      "apothem"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-pyramid-lateral_area_from_apothem_side-30125",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 4.0,
+      "height": 7.745967
+     },
+     "solid_marks": [
+      "apothem"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-pyramid_full_area_from_apothem_side-40049",
+   "topic": "pyramids",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "pyramid",
+     "base_shape": "square",
+     "solid_dims": {
+      "base_side": 2.0,
+      "height": 9.949874
+     },
+     "solid_marks": [
+      "apothem"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-rotation-bodies-cyl_full-130988",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 9.0,
+      "height": 11.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-rotation-bodies-cyl_lateral-130132",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 58.0,
+      "height": 29.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-rotation-bodies-cyl_volume-130066",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 16.0,
+      "height": 15.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-volume-cylinder-11178",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 11.0,
+      "height": 14.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2786",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 4.0,
+      "height": 5.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3346",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 5.0,
+      "height": 4.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3403",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 3.0,
+      "height": 7.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3404",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 2.0,
+      "height": 5.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3515",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 4.0,
+      "height": 10.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3735",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 4.0,
+      "height": 6.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2569",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 3.0,
+      "height": 5.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2788",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 4.0,
+      "height": 10.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-cylinder_diameter_from_full_and_lateral-40210",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 8.0,
+      "height": 22.0
+     },
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3495",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 4.0,
+      "height": 5.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2800",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 5.0,
+      "height": 4.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3216",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 2.0,
+      "height": 8.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3221",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 5.0,
+      "height": 2.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3671",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 3.0,
+      "height": 10.0
+     },
+     "solid_marks": [
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-cylinder_diameter_from_full_and_lateral-40237",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 42.0,
+      "height": 19.0
+     },
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-cylinder_diameter_from_full_and_lateral-40212",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 12.0,
+      "height": 36.0
+     },
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-cylinder_diameter_from_full_and_lateral-40057",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 2.0,
+      "height": 8.0
+     },
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-rotation-bodies-cyl_diagonal-300018",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 2.0,
+      "height": 3.0
+     },
+     "solid_marks": [
+      "axial_section",
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2834",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 4.0,
+      "height": 6.0
+     },
+     "solid_marks": [
+      "axial_section",
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-rotation-bodies-cyl_diagonal-304374",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 20.0,
+      "height": 42.0
+     },
+     "solid_marks": [
+      "axial_section",
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-rotation-bodies-cyl_diagonal-301457",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 20.0,
+      "height": 9.0
+     },
+     "solid_marks": [
+      "axial_section",
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-rotation-bodies-cyl_diagonal-300144",
+   "topic": "cylinder",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cylinder",
+     "solid_dims": {
+      "radius": 10.0,
+      "height": 15.0
+     },
+     "solid_marks": [
+      "axial_section",
+      "height",
+      "radius"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-rotation-bodies-cone_slant-300531",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 12.0,
+      "height": 35.0
+     },
+     "solid_marks": [
+      "height",
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2803",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 6.0,
+      "height": 8.0
+     },
+     "solid_marks": [
+      "height",
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2804",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 5.0,
+      "height": 12.0
+     },
+     "solid_marks": [
+      "height",
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2829",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 6.0,
+      "height": 8.0
+     },
+     "solid_marks": [
+      "height",
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3406",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 5.0,
+      "height": 12.0
+     },
+     "solid_marks": [
+      "height",
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3499",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 8.0,
+      "height": 6.0
+     },
+     "solid_marks": [
+      "height",
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3738",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 5.0,
+      "height": 12.0
+     },
+     "solid_marks": [
+      "height",
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2792",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 3.0,
+      "height": 4.0
+     },
+     "solid_marks": [
+      "height",
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3151",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 4.0,
+      "height": 3.0
+     },
+     "solid_marks": [
+      "height",
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3157",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 8.0,
+      "height": 6.0
+     },
+     "solid_marks": [
+      "height",
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3517",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 6.0,
+      "height": 8.0
+     },
+     "solid_marks": [
+      "height",
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3666",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 6.0,
+      "height": 8.0
+     },
+     "solid_marks": [
+      "height",
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-volume-cone-11135",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 8.0,
+      "height": 6.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-cone_full_from_radius_slant-40013",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 3.0,
+      "height": 4.0
+     },
+     "solid_marks": [
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-rotation-bodies-cone_lateral-130125",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 15.0,
+      "height": 30.512293
+     },
+     "solid_marks": [
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-048",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 12.0,
+      "height": 9.0
+     },
+     "solid_marks": [
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-052",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 5.0,
+      "height": 12.0
+     },
+     "solid_marks": [
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2787",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 6.0,
+      "height": 5.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2806",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 3.0,
+      "height": 4.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3500",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 6.0,
+      "height": 5.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3736",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 6.0,
+      "height": 10.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-1329",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 8.0,
+      "height": 15.0
+     },
+     "solid_marks": [
+      "height",
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2570",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 6.0,
+      "height": 4.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2791",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 6.0,
+      "height": 5.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-cone_diameter_from_lateral_slant-40087",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 7.0,
+      "height": 13.266499
+     },
+     "solid_marks": [
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3516",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 5.0,
+      "height": 9.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2801",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 3.0,
+      "height": 10.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3282",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 5.0,
+      "height": 9.0
+     },
+     "solid_marks": [
+      "height"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-cone_diameter_from_lateral_slant-41093",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 12.0,
+      "height": 14.73092
+     },
+     "solid_marks": [
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-cone_diameter_from_lateral_slant-40170",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 12.0,
+      "height": 27.495454
+     },
+     "solid_marks": [
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-cone_diameter_from_lateral_slant-40080",
+   "topic": "cone",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "cone",
+     "solid_dims": {
+      "radius": 11.0,
+      "height": 6.928203
+     },
+     "solid_marks": [
+      "slant"
+     ]
+    }
+   },
+   "reason": "пропорції з умови",
+   "probes": []
+  },
+  {
+   "id": "gen3-rotation-bodies-sphere_area-304083",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2788",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2807",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3151",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3405",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3517",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3737",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2571",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2572",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2795",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2796",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3166",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-sphere_diameter_from_area-42052",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3503",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-3636",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3174",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3280",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-3514",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-sphere_diameter_from_area-40004",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-sphere_diameter_from_area-40003",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-sphere_diameter_from_area-42032",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-sphere_inscribed_in_cube_area-42027",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere_in_cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-oa-2822",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere_in_cube",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "nmt-sc-2797",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere_in_cube",
+     "solid_marks": [
+      "radius"
+     ]
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-sphere_inscribed_in_cube_area-42059",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere_in_cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-sphere_inscribed_in_cube_area-44985",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere_in_cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  },
+  {
+   "id": "gen3-solids-measurement-surface-sphere_inscribed_in_cube_area-40986",
+   "topic": "sphere",
+   "handled": true,
+   "fingerprint": {
+    "version": 1,
+    "domains": [
+     "geometry"
+    ],
+    "entities": [],
+    "intents": [
+     "show_3d_solid"
+    ],
+    "extracted_data": {
+     "shape": "sphere_in_cube"
+    }
+   },
+   "reason": "схема без пропорцій (вигляд тіла не залежить від даних або їх бракує)",
+   "probes": []
+  }
+ ]
+}

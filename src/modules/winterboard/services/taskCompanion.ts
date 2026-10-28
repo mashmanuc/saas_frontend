@@ -50,6 +50,133 @@ export function taskNumberLine(raw: unknown): NumberLineData | null {
   return evaluate(data).ok ? JSON.parse(JSON.stringify(data)) as NumberLineData : null
 }
 
+// Наш контракт тіла (`solid_dims`, `solid_marks`) → параметри й допоміжні лінії чинних шаблонів 3D-об'єкта.
+// Межі — з `TEMPLATES.*.params` рушія (тест звіряє); один множник на всі розміри, щоб пропорції не спотворились.
+export const SOLID_PARAMS: Record<string, Record<string, [string, number, number]>> = {
+  cuboid: { a: ['length', 0.6, 3], b: ['width', 0.6, 3], c: ['height', 0.6, 3] },
+  prism4: { a: ['base_side', 0.6, 2.6], h: ['height', 0.6, 3.4] },
+  pyramid4: { a: ['base_side', 0.6, 2.8], h: ['height', 0.4, 3.2] },
+  cylinder: { r: ['radius', 0.4, 2], h: ['height', 0.6, 3.6] },
+  cone: { r: ['radius', 0.4, 2], h: ['height', 0.6, 3.6] },
+}
+export const SOLID_OPTS: Record<string, Record<string, string>> = {
+  cube: { diagonal: 'bodyDiag', face_diagonal: 'faceDiag' },
+  cuboid: { diagonal: 'bodyDiag' },
+  prism4: { diagonal: 'bodyDiag' },
+  pyramid4: { height: 'height', apothem: 'apothem' },
+  cylinder: { height: 'height', radius: 'radius', axial_section: 'axSect' },
+  cone: { height: 'height', slant: 'slant' },
+  sphere: { radius: 'radius' },
+  cubeInscribedSphere: { radius: 'radius' },
+}
+
+/** Пропорції й лінії з умови для шаблону; null — дані пошкоджені (тіло не будуємо, а не малюємо навмання). */
+export function taskSolid(templateKey: string, d: Record<string, unknown>):
+  { params?: Record<string, number>; opts?: Record<string, boolean> } | null {
+  const out: { params?: Record<string, number>; opts?: Record<string, boolean> } = {}
+  const spec = SOLID_PARAMS[templateKey]
+  if (d.solid_dims !== undefined) {
+    const dims = d.solid_dims
+    if (!object(dims) || !spec || !Object.values(spec).every(([k]) => finite(dims[k]) && (dims[k] as number) > 0)) return null
+    let lo = 0, hi = Infinity
+    for (const [key, min, max] of Object.values(spec)) {
+      const v = dims[key] as number
+      lo = Math.max(lo, min / v); hi = Math.min(hi, max / v)
+    }
+    // Пропорції, яких шаблон не вміщує (дуже високий конус), не стискаємо кожну окремо: лишаємо типовий вигляд.
+    if (lo <= hi) {
+      const k = Math.sqrt(lo * hi)
+      out.params = Object.fromEntries(Object.entries(spec).map(([p, [key]]) => [p, Math.round((dims[key] as number) * k * 1000) / 1000]))
+    }
+  }
+  if (d.solid_marks !== undefined) {
+    const marks = d.solid_marks
+    if (!Array.isArray(marks) || !marks.every(text)) return null
+    const known = SOLID_OPTS[templateKey] ?? {}
+    const opts = Object.fromEntries(marks.filter(m => m in known).map(m => [known[m], true]))
+    if (Object.keys(opts).length) out.opts = opts
+  }
+  return out
+}
+
+// Шаблони, які справді відкриває 3D-об'єкт дошки (`NMT3D.TEMPLATES` у nmt-3d.js; звірено 2026-10-28,
+// тест nmt3dCompanionTemplates). Ключі nmt-templates.js (`sphere_in_cube`, `truncCone`, `prism3`) — лише
+// SVG-мініатюри: Workspace їх не знає, і «Побудувати» давало порожню картку. Ключ поза списком = відмова.
+export const NMT3D_TEMPLATE_KEYS = new Set([
+  'cone', 'cube', 'cuboid', 'cylinder', 'prism4', 'prism6',
+  'pyramid3', 'pyramid4', 'sphere', 'tetrahedron', 'frustumCone',
+  // Композитні сцени «вписано/описано» (A-T3) — одна параметрична фігура,
+  // а не дві поруч: розмір внутрішнього тіла випливає із зовнішнього.
+  'cubeInscribedSphere', 'cubeCircumSphere',
+])
+
+/** Дані 3D-тіла з extracted_data задачі; null = чесно не будуємо (немає шаблона чи дані пошкоджені). */
+export function taskSolidData(d: Record<string, unknown>): Record<string, unknown> | null {
+  // Map extracted_data.shape → Nmt3dData.templateKey (version 1 format).
+  // extracted_data comes from enrich_fingerprints (e.g. {shape:"pyramid"}).
+  //
+  // ⛔ БЕЗ ФОЛБЕКА. Раніше тут стояло `?? 'cube'` — і 50 задач банку, де
+  // екстрактор не розпізнав тіло (shape=None), отримували КУБА-САМОЗВАНЦЯ:
+  // «об'єм правильного тетраедра» → куб, «перпендикуляр і похила» → куб.
+  // Будь-який фолбек-об'єкт бреше учневі, тому shape відсутній → companion
+  // не створюється (ТЗ D-4 крок 1, п.1.1).
+  const solidShape = d.shape as string | undefined
+  const baseShape  = (d.base_shape as string | undefined)
+  if (!solidShape) {
+    console.warn('[WB] nmt3d companion skipped — екстрактор не розпізнав тіло', { d })
+    return null
+  }
+  const SHAPE_TO_TEMPLATE: Record<string, string | null> = {
+    // hexagon-піраміди шаблона НЕМАЄ (pyramid6 не існує в nmt-templates) —
+    // чесний null: краще без 3D, ніж каркас із хибною основою.
+    pyramid:  baseShape === 'triangle' ? 'pyramid3'
+      : baseShape === 'hexagon' ? null : 'pyramid4',
+    // Явно інша основа (трикутник, п'ятикутник) — не чотирикутна призма: такої картинки не малюємо.
+    prism:    baseShape === 'hexagon' ? 'prism6'
+      : !baseShape || ['square', 'rectangle', 'rhombus', 'parallelogram'].includes(baseShape) ? 'prism4' : null,
+    cylinder: 'cylinder',
+    cone:     'cone',
+    sphere:   'sphere',
+    cube:     'cube',
+    cuboid:   'cuboid',
+    // 2026-08-04 (власник): точний шаблон замість generic pyramid3.
+    tetrahedron: 'tetrahedron',
+    // A-T3: shape для композитів приходить із BE вже як пара «X_in_Y».
+    // Без цих рядків companion мовчки не рендериться (грабля тетраедра, D-4).
+    sphere_in_cube: 'cubeInscribedSphere',
+    cube_in_sphere: 'cubeCircumSphere',
+    // Прогін №4 (2026-08-04): 52 задачі банку мають shape='parallelepiped',
+    // якого не було в мапі — фолбек «як є» створював ПОРОЖНЮ картку
+    // (Workspace не знає такого шаблона) і пустушка їхала аж у колоду.
+    parallelepiped: 'cuboid',
+    rectangular_parallelepiped: 'cuboid',
+    // 3D-об'єкт знає зрізаний конус як frustumCone (truncCone — лише SVG-мініатюра).
+    frustum_cone: 'frustumCone',
+    // Шаблона зрізаної ПІРАМІДИ немає взагалі → чесний null (14 задач).
+    frustum_pyramid: null,
+  }
+  // Невідомий shape НЕ пропускається «як є»: templateKey поза реальним
+  // списком шаблонів = порожній об'єкт на дошці й у презентації.
+  const templateKey = SHAPE_TO_TEMPLATE[solidShape] ?? null
+  if (!templateKey || !NMT3D_TEMPLATE_KEYS.has(templateKey)) {
+    console.warn('[WB] nmt3d companion skipped — немає шаблона', { solidShape, baseShape })
+    return null
+  }
+  // Пропорції й допоміжні лінії — лише з умови (extracted_data.solid_dims / solid_marks);
+  // без них — типовий вигляд шаблону, як і раніше. Пошкоджені дані → тіла не будуємо.
+  const solid = taskSolid(templateKey, d)
+  if (solid === null) {
+    console.warn('[WB] nmt3d companion skipped — пошкоджені розміри тіла', { d })
+    return null
+  }
+  return {
+    version:     1,
+    templateKey,
+    mode:        'adapt' as const,
+    ...solid,
+  }
+}
+
 export function taskGraphPoints(data: Record<string, unknown>): Array<{ x: number; y: number }> {
   const points = data.graph_points
   return Array.isArray(points) && points.length > 0 && points.length <= 32
@@ -61,23 +188,32 @@ export function taskGraphSources(data: Record<string, unknown>): string[] {
     ? data.equations.map(s => /^[a-zA-Z]\s*=/.test(s.trim()) ? s.trim() : `y=${s.trim()}`) : []
 }
 
-/** Абсциса саме з умови, не типовий x₀=1 і не відповідь задачі. */
-export function taskCalculusInput(data: Record<string, unknown>): { expr: string; x0: number } | null {
+export type TaskCalculusInput =
+  | { mode: 'derivative'; expr: string; x0: number }
+  | { mode: 'integral'; expr: string; a: number; b: number }
+
+/** Абсциса й межі саме з умови: не типовий x₀=1, не межі «для прикладу» і не відповідь задачі. */
+export function taskCalculusInput(data: Record<string, unknown>): TaskCalculusInput | null {
   const raw = data.calculus
   const sources = taskGraphSources(data)
-  if (!object(raw) || raw.mode !== 'derivative' || !finite(raw.x0) || sources.length !== 1) return null
+  if (!object(raw) || sources.length !== 1) return null
   const expr = sources[0].replace(/^y\s*=\s*/, '')
-  return { expr, x0: raw.x0 }
+  if (raw.mode === 'derivative' && finite(raw.x0)) return { mode: 'derivative', expr, x0: raw.x0 }
+  if (raw.mode === 'integral' && finite(raw.a) && finite(raw.b) && raw.a < raw.b)
+    return { mode: 'integral', expr, a: raw.a, b: raw.b }
+  return null
 }
 
 export function taskCalculusData(data: Record<string, unknown>): CalculusData | null {
   const input = taskCalculusInput(data)
   if (!input) return null
-  const { expr, x0 } = input
-  const fit = autofitExpressions([`y=${expr}`], {}, [x0])
-  return { ...buildDefaultCalculusData('derivative'), expr, x0,
-    viewport: fit ? { cx: (fit.xMin + fit.xMax) / 2, cy: (fit.yMin + fit.yMax) / 2, scale: 50, fit }
-      : { cx: x0, cy: 0, scale: 50 } }
+  const must = input.mode === 'derivative' ? [input.x0] : [input.a, input.b]
+  const fit = autofitExpressions([`y=${input.expr}`], {}, must)
+  const viewport = fit ? { cx: (fit.xMin + fit.xMax) / 2, cy: (fit.yMin + fit.yMax) / 2, scale: 50, fit }
+    : { cx: must[0], cy: 0, scale: 50 }
+  return input.mode === 'derivative'
+    ? { ...buildDefaultCalculusData('derivative'), expr: input.expr, x0: input.x0, viewport }
+    : { ...buildDefaultCalculusData('integral'), expr: input.expr, a: input.a, b: input.b, viewport }
 }
 
 /** Ті самі canonical factories, що для вставлення з панелі інструментів. */
@@ -124,7 +260,8 @@ export function matchesTaskCompanion(asset: WBAsset, resolution: CompanionResolu
   if (asset.type === 'calculus_card') {
     const wanted = taskCalculusInput(resolution.data)
     const actual = asset.data as unknown as CalculusData
-    return !!wanted && actual?.mode === 'derivative' && actual.expr === wanted.expr && actual.x0 === wanted.x0
+    if (!wanted || actual?.mode !== wanted.mode || actual.expr !== wanted.expr) return false
+    return wanted.mode === 'derivative' ? actual.x0 === wanted.x0 : actual.a === wanted.a && actual.b === wanted.b
   }
   if (asset.type === 'number_line') {
     const actual = taskNumberLine(asset.data), wanted = taskNumberLine(resolution.data.number_line)
