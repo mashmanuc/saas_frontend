@@ -11,10 +11,14 @@ import type { StudentLedger, StudentPaymentItem } from '../api/studentPayments'
 export interface CoveredLesson {
   /** `schedule:12` / `instant:5` — урок розкладу має той самий id, що подія календаря */
   key: string
+  source: 'schedule' | 'instant'
+  id: number
   start: string
   minutes: number
   held: boolean
   noShow: boolean
+  /** false — «не рахується» (лише проведені) */
+  counted: boolean
 }
 
 export interface PaymentGroup {
@@ -50,14 +54,15 @@ const byStart = (a: { start: string }, b: { start: string }) => Date.parse(a.sta
 
 export function paymentCoverage(ledger: StudentLedger): PaymentCoverage {
   const payments = [...ledger.payments].sort((a, b) => a.paid_on.localeCompare(b.paid_on) || a.id - b.id)
-  const held = ledger.lessons.map((l) => ({
-    key: `${l.source}:${l.id}`, start: l.start, minutes: l.minutes, held: true, noShow: l.no_show, counted: l.counted,
+  const held: CoveredLesson[] = ledger.lessons.map((l) => ({
+    key: `${l.source}:${l.id}`, source: l.source, id: l.id, start: l.start, minutes: l.minutes, held: true,
+    noShow: l.no_show, counted: l.counted,
   }))
   const series: CoveredLesson[] = [
     ...held.filter((l) => l.counted).sort(byStart),
-    ...(ledger.upcoming ?? []).map((u) => ({ key: `schedule:${u.id}`, start: u.start, minutes: u.minutes, held: false,
-      noShow: false })).sort(byStart),
-  ].map(({ key, start, minutes, held: h, noShow }) => ({ key, start, minutes, held: h, noShow }))
+    ...(ledger.upcoming ?? []).map((u): CoveredLesson => ({ key: `schedule:${u.id}`, source: 'schedule', id: u.id,
+      start: u.start, minutes: u.minutes, held: false, noShow: false, counted: true })).sort(byStart),
+  ]
 
   const groups: PaymentGroup[] = payments.map((p) => ({
     payment: p, price: p.lessons > 0 ? p.amount / p.lessons : 0, lessons: [], undated: 0,
@@ -84,8 +89,7 @@ export function paymentCoverage(ledger: StudentLedger): PaymentCoverage {
     groups,
     unpaidHeld: unpaid.filter((l) => l.held),
     unpaidPlanned: unpaid.filter((l) => !l.held),
-    free: held.filter((l) => !l.counted).sort(byStart)
-      .map(({ key, start, minutes, noShow }) => ({ key, start, minutes, held: true, noShow })),
+    free: held.filter((l) => !l.counted).sort(byStart),
     paidAmount: payments.reduce((s, p) => s + p.amount, 0),
     paidLessons,
     heldLessons,

@@ -31,6 +31,8 @@ function dialog() {
   })
 }
 const $ = (w: ReturnType<typeof dialog>, id: string) => w.find(`[data-testid="${id}"]`)
+// 2026-10-28: залишок — картка «Лишилось / Борг» (той самий вигляд, що «Оплати» з розкладу)
+const left = (w: ReturnType<typeof dialog>) => $(w, 'payments-overview-left').text().replace(/\s+/g, ' ')
 
 describe('balanceView — що на картці учня', () => {
   it('без оплат — нічого; залишок; останній; закінчились; борг з орієнтовною сумою', () => {
@@ -76,7 +78,7 @@ describe('StudentPaymentsDialog', () => {
     await $(w, 'student-payments-form').trigger('submit')
     await flushPromises()
     expect(studentPaymentsApi.record).toHaveBeenCalledWith(7, { amount: '2000', lessons: 8, paid_on: '2026-10-01', note: 'жовтень' })
-    expect($(w, 'student-payments-balance').text()).toBe(fill(P.balance.left, { n: 6 }))
+    expect(left(w)).toContain(`${P.overview.left}6`)
     expect($(w, 'student-payments-history').text()).toContain('жовтень')
     expect(w.emitted('changed')).toHaveLength(1)
     // форма готова до наступної оплати — поля порожні (інакше здається, що запис не відбувся)
@@ -107,7 +109,11 @@ describe('StudentPaymentsDialog', () => {
     vi.mocked(studentPaymentsApi.remove).mockResolvedValueOnce({ balance: NONE } as never)
     const w = dialog()
     await flushPromises()
-    expect($(w, 'student-payments-balance').text()).toBe(fill(P.balance.debt, { n: 1, amount: 300 }))
+    expect(left(w)).toContain(`${P.overview.debt}1`)
+    expect(left(w).replace(/\s/g, '')).toContain('≈300₴')
+    // оплати вже є — спершу видно їх, форма згорнута в кнопку
+    expect($(w, 'student-payments-form').exists()).toBe(false)
+    expect($(w, 'student-payments-add-toggle').exists()).toBe(true)
     await $(w, 'student-payment-delete-3').trigger('click')
     expect(studentPaymentsApi.remove).not.toHaveBeenCalled()
     await $(w, 'student-payment-delete-yes-3').trigger('click')
@@ -137,12 +143,13 @@ describe('StudentPaymentsDialog', () => {
     await flushPromises()
     const btn = () => $(w, 'student-payment-lesson-schedule-11')
     expect(btn().text()).toBe(P.lessonCounted)
-    expect($(w, 'student-payments-lessons').text()).toContain(P.sourceInstant)
+    expect($(w, 'student-payments-history').text()).toContain(P.sourceInstant)
     await btn().trigger('click')
     await flushPromises()
     expect(studentPaymentsApi.setLessonCounted).toHaveBeenLastCalledWith(7, { source: 'schedule', id: 11, counted: false })
     expect(btn().text()).toBe(P.lessonNotCounted)
-    expect($(w, 'student-payments-balance').text()).toBe(fill(P.balance.left, { n: 3 }))
+    expect($(w, 'payments-overview-free').text()).toContain(P.lessonNotCounted)   // переїхав у «Не рахуються»
+    expect(left(w)).toContain(`${P.overview.left}3`)
     expect(w.emitted('changed')).toHaveLength(1)
     await btn().trigger('click')
     await flushPromises()
@@ -160,11 +167,30 @@ describe('StudentPaymentsDialog', () => {
     vi.mocked(studentPaymentsApi.setLessonCounted).mockRejectedValueOnce({ response: { status: 404, data: { error: 'not_found' } } })
     const w = dialog()
     await flushPromises()
-    expect($(w, 'student-payments-lessons').text()).toContain(P.noShow)
+    expect($(w, 'student-payments-history').text()).toContain(P.noShow)
     await $(w, 'student-payment-lesson-schedule-11').trigger('click')
     await flushPromises()
     expect($(w, 'student-payment-error').text()).toBe(P.errors.not_found)
     expect($(w, 'student-payment-lesson-schedule-11').text()).toBe(P.lessonCounted)
+    w.unmount()
+  })
+
+  it('є оплати — «＋ Записати оплату» розгортає форму; кожна оплата — з уроками по датах', async () => {
+    vi.mocked(studentPaymentsApi.ledger).mockResolvedValueOnce({
+      ...LEDGER,
+      payments: [{ id: 3, amount: 1400, lessons: 4, paid_on: '2026-10-15', note: 'за жовтень' }],
+      lessons: [{ source: 'schedule', id: 11, start: '2026-10-15T17:00:00Z', minutes: 60, no_show: false, counted: true }],
+      upcoming: [{ id: 12, start: '2026-11-05T17:00:00Z', minutes: 60 }],
+      balance: { ...NONE, tracking: true, since: '2026-10-15', paid_lessons: 4, done_lessons: 1, left_lessons: 3, last_price: 350 },
+    } as never)
+    const w = dialog()
+    await flushPromises()
+    const group = $(w, 'payments-overview-group')
+    expect(group.text()).toContain('за жовтень')
+    expect(group.findAll('.pov__lesson')).toHaveLength(3)                 // проведений + у розкладі + «без дати»
+    expect(left(w).replace(/\s/g, '')).toContain('≈1050₴')
+    await $(w, 'student-payments-add-toggle').trigger('click')
+    expect($(w, 'student-payments-form').exists()).toBe(true)
     w.unmount()
   })
 

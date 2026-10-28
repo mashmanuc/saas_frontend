@@ -9,19 +9,64 @@
       <p v-if="loading" class="text-sm text-muted">{{ $t('dashboard.tutor.payments.loading') }}</p>
       <p v-else-if="loadError" class="text-sm text-danger" role="alert">{{ loadError }}</p>
 
-      <template v-else-if="ledger">
-        <p class="text-sm font-semibold" :class="toneClass" data-testid="student-payments-balance">
-          {{ balanceText }}
+      <template v-else-if="ledger && coverage">
+        <!-- 2026-10-28 (власник: «повно однотонних символів, тяжко розібрати»): той самий вигляд, що «Оплати» з розкладу —
+             картки «Сплачено / Проведено / Лишилось», кожна оплата з уроками по датах; тут ще «Видалити» й «рахується» -->
+        <p v-if="!coverage.tracking" class="text-sm text-muted" data-testid="student-payments-balance">
+          {{ $t('dashboard.tutor.payments.balance.none') }}
         </p>
-        <p v-if="ledger.balance.tracking" class="text-xs text-muted">
-          {{ $t('dashboard.tutor.payments.counted', {
-            paid: ledger.balance.paid_lessons,
-            done: ledger.balance.done_lessons,
-            since: formatDay(ledger.balance.since),
-          }) }}
-        </p>
+        <div v-else data-testid="student-payments-history">
+          <PaymentsCoverage :coverage="coverage">
+            <template #payment-actions="{ payment }">
+              <button
+                v-if="confirmId !== payment.id"
+                type="button"
+                class="shrink-0 text-xs text-muted hover:text-danger"
+                :data-testid="`student-payment-delete-${payment.id}`"
+                @click="confirmId = payment.id"
+              >
+                {{ $t('dashboard.tutor.payments.delete') }}
+              </button>
+              <span v-else class="flex shrink-0 items-center gap-2 text-xs">
+                <button type="button" class="font-semibold text-danger" :data-testid="`student-payment-delete-yes-${payment.id}`" @click="remove(payment.id)">
+                  {{ $t('dashboard.tutor.payments.deleteYes') }}
+                </button>
+                <button type="button" class="text-muted" @click="confirmId = null">{{ $t('dashboard.tutor.payments.deleteNo') }}</button>
+              </span>
+            </template>
+            <!-- «Урок не рахувати» (власник 2026-10-15, пункт 3) — лише на проведених -->
+            <template #lesson-actions="{ lesson }">
+              <button
+                v-if="lesson.held"
+                type="button"
+                class="pay-count"
+                :class="lesson.counted ? 'pay-count--on' : ''"
+                :disabled="togglingKey === `${lesson.source}-${lesson.id}`"
+                :data-testid="`student-payment-lesson-${lesson.source}-${lesson.id}`"
+                :title="$t(lesson.counted ? 'dashboard.tutor.payments.makeNotCounted' : 'dashboard.tutor.payments.makeCounted')"
+                @click="toggleCounted(lesson)"
+              >
+                {{ $t(lesson.counted ? 'dashboard.tutor.payments.lessonCounted' : 'dashboard.tutor.payments.lessonNotCounted') }}
+              </button>
+              <span v-else />
+            </template>
+          </PaymentsCoverage>
+          <p v-if="ledger.lessons.length" class="mt-2 text-xs text-muted">{{ $t('dashboard.tutor.payments.lessonsHint') }}</p>
+        </div>
 
-        <form class="space-y-3 rounded-xl border border-border-subtle p-3" data-testid="student-payments-form" @submit.prevent="save">
+        <p v-if="saveError" class="text-sm text-danger" role="alert" data-testid="student-payment-error">{{ saveError }}</p>
+
+        <!-- Записати оплату: є оплати — згорнуто (спершу видно, що вже є); оплат немає — одразу відкрито -->
+        <button
+          v-if="!formOpen"
+          type="button"
+          class="pay-add"
+          data-testid="student-payments-add-toggle"
+          @click="formOpen = true"
+        >
+          ＋ {{ $t('dashboard.tutor.payments.add') }}
+        </button>
+        <form v-else class="space-y-3 rounded-xl border border-border-subtle p-3" data-testid="student-payments-form" @submit.prevent="save">
           <p class="text-sm font-semibold text-body">{{ $t('dashboard.tutor.payments.add') }}</p>
           <div class="grid grid-cols-2 gap-3">
             <Input
@@ -73,7 +118,6 @@
             />
           </div>
           <p v-if="pricePreview" class="text-xs text-muted">{{ pricePreview }}</p>
-          <p v-if="saveError" class="text-sm text-danger" role="alert" data-testid="student-payment-error">{{ saveError }}</p>
           <p v-else-if="!saving && !canSave" class="text-xs text-muted" data-testid="student-payment-fill-hint">
             {{ $t('dashboard.tutor.payments.fillHint') }}
           </p>
@@ -83,68 +127,6 @@
             </Button>
           </div>
         </form>
-
-        <!-- «Урок не рахувати» (власник 2026-10-15, пункт 3) -->
-        <div v-if="ledger.lessons && ledger.lessons.length" class="space-y-2" data-testid="student-payments-lessons">
-          <p class="text-sm font-semibold text-body">
-            {{ $t('dashboard.tutor.payments.lessonsTitle', { since: formatDay(ledger.balance.since) }) }}
-          </p>
-          <p class="text-xs text-muted">{{ $t('dashboard.tutor.payments.lessonsHint') }}</p>
-          <ul class="max-h-56 divide-y divide-border-subtle overflow-y-auto text-sm">
-            <li
-              v-for="l in ledger.lessons"
-              :key="`${l.source}-${l.id}`"
-              class="flex items-center justify-between gap-3 py-2"
-              :class="{ 'text-muted': !l.counted }"
-            >
-              <span class="min-w-0" :class="{ 'line-through': !l.counted }">
-                <span class="font-medium" :class="l.counted ? 'text-body' : ''">{{ formatLessonTime(l.start) }}</span>
-                · {{ $t('dashboard.tutor.payments.minutes', { n: l.minutes }) }}
-                · {{ $t(l.source === 'schedule' ? 'dashboard.tutor.payments.sourceSchedule' : 'dashboard.tutor.payments.sourceInstant') }}
-                <span v-if="l.no_show"> · {{ $t('dashboard.tutor.payments.noShow') }}</span>
-              </span>
-              <button
-                type="button"
-                class="shrink-0 rounded-full border px-3 py-1 text-xs"
-                :class="l.counted ? 'border-emerald-600 text-emerald-700' : 'border-default text-muted'"
-                :disabled="togglingKey === `${l.source}-${l.id}`"
-                :data-testid="`student-payment-lesson-${l.source}-${l.id}`"
-                :title="$t(l.counted ? 'dashboard.tutor.payments.makeNotCounted' : 'dashboard.tutor.payments.makeCounted')"
-                @click="toggleCounted(l)"
-              >
-                {{ $t(l.counted ? 'dashboard.tutor.payments.lessonCounted' : 'dashboard.tutor.payments.lessonNotCounted') }}
-              </button>
-            </li>
-          </ul>
-        </div>
-
-        <div v-if="ledger.payments.length" class="space-y-2">
-          <p class="text-sm font-semibold text-body">{{ $t('dashboard.tutor.payments.history') }}</p>
-          <ul class="divide-y divide-border-subtle text-sm" data-testid="student-payments-history">
-            <li v-for="p in ledger.payments" :key="p.id" class="flex items-center justify-between gap-3 py-2">
-              <span class="min-w-0">
-                <span class="font-medium text-body">{{ formatDay(p.paid_on) }}</span>
-                · {{ formatUah(p.amount) }} · {{ $t('dashboard.tutor.payments.lessonsShort', { n: p.lessons }) }}
-                <span v-if="p.note" class="text-muted"> · {{ p.note }}</span>
-              </span>
-              <button
-                v-if="confirmId !== p.id"
-                type="button"
-                class="shrink-0 text-xs text-muted hover:text-danger"
-                :data-testid="`student-payment-delete-${p.id}`"
-                @click="confirmId = p.id"
-              >
-                {{ $t('dashboard.tutor.payments.delete') }}
-              </button>
-              <span v-else class="flex shrink-0 items-center gap-2 text-xs">
-                <button type="button" class="font-semibold text-danger" :data-testid="`student-payment-delete-yes-${p.id}`" @click="remove(p.id)">
-                  {{ $t('dashboard.tutor.payments.deleteYes') }}
-                </button>
-                <button type="button" class="text-muted" @click="confirmId = null">{{ $t('dashboard.tutor.payments.deleteNo') }}</button>
-              </span>
-            </li>
-          </ul>
-        </div>
       </template>
     </div>
   </Modal>
@@ -158,7 +140,9 @@ import { useI18n } from 'vue-i18n'
 import Modal from '../../../ui/Modal.vue'
 import Button from '../../../ui/Button.vue'
 import Input from '../../../ui/Input.vue'
-import { balanceView, formatUah, studentPaymentsApi, type HeldLessonItem, type StudentLedger } from '../api/studentPayments'
+import PaymentsCoverage from './PaymentsCoverage.vue'
+import { formatUah, studentPaymentsApi, type HeldLessonItem, type StudentLedger } from '../api/studentPayments'
+import { paymentCoverage } from '../utils/paymentCoverage'
 
 const props = defineProps<{ open: boolean; studentId: number | string | null; studentName: string }>()
 const emit = defineEmits<{ close: []; changed: [] }>()
@@ -175,6 +159,9 @@ const saving = ref(false)
 const saveError = ref('')
 const confirmId = ref<number | null>(null)
 const togglingKey = ref<string | null>(null)
+/** 2026-10-28: форма «Записати оплату» — відкрита, лише коли оплат ще немає (або вчитель її відкрив) */
+const formOpen = ref(false)
+const coverage = computed(() => (ledger.value ? paymentCoverage(ledger.value) : null))
 
 function today(): string {
   const d = new Date()
@@ -193,6 +180,7 @@ async function load(): Promise<void> {
   loadError.value = ''
   try {
     ledger.value = await studentPaymentsApi.ledger(props.studentId)
+    formOpen.value = !ledger.value.balance.tracking
   } catch (err) {
     ledger.value = null
     loadError.value = errorText(err)
@@ -216,12 +204,6 @@ watch(
   { immediate: true },
 )
 
-const view = computed(() => balanceView(ledger.value?.balance))
-const balanceText = computed(() => t(`dashboard.tutor.payments.balance.${view.value.key}`, view.value.params))
-const toneClass = computed(() => ({
-  ok: 'text-emerald-700', low: 'text-amber-700', debt: 'text-danger', none: 'text-muted',
-}[view.value.tone]))
-
 const monthHints = computed(() => {
   const m = ledger.value?.month_lessons ?? {}
   return Object.entries(m)
@@ -242,13 +224,8 @@ const pricePreview = computed(() =>
   canSave.value ? t('dashboard.tutor.payments.pricePreview', { price: formatUah(Math.round((amountNumber.value / lessonsNumber.value) * 100) / 100) }) : '',
 )
 
-function formatLessonTime(iso: string): string {
-  return new Intl.DateTimeFormat(locale.value, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-    .format(new Date(iso))
-}
-
 /** «Урок не рахувати» / знову рахувати: урок лишається проведеним, змінюється лише списання з передоплати */
-async function toggleCounted(l: HeldLessonItem): Promise<void> {
+async function toggleCounted(l: Pick<HeldLessonItem, 'source' | 'id' | 'counted'>): Promise<void> {
   if (props.studentId == null || !ledger.value) return
   const key = `${l.source}-${l.id}`
   togglingKey.value = key
@@ -267,11 +244,6 @@ async function toggleCounted(l: HeldLessonItem): Promise<void> {
   } finally {
     togglingKey.value = null
   }
-}
-
-function formatDay(iso: string | null): string {
-  if (!iso) return ''
-  return new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(`${iso}T12:00:00`))
 }
 
 async function save(): Promise<void> {
@@ -313,3 +285,36 @@ async function remove(paymentId: number): Promise<void> {
   }
 }
 </script>
+
+<style scoped>
+/* 2026-10-28: «рахується» — зелене, «не рахується» — сіре; «Записати оплату» — помітна, але не форма на пів-вікна */
+.pay-count {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: none;
+  cursor: pointer;
+}
+.pay-count--on {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+.pay-count:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.pay-add {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1.5px dashed var(--accent);
+  background: none;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+</style>
