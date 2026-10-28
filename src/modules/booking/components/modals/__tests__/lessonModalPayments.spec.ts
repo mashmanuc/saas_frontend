@@ -97,9 +97,12 @@ describe('Вікно уроку в розкладі — коротко й з о�
     const ym = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     const lessonYm = ym(new Date(future))
     const name = new Intl.DateTimeFormat('uk', { month: 'long' }).format(new Date(`${lessonYm}-15T12:00:00`))
+    // У обліку той самий урок, що у вікні (той самий час), — як на сайті. Раніше облік брав «завтра», а вікно —
+    // «через 3 дні»: в останні дні місяця це різні місяці, і тест падав (29.10), хоча на сайті все гаразд.
     const monthly = (month: string) => {
       const l = ownLedger([28], 0)
-      return { ...l, payments: [], balance: { ...l.balance, since: `${month}-01`, paid_lessons: 0, last_price: null, mode: 'monthly', month } }
+      return { ...l, payments: [], upcoming: [{ id: 28, start: future, minutes: 60 }],
+        balance: { ...l.balance, since: `${month}-01`, paid_lessons: 0, last_price: null, mode: 'monthly', month } }
     }
     ledger.mockResolvedValue(monthly(lessonYm))
     let w = await open()
