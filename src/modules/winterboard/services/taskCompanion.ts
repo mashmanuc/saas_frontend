@@ -217,6 +217,54 @@ export function taskCalculusData(data: Record<string, unknown>): CalculusData | 
     : { ...buildDefaultCalculusData('integral'), expr: input.expr, a: input.a, b: input.b, viewport }
 }
 
+// ── «Побудувати» для векторів (власник 28.10: «Побудувати — так») ─────────────────────────────────────────
+// Точки, вектори й відрізки з умови (BE `num_vec_bank_figures`) → сцена наявної «Геометрії» (geomash_scene). Об'єкти —
+// у тому самому форматі, що дає її конструктор (GeoEngine.construct: base_ + point/vector/segment; звірено тестом).
+// На дошці «Геометрія» ставить початок координат у центр полотна й бере лише масштаб `cs.sc` — тому масштаб
+// підбираємо так, щоб усі точки вмістились у рамку картки.
+export const TASK_GEOMASH_SIZE = { w: 520, h: 400 }
+const GEO_POINT_COLOR = '#1a5c38'
+const GEO_VECTOR_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#d97706']
+const GEO_NAME = /^[A-Za-z][A-Za-z_0-9]{0,7}$/
+
+interface TaskGeoPoint { name: string; x: number; y: number; hidden?: boolean }
+interface TaskGeoLink { name?: string; from: string; to: string }
+
+export function taskGeomashData(d: Record<string, unknown>): Record<string, unknown> | null {
+  const points = d.geo_points, vectors = d.geo_vectors ?? [], segments = d.geo_segments ?? []
+  if (!Array.isArray(points) || !Array.isArray(vectors) || !Array.isArray(segments)) return null
+  if (!points.length || points.length > 12 || vectors.length + segments.length === 0) return null
+  const byName = new Map<string, TaskGeoPoint>()
+  for (const p of points as TaskGeoPoint[]) {
+    if (!p || typeof p.name !== 'string' || !GEO_NAME.test(p.name) || byName.has(p.name)
+        || !Number.isFinite(p.x) || !Number.isFinite(p.y) || Math.abs(p.x) > 1000 || Math.abs(p.y) > 1000) return null
+    byName.set(p.name, p)
+  }
+  const links = [...(vectors as TaskGeoLink[]).map(v => ({ ...v, type: 'vector' as const })),
+    ...(segments as TaskGeoLink[]).map(s => ({ ...s, type: 'segment' as const }))]
+  for (const l of links) {
+    if (!l || !byName.has(l.from) || !byName.has(l.to) || l.from === l.to) return null
+    if (l.type === 'vector' && (typeof l.name !== 'string' || !GEO_NAME.test(l.name) || byName.has(l.name))) return null
+  }
+  const base = (id: string, type: string, labelMode: string, color: string) =>
+    ({ id, type, labelMode, visible: true, locked: false, color, lw: 2 })
+  const objects: Array<Record<string, unknown>> = (points as TaskGeoPoint[]).map(p =>
+    ({ ...base(p.name, 'point', p.hidden ? 'none' : 'name', GEO_POINT_COLOR), wx: p.x, wy: p.y, deps: [] }))
+  let k = 0
+  for (const l of links) {
+    const id = l.type === 'vector' ? l.name! : `s_${l.from}${l.to}`
+    objects.push({ ...base(id, l.type, l.type === 'vector' ? 'name' : 'none',
+      l.type === 'vector' ? GEO_VECTOR_COLORS[k++ % GEO_VECTOR_COLORS.length] : GEO_POINT_COLOR),
+    p1: l.from, p2: l.to, deps: [l.from, l.to] })
+  }
+  // Початок координат — у центрі полотна: масштаб за найдальшою від нього точкою, з полем 36 px.
+  const ax = Math.max(1, ...(points as TaskGeoPoint[]).map(p => Math.abs(p.x)))
+  const ay = Math.max(1, ...(points as TaskGeoPoint[]).map(p => Math.abs(p.y)))
+  const sc = Math.max(2, Math.min(60, (TASK_GEOMASH_SIZE.w / 2 - 36) / ax, (TASK_GEOMASH_SIZE.h / 2 - 36) / ay))
+  return { version: 1, scene: { format: 'geomash-scene', version: 1, objects,
+    cs: { ox: TASK_GEOMASH_SIZE.w / 2, oy: TASK_GEOMASH_SIZE.h / 2, sc: Math.floor(sc * 100) / 100 } } }
+}
+
 /** Ті самі canonical factories, що для вставлення з панелі інструментів. */
 export function buildTaskCompanion(resolution: CompanionResolution, x: number, y: number, id: string): WBAsset | null {
   const d = resolution.data
@@ -230,6 +278,12 @@ export function buildTaskCompanion(resolution: CompanionResolution, x: number, y
     const data = taskSolidData(d)
     if (!data) return null
     return { id, type: 'nmt3d', src: '', x, y, w: 680, h: 500, rotation: 0, locked: false, data } as unknown as WBAsset
+  }
+  if (resolution.rendererType === 'geomash_scene') {
+    const data = taskGeomashData(d)
+    if (!data) return null
+    return { id, type: 'geomash_scene', src: '', x, y, ...TASK_GEOMASH_SIZE, rotation: 0, locked: false,
+      data } as unknown as WBAsset
   }
   if (resolution.rendererType === 'number_line') {
     const data = taskNumberLine(d.number_line)
@@ -276,6 +330,14 @@ export function matchesTaskCompanion(asset: WBAsset, resolution: CompanionResolu
     const actual = asset.data as unknown as { templateKey?: string; params?: Record<string, number> }
     if (!wanted || actual?.templateKey !== wanted.templateKey) return false
     return !wanted.params || stable(actual.params ?? null) === stable(wanted.params)
+  }
+  if (asset.type === 'geomash_scene') {
+    // Своя сцена — ті самі точки й вектори з умови (стиль, підписи й масштаб учитель міняє сам).
+    const key = (objects: unknown) => stable((Array.isArray(objects) ? objects : []).map((o: Record<string, unknown>) =>
+      [o.id, o.type, o.wx ?? null, o.wy ?? null, o.p1 ?? null, o.p2 ?? null]))
+    const wanted = taskGeomashData(resolution.data) as { scene: { objects: unknown } } | null
+    const actual = asset.data as unknown as { scene?: { objects?: unknown } }
+    return !!wanted && key(actual?.scene?.objects) === key(wanted.scene.objects)
   }
   if (asset.type === 'number_line') {
     const actual = taskNumberLine(asset.data), wanted = taskNumberLine(resolution.data.number_line)

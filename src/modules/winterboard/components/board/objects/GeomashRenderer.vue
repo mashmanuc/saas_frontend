@@ -501,7 +501,9 @@ function onStageContextMenu(ev: MouseEvent) {
   ev.preventDefault(); ev.stopPropagation()
   geomashToolState.selectedGeoId = hit
   const rect = stageEl.value?.getBoundingClientRect()
-  ctxMenu.value = { x: ev.clientX - (rect?.left ?? 0), y: ev.clientY - (rect?.top ?? 0), id: hit }
+  // Картка на масштабі дошки зменшена обгорткою scale(): екранні пікселі → пікселі картки.
+  const k = rect && rect.width > 0 ? (stageEl.value?.clientWidth || rect.width) / rect.width : 1
+  ctxMenu.value = { x: (ev.clientX - (rect?.left ?? 0)) * k, y: (ev.clientY - (rect?.top ?? 0)) * k, id: hit }
   redraw()
 }
 /** Б-168: «Копіювати» в меню правої кнопки — копія з'являється поруч і стає виділеною. */

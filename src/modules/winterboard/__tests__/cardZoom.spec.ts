@@ -61,7 +61,7 @@ describe('useCardZoomRefresh — ПІСЛЯ оновлення DOM', () => {
 
 describe('проводка: які картки масштабуються і де', () => {
   it('рівно чотири типи з власним полотном (+ «Наочна сцена», 2026-10-20; + тіло, 2026-10-28)', () => {
-    expect([...ZOOM_SCALED_CARD_TYPES].sort()).toEqual(['calculus_card', 'graph_calculator', 'math_scene', 'nmt3d', 'trig_circle'])
+    expect([...ZOOM_SCALED_CARD_TYPES].sort()).toEqual(['calculus_card', 'geomash_scene', 'graph_calculator', 'math_scene', 'nmt3d', 'trig_circle'])
   })
 
   it('уніфікований шар (прод: VITE_UNIFIED_ZORDER=true) кладе лише ці типи в .wb-card-zoom', () => {
@@ -75,8 +75,8 @@ describe('проводка: які картки масштабуються і д
   it('WBCanvas: дає масштаб карткам; старі блоки (відкат) теж обгорнуто; резерв шапки — у пікселях картки', () => {
     const canvas = read('components/canvas/WBCanvas.vue')
     expect(canvas).toContain('provideCardZoom(computed(() => props.zoom))')
-    // 2026-10-21: + картка задачі (nmt_task) у старих блоках; 2026-10-28: + тіло (nmt3d)
-    expect(canvas.split('<div class="wb-card-zoom" :style="cardZoomStyle(zoom, expandedAssetId === asset.id)">').length - 1).toBe(5)
+    // 2026-10-21: + картка задачі (nmt_task) у старих блоках; 2026-10-28: + тіло (nmt3d), «Геометрія» (geomash_scene)
+    expect(canvas.split('<div class="wb-card-zoom" :style="cardZoomStyle(zoom, expandedAssetId === asset.id)">').length - 1).toBe(6)
     expect(canvas).toContain('isZoomScaledCard(t) && props.zoom > 0 ? width / props.zoom : width')
   })
 

@@ -16,7 +16,7 @@
 
 // ── Renderer resolution result ────────────────────────────────────────────────
 
-import { taskCalculusInput, taskGraphPoints, taskNumberLine } from './taskCompanion'
+import { taskCalculusInput, taskGeomashData, taskGraphPoints, taskNumberLine } from './taskCompanion'
 
 export interface CompanionResolution {
   /** WBAsset.type — який renderer spawn-ити. */
@@ -70,7 +70,8 @@ export const INTENT_TO_RENDERERS: Record<string, string[]> = {
   show_median:            ['geometry_2d_v2'],
   show_bisector:          ['geometry_2d_v2'],
   show_circumscribed_circle: ['geometry_2d_v2'],
-  show_vectors_2d:        ['geometry_2d_v2'],
+  // Вектори з умови (пакет 28.10) — у «Геометрії»; креслення фігур лишається першим для задач із фігурою.
+  show_vectors_2d:        ['geometry_2d_v2', 'geomash_scene'],
   show_vector_sum:        ['geometry_2d_v2'],
 
   // ── Trigonometry ───────────────────────────────────────────────────────────
@@ -95,6 +96,7 @@ export const AVAILABLE_RENDERERS = new Set<string>([
   'trig_solver',
   'quadratic_card',
   'number_line',
+  'geomash_scene',
 ])
 
 // ── Default sizes per renderer ─────────────────────────────────────────────────
@@ -108,6 +110,7 @@ export const RENDERER_DEFAULTS: Record<string, { w: number; h: number }> = {
   trig_solver:      { w: 520, h: 480 },
   quadratic_card:   { w: 480, h: 380 },
   number_line:      { w: 600, h: 300 },
+  geomash_scene:    { w: 520, h: 400 },
   // «Наочна сцена» (DEFAULT_MATH_SCENE_*): з намірами задач не повʼязана; розмір — щоб перелік був повний.
   math_scene:       { w: 1000, h: 640 },
 }
@@ -169,6 +172,8 @@ const RENDERER_REQUIRES_DATA: Record<string, (d: Record<string, unknown>) => boo
   // shape → кнопки немає. Кнопка обіцяє лише те, що зробить (INV-CAP-1:
   // рішення про renderer — ТІЛЬКИ тут, не в spawn-обробнику).
   nmt3d:            (d) => typeof d.shape === 'string' && d.shape.length > 0,
+  // Точки й вектори з умови; без них «Геометрія» з картки не пропонується (порожньої сцени не даємо).
+  geomash_scene:    (d) => taskGeomashData(d) !== null,
 }
 
 /**

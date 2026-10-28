@@ -771,6 +771,7 @@
           ? { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', zIndex: '50' }
           : getOverlayStyle(asset)"
       >
+        <div class="wb-card-zoom" :style="cardZoomStyle(zoom, expandedAssetId === asset.id)">
         <GeomashRenderer
           :asset="(asset as any)"
           :is-selected="wbStore.selectedIds.includes(asset.id)"
@@ -782,6 +783,7 @@
           @select-other="(id: string) => wbStore.selectItems([id])"
         /><!-- ^ scene-рендерер міняє ЛИШЕ data; geometry (x/y/w/h) — зі свіжого store-asset,
              інакше stale props.x/y у emit клоберить щойно завершений drag (рамка-примара) -->
+        </div>
       </div>
     </template>
 
@@ -1360,6 +1362,8 @@ function handleSpawnCompanions(payload: {
       || (resolution.rendererType === 'calculus_card' && 'calculus' in resolution.data)
       // Тіло з умови (пакети 28.10): своє для кожної задачі, а не «одне 3D на сторінку».
       || (resolution.rendererType === 'nmt3d' && 'solid_marks' in resolution.data)
+      // Вектори з умови (28.10): своя сцена «Геометрії» для кожної задачі.
+      || (resolution.rendererType === 'geomash_scene' && 'geo_points' in resolution.data)
     if (!nativeTaskVisual && existingTypes.has(resolution.rendererType)) {
       // Companion цього типу вже є в companionLinks — вибираємо існуючий
       const existing = assets.value.find(
@@ -1397,7 +1401,7 @@ function handleSpawnCompanions(payload: {
       // Дві задачі поруч («Наочний»): під своєю карткою — не ширше за неї й до низу сторінки,
       // якщо так лишається щонайменше 300 px. Лише для коробок без власної прив'язки до центру.
       const fit = { w: Math.min(def.w, sourceAsset?.w ?? def.w), h: Math.min(def.h, PAGE_HEIGHT - 24 - companionY) }
-      if (sourceAsset && ['nmt3d', 'calculus_card'].includes(resolution.rendererType) && fit.h >= 300
+      if (sourceAsset && ['nmt3d', 'calculus_card', 'geomash_scene'].includes(resolution.rendererType) && fit.h >= 300
           && !occupied(companionX, companionY, fit.w, fit.h)) size = fit
     }
 
@@ -1431,7 +1435,7 @@ function handleSpawnCompanions(payload: {
     }
 
     const nativeAsset = nativeTaskVisual ? buildTaskCompanion(resolution, companionX, companionY, generateId()) : null
-    if (nativeAsset && ['nmt3d', 'calculus_card'].includes(nativeAsset.type)) Object.assign(nativeAsset, size)
+    if (nativeAsset && ['nmt3d', 'calculus_card', 'geomash_scene'].includes(nativeAsset.type)) Object.assign(nativeAsset, size)
     if (nativeTaskVisual && !nativeAsset) {
       notifyWarning('Не можу побудувати ілюстрацію: дані задачі пошкоджені.')
       continue
