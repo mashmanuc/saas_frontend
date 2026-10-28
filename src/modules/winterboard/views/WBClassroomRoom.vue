@@ -205,6 +205,10 @@
           v-if="classroomRole.isTeacher.value && resolvedSessionId"
           :board-id="resolvedSessionId"
         />
+        <WBProgramButton
+          v-if="classroomRole.isTeacher.value && resolvedSessionId"
+          :board-id="resolvedSessionId"
+        />
         <!-- Повний екран (teacher only) — та сама кнопка, що в WBSoloRoom, з тією
              самою поведінкою (CLASSROOM_REMOTE_VISION крок 2): fullscreen +
              wake lock + автоховання шапки. Лише вигляд цього пристрою —
@@ -625,6 +629,7 @@ import WBSelectionToolbar from '../components/canvas/WBSelectionToolbar.vue'
 import WBYouTubeModal from '../components/toolbar/WBYouTubeModal.vue'
 import WBClassroomRecordingControls from '../components/replay/WBClassroomRecordingControls.vue'
 import WBHomeworkButton from '../components/homework/WBHomeworkButton.vue'
+import WBProgramButton from '@/modules/learning-programs/components/WBProgramButton.vue'
 import { provideHomeworkCopyBoard } from '../composables/homeworkCopy'
 import WBEndSessionDialog from '../components/dialogs/WBEndSessionDialog.vue'
 // PR1 (2026-05-03): post-record share prompt — port із WBSoloRoom для visibility toggle

@@ -64,6 +64,7 @@ import { useAuthStore } from '../modules/auth/store/authStore'
 import { useSidebarBadges } from '../composables/useSidebarBadges'
 import { useLayoutStore } from '@/stores/layoutStore'
 import { getSectionedMenuByRole } from '../config/menu'
+import { useProgramsAvailability } from '../modules/learning-programs/composables/useProgramsAvailability'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -78,11 +79,16 @@ const sidebarBadges = useSidebarBadges()
 // - mainAreaClass reads sidebarMode + isCollapsed via store derived getters.
 //   Tailwind ml-* classes will become CSS vars in G-2 (audit).
 
+// Пункти з `requires` з'являються лише після відповіді сервера (не прапорцем збірки).
+const programs = useProgramsAvailability()
+watch(() => [authStore.user?.id, authStore.user?.role], ([id, role]) => { programs.ensure(id, role) }, { immediate: true })
+const gates = computed(() => ({ learningPrograms: programs.available.value === true }))
+
 const sidebarSections = computed(() => {
   const sections = getSectionedMenuByRole(authStore.user?.role)
   return sections.map(section => ({
     ...section,
-    items: section.items.map(item => {
+    items: section.items.filter(item => !item.requires || gates.value[item.requires]).map(item => {
       const badge = sidebarBadges.getBadge(item.to)
       if (badge) {
         return { ...item, badge: badge.count, badgeType: badge.type }

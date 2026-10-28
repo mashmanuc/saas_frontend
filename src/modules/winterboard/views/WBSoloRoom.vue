@@ -169,6 +169,11 @@
           v-if="isSessionOwner && sessionId && !isLocalWorkspace && !constructorMode"
           :board-id="sessionId"
         />
+        <!-- «Програма» (програми навчання, ТЗ §5.3): лише з учнем уроку й відкритим модулем; вікно поверх дошки. -->
+        <WBProgramButton
+          v-if="isSessionOwner && sessionId && !isLocalWorkspace && !constructorMode"
+          :board-id="sessionId"
+        />
         <!-- Solo → Classroom fork: "Запросити учня" — приховано в constructor mode.
              Local Workspace (ТЗ §4): кнопка видима, клік → CloudUpsellModal. -->
         <button
@@ -1305,6 +1310,7 @@ import { useOnboardingHints, TutorHintId } from '@/composables/useOnboardingHint
 import { lessonViewApi } from '@/modules/knowledge/api/lessonViewApi'
 import WBInviteStudentModal from '../components/classroom/WBInviteStudentModal.vue'
 import WBHomeworkButton from '../components/homework/WBHomeworkButton.vue'
+import WBProgramButton from '@/modules/learning-programs/components/WBProgramButton.vue'
 import { provideHomeworkCopyBoard } from '../composables/homeworkCopy'
 import { useGridOverlay, type GridType } from '../composables/useGridOverlay'
 import { usePageTransition } from '../composables/usePageTransition'

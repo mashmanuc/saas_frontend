@@ -245,6 +245,25 @@ const routes = [
         component: () => import('../modules/dashboard/views/TutorStudents.vue'),
         meta: { roles: [USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.TUTOR] },
       },
+      // Програми навчання учнів. Модуль вмикає сервер (пілот; поза ним усі адреси — 404 і екран «не знайдено»).
+      {
+        path: 'tutor/programs',
+        name: 'learning-programs',
+        component: () => import('../modules/learning-programs/views/ProgramsListView.vue'),
+        meta: { roles: [USER_ROLES.TUTOR] },
+      },
+      {
+        path: 'tutor/programs/:id',
+        name: 'learning-program',
+        component: () => import('../modules/learning-programs/views/ProgramWorkspaceView.vue'),
+        meta: { roles: [USER_ROLES.TUTOR] },
+      },
+      {
+        path: 'tutor/programs/:id/learner',
+        name: 'learning-program-learner',
+        component: () => import('../modules/learning-programs/views/ProgramLearnerView.vue'),
+        meta: { roles: [USER_ROLES.TUTOR] },
+      },
       {
         path: 'dashboard/classrooms',
         name: 'dashboard-classrooms',

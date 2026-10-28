@@ -1267,6 +1267,7 @@
       "wbBoards": "Lesson Studio",
       "wbStudents": "Students",
       "myStudents": "My Students",
+      "programs": "Programs",
       "messages": "Messages",
       "inquiries": "Inquiries",
       "myInquiries": "My Inquiries",
@@ -1318,6 +1319,7 @@
       "wbLessons": "My saved lessons with search and folders",
       "wbBoards": "Lesson constructor and preparation",
       "myStudents": "Your active students",
+      "programs": "Each student's program: done, today, next",
       "inquiries": "New requests from students",
       "tutorProfile": "Your public marketplace profile",
       "billing": "Finances, subscription, and payments",
@@ -12932,5 +12934,140 @@
     "loadError": "Couldn't load “My lessons”. A new board is still available.",
     "subfolders": "folders: {n}",
     "emptyFolder": "empty"
+  },
+  "learningPrograms": {
+    "step": {
+      "title": "Student's program"
+    },
+    "list": {
+      "title": "Programs",
+      "subtitle": "Each student's program: what's done, what's today, what's next.",
+      "new": "New program",
+      "search": "Search by student or title",
+      "empty": "No programs yet",
+      "group": "Class",
+      "attention": "Needs attention",
+      "now": "Now",
+      "finished": "All done",
+      "nextSession": "Next lesson"
+    },
+    "status": {
+      "active": "Active",
+      "paused": "Paused",
+      "done": "Finished"
+    },
+    "create": {
+      "title": "New program",
+      "learner": "Student",
+      "change": "Change",
+      "needLearner": "Choose a student — a program is always for a specific child.",
+      "template": "Program",
+      "noTemplates": "No ready programs yet.",
+      "level": "Student's level",
+      "levelHint": "From 1 to 5 — how the student is doing now. Task difficulty is chosen separately when preparing.",
+      "save": "Create"
+    },
+    "errors": {
+      "learnerNotActive": "This student is not active with you — add them back to your students first.",
+      "generic": "Something went wrong. Please try again.",
+      "load": "Could not load the program.",
+      "notFound": "Program not found.",
+      "revisionConflict": "The program was just changed in another tab — showing the latest version."
+    },
+    "prepare": {
+      "title": "Prepare: {lesson}",
+      "profile": "Task difficulty",
+      "count": "How many tasks",
+      "checking": "Checking there are enough tasks…",
+      "topic": "Topic of the set",
+      "ready": "Enough tasks: there will be {n}.",
+      "shortage": "Not enough tasks: {available} available, {requested} needed. Reduce the number or pick another difficulty.",
+      "done": "The lesson is ready.",
+      "go": "Prepare lesson"
+    },
+    "profile": {
+      "easy": "Easy",
+      "balanced": "Balanced",
+      "hard": "Hard",
+      "exam": "Exam-like"
+    },
+    "lesson": {
+      "open": "Open lesson",
+      "prepare": "Prepare",
+      "prepareAgain": "Prepare again",
+      "repeatNeeded": "Needs repeating",
+      "review": "review"
+    },
+    "reasons": {
+      "notEnabled": "Lesson generation is turned off right now.",
+      "topicNotMapped": "The topic for this lesson is not set yet.",
+      "manualScenario": "This lesson is prepared separately (diagnostic or mock test).",
+      "needsLearnerContext": "This lesson's topic is chosen from the student's mistakes.",
+      "contextChanged": "The program changed while the lesson was being prepared. Please try again."
+    },
+    "outcome": {
+      "tasks": "Tasks of the prepared lesson",
+      "tasksAll": "All solved",
+      "tasksUnknown": "Some or not sure",
+      "next": "Held — move on",
+      "repeat": "Held — once more",
+      "notHeld": "Did not happen",
+      "offerReview": "Add a review lesson for this topic to the plan?",
+      "addReview": "Add review",
+      "noReview": "No need",
+      "savedNext": "Done, the next lesson is up",
+      "savedRepeat": "Held, the topic will be repeated",
+      "savedNotHeld": "Did not happen",
+      "savedReview": "Review added to the plan"
+    },
+    "workspace": {
+      "showLearner": "Show to student",
+      "level": "Level",
+      "pace": "Pace",
+      "last": "Last lesson",
+      "noLast": "No lessons yet",
+      "today": "Today",
+      "allDone": "All lessons of the program are done",
+      "next": "Next",
+      "noNext": "No more lessons",
+      "plan": "Full plan"
+    },
+    "pace": {
+      "0_50": "Half speed",
+      "0_75": "A bit slower",
+      "1_00": "Normal",
+      "1_25": "A bit faster",
+      "1_50": "Faster",
+      "2_00": "Twice as fast"
+    },
+    "itemState": {
+      "done": "Done",
+      "in_progress": "Now",
+      "planned": "Ahead",
+      "deferred": "Deferred",
+      "skipped": "Skipped",
+      "skippedHint": "This topic is skipped — its lessons are not in the plan.",
+      "deferredHint": "No lessons planned for this topic yet."
+    },
+    "credit": {
+      "credited": "Done",
+      "open": "Ahead",
+      "repeat_needed": "Repeat"
+    },
+    "learner": {
+      "now": "Now studying",
+      "progress": "Progress",
+      "done": "{done} of {total} done",
+      "nowBadge": "now",
+      "next": "Next lesson"
+    },
+    "board": {
+      "button": "Program",
+      "title": "Student's program",
+      "none": "No program has been created for this student yet.",
+      "create": "Create program",
+      "choose": "Choose a program",
+      "manage": "Manage program"
+    }
   }
 }

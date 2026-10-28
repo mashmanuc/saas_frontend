@@ -101,6 +101,10 @@ export const SECTIONED_MENU_BY_ROLE = {
       label: 'sidebar.section.students',
       items: [
         { label: 'sidebar.item.myStudents', icon: 'users', to: '/tutor/students', hint: 'sidebar.hint.myStudents' },
+        // Програми навчання учнів — лише коли сервер відкрив модуль цьому вчителю (пілот; поза ним 404).
+        // Показ вирішує PageShell через `requires: 'learningPrograms'` (useProgramsAvailability).
+        { label: 'sidebar.item.programs', icon: 'graduation-cap', to: '/tutor/programs', hint: 'sidebar.hint.programs',
+          requires: 'learningPrograms' },
         // «Запити» прибрано 2026-09-22 (візуальний огляд, Топ-10 №4): маршрут
         // `/tutor/inquiries` — редірект на Головну (`router/index.js`), бо запити
         // жили в маркетплейсі, вимкненому 2026-06-17. Пункт вів у нікуди.
