@@ -35,6 +35,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { learningProgramsApi, type LearnerView } from '../api/learningProgramsApi'
+import { latestOnly } from '../intent'
 
 const props = defineProps<{ programId: string }>()
 const { t } = useI18n({ useScope: 'global' })
@@ -47,15 +48,20 @@ const percent = computed(() => {
   return pr && pr.planned_lessons ? Math.round((100 * pr.done_lessons) / pr.planned_lessons) : 0
 })
 
+// Лише відповідь для поточної програми потрапляє на екран; старий вміст прибирається одразу (review F4).
+const loads = latestOnly()
 watch(() => props.programId, async (id) => {
+  const token = loads.start()
+  v.value = null
   loading.value = true
   failed.value = false
   try {
-    v.value = await learningProgramsApi.learnerView(id)
+    const fresh = await learningProgramsApi.learnerView(id)
+    if (loads.isCurrent(token)) v.value = fresh
   } catch {
-    failed.value = true
+    if (loads.isCurrent(token)) failed.value = true
   } finally {
-    loading.value = false
+    if (loads.isCurrent(token)) loading.value = false
   }
 }, { immediate: true })
 </script>

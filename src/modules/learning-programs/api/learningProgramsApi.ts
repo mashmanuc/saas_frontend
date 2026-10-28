@@ -136,11 +136,75 @@ export interface MaterialUse { material_ref: Ref; usage: 'whole' | 'partial' | '
 
 export type PedagogicalAction = 'next' | 'repeat' | 'none'
 
-function uuid(): string {
-  return crypto.randomUUID()
+export interface OutcomeInput {
+  attendance: 'held' | 'not_held'
+  action: PedagogicalAction
+  materials?: MaterialUse[]
+  /** Урок розкладу: тоді відвідування сервер звіряє з розкладом (`booking.event`). */
+  calendarRef?: Ref | null
 }
 
-const key = () => ({ headers: { 'Idempotency-Key': uuid() } })
+/**
+ * Тіла команд складаються ОДИН раз на намір (ключ усередині тіла або поруч) і надсилаються як є — повтор після
+ * втраченої відповіді має бути байт-у-байт тим самим запитом (сервер звіряє хеш тіла). Див. `intent.ts`.
+ */
+export const bodies = {
+  create(o: { template_version_id: string; learnerId: number; level: number | null; status: 'draft' | 'active' }) {
+    return {
+      template_version_id: o.template_version_id,
+      target: { kind: 'learner', learner_id: o.learnerId, learner_ids: null, group_ref: null },
+      title_override: null,
+      level: o.level ? { ordinal: o.level } : null,
+      pace: '1.00',
+      goal: null,
+      status: o.status,
+    }
+  },
+  /** Підсумок заняття індивідуальної програми: один учасник, його список = список події (контракт §3.1). */
+  outcome(p: ProgramDetail, lessonId: string, o: OutcomeInput, eventId: string) {
+    const credited = o.attendance === 'held' && o.action === 'next' ? [lessonId] : []
+    const action = o.attendance === 'held' ? o.action : 'none'
+    const part = p.target.participants.find((x) => !x.left_at) ?? p.target.participants[0]
+    return {
+      event_id: eventId,
+      schema_version: 1,
+      kind: 'outcome',
+      expected_revision: p.route_revision,
+      occurred_at: new Date().toISOString(),
+      calendar_ref: o.calendarRef ?? null,
+      attendance: o.attendance,
+      pedagogical_action: action,
+      credited_lesson_ids: credited,
+      participant_outcomes: [{
+        participant_id: part.participant_id, attendance: o.attendance, personal_action: action,
+        personal_credited_lesson_ids: credited, needs_catch_up: false,
+      }],
+      materials_used: o.attendance === 'held' ? (o.materials ?? []) : [],
+      corrects_event_id: null,
+      correction_reason: null,
+    }
+  },
+  /** «Ще раз»: заняття-повторення після цього заняття (нічого не генерує й не зараховує). */
+  addReview(p: ProgramDetail, afterLessonId: string, unitRefs: string[]) {
+    return { kind: 'add_review', expected_revision: p.route_revision,
+      payload: { after_lesson_id: afterLessonId, lessons: 1, review_unit_refs: unitRefs } }
+  },
+  setLevel(p: ProgramDetail, ordinal: number) {
+    return { kind: 'set_level', expected_revision: p.route_revision,
+      payload: { level: { ordinal }, scope: 'program', item_id: null } }
+  },
+  setPace(p: ProgramDetail, pace: string) {
+    return { kind: 'set_pace', expected_revision: p.route_revision, payload: { pace } }
+  },
+  prepare(p: ProgramDetail, profile: string, count: number, requestId: string) {
+    return {
+      request_id: requestId, level_selection: { code: profile }, volume_selection: { kind: 'count', value: count },
+      review: { intentional_review: false, review_reason: null }, expected_revision: p.route_revision,
+    }
+  },
+}
+
+const withKey = (key: string) => ({ headers: { 'Idempotency-Key': key } })
 
 export const learningProgramsApi = {
   list(params: { status?: string; q?: string; learner?: number } = {}): Promise<Page<ProgramListItem>> {
@@ -158,65 +222,15 @@ export const learningProgramsApi = {
   templates(): Promise<TemplateVersion[]> {
     return api.get('/v1/learning-program-templates/')
   },
-  create(body: { template_version_id: string; learnerId: number; level: number | null; status: 'draft' | 'active' }):
-    Promise<ProgramDetail> {
-    return api.post(`${BASE}/`, {
-      template_version_id: body.template_version_id,
-      target: { kind: 'learner', learner_id: body.learnerId, learner_ids: null, group_ref: null },
-      title_override: null,
-      level: body.level ? { ordinal: body.level } : null,
-      pace: '1.00',
-      goal: null,
-      status: body.status,
-    }, key())
+  create(body: ReturnType<typeof bodies.create>, key: string): Promise<ProgramDetail> {
+    return api.post(`${BASE}/`, body, withKey(key))
   },
-  /** Підсумок заняття індивідуальної програми: один учасник, його список = список події (контракт §3.1). */
-  recordOutcome(p: ProgramDetail, lessonId: string, o: {
-    attendance: 'held' | 'not_held'
-    action: PedagogicalAction
-    materials?: MaterialUse[]
-    /** Урок розкладу: тоді відвідування сервер звіряє з розкладом (`booking.event`). */
-    calendarRef?: Ref | null
-  }): Promise<{ route_revision: number; replayed: boolean }> {
-    const credited = o.attendance === 'held' && o.action === 'next' ? [lessonId] : []
-    const action = o.attendance === 'held' ? o.action : 'none'
-    const part = p.target.participants.find((x) => !x.left_at) ?? p.target.participants[0]
-    return api.post(`${BASE}/${p.id}/lessons/${lessonId}/outcome/`, {
-      event_id: uuid(),
-      schema_version: 1,
-      kind: 'outcome',
-      expected_revision: p.route_revision,
-      occurred_at: new Date().toISOString(),
-      calendar_ref: o.calendarRef ?? null,
-      attendance: o.attendance,
-      pedagogical_action: action,
-      credited_lesson_ids: credited,
-      participant_outcomes: [{
-        participant_id: part.participant_id, attendance: o.attendance, personal_action: action,
-        personal_credited_lesson_ids: credited, needs_catch_up: false,
-      }],
-      materials_used: o.attendance === 'held' ? (o.materials ?? []) : [],
-      corrects_event_id: null,
-      correction_reason: null,
-    })
+  sendOutcome(programId: string, lessonId: string, body: ReturnType<typeof bodies.outcome>):
+    Promise<{ route_revision: number; replayed: boolean }> {
+    return api.post(`${BASE}/${programId}/lessons/${lessonId}/outcome/`, body)
   },
-  /** «Ще раз»: додати заняття-повторення після цього заняття (нічого не генерує й не зараховує). */
-  addReview(p: ProgramDetail, afterLessonId: string, unitRefs: string[]) {
-    return api.post(`${BASE}/${p.id}/proposals/`, {
-      kind: 'add_review', expected_revision: p.route_revision,
-      payload: { after_lesson_id: afterLessonId, lessons: 1, review_unit_refs: unitRefs },
-    }, key())
-  },
-  setLevel(p: ProgramDetail, ordinal: number) {
-    return api.post(`${BASE}/${p.id}/proposals/`, {
-      kind: 'set_level', expected_revision: p.route_revision,
-      payload: { level: { ordinal }, scope: 'program', item_id: null },
-    }, key())
-  },
-  setPace(p: ProgramDetail, pace: string) {
-    return api.post(`${BASE}/${p.id}/proposals/`, {
-      kind: 'set_pace', expected_revision: p.route_revision, payload: { pace },
-    }, key())
+  sendProposal(programId: string, body: object, key: string): Promise<{ route_revision: number; replayed: boolean }> {
+    return api.post(`${BASE}/${programId}/proposals/`, body, withKey(key))
   },
   capabilities(programId: string, lessonId: string): Promise<Capabilities> {
     return api.get(`${BASE}/${programId}/lessons/${lessonId}/generation/capabilities/`)
@@ -227,11 +241,9 @@ export const learningProgramsApi = {
       review: { intentional_review: false, review_reason: null },
     })
   },
-  prepare(p: ProgramDetail, lessonId: string, profile: string, count: number): Promise<{ request_id: string; status: string }> {
-    return api.post(`${BASE}/${p.id}/lessons/${lessonId}/preparations/`, {
-      request_id: uuid(), level_selection: { code: profile }, volume_selection: { kind: 'count', value: count },
-      review: { intentional_review: false, review_reason: null }, expected_revision: p.route_revision,
-    })
+  sendPrepare(programId: string, lessonId: string, body: ReturnType<typeof bodies.prepare>):
+    Promise<{ request_id: string; status: string }> {
+    return api.post(`${BASE}/${programId}/lessons/${lessonId}/preparations/`, body)
   },
   preparation(requestId: string): Promise<PreparationStatus> {
     return api.get(`${BASE}/preparations/${requestId}/`)

@@ -32,6 +32,7 @@ import { useAuthStore } from '@/modules/auth/store/authStore'
 import LessonOutcomeActions from './LessonOutcomeActions.vue'
 import { learningProgramsApi, type ProgramDetail, type ProgramLesson } from '../api/learningProgramsApi'
 import { useProgramsAvailability } from '../composables/useProgramsAvailability'
+import { latestOnly } from '../intent'
 
 const props = defineProps<{ studentId: number | null; eventId?: number | null; attendance?: 'held' | 'not_held' | null }>()
 const emit = defineEmits<{ (e: 'changed'): void }>()
@@ -44,30 +45,39 @@ const programs = ref<{ id: string; title: string }[]>([])
 const program = ref<ProgramDetail | null>(null)
 const lesson = ref<ProgramLesson | null>(null)
 
-async function pick(id: string) {
+// Учня на уроці могли змінити: відповіді для попереднього учня відкидаються (review F4).
+const loads = latestOnly()
+
+async function pick(id: string, token = loads.start()) {
   state.value = 'loading'
   try {
-    program.value = await learningProgramsApi.detail(id)
-    const tid = program.value.summary.today?.lesson_id
-    lesson.value = tid ? program.value.lessons.find((l) => l.lesson_id === tid) ?? null : null
+    const fresh = await learningProgramsApi.detail(id)
+    if (!loads.isCurrent(token)) return
+    program.value = fresh
+    const tid = fresh.summary.today?.lesson_id
+    lesson.value = tid ? fresh.lessons.find((l) => l.lesson_id === tid) ?? null : null
     state.value = lesson.value ? 'ready' : 'done'
   } catch {
-    state.value = 'hidden'
+    if (loads.isCurrent(token)) state.value = 'hidden'
   }
 }
 
 watch(() => props.studentId, async (sid) => {
+  const token = loads.start()
   state.value = 'hidden'
-  if (!sid || !(await availability.ensure(auth.user?.id, auth.user?.role))) return
+  program.value = null
+  lesson.value = null
+  if (!sid || !(await availability.ensure(auth.user?.id, auth.user?.role)) || !loads.isCurrent(token)) return
   state.value = 'loading'
   try {
     const page = await learningProgramsApi.list({ learner: sid, status: 'active' })
+    if (!loads.isCurrent(token)) return
     programs.value = page.results.map((r) => ({ id: r.id, title: r.title }))
     if (!programs.value.length) state.value = 'hidden'
-    else if (programs.value.length === 1) await pick(programs.value[0].id)
+    else if (programs.value.length === 1) await pick(programs.value[0].id, token)
     else state.value = 'choose'
   } catch {
-    state.value = 'hidden'
+    if (loads.isCurrent(token)) state.value = 'hidden'
   }
 }, { immediate: true })
 </script>

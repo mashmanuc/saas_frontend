@@ -12968,6 +12968,7 @@
       "save": "Create"
     },
     "errors": {
+      "noAnswer": "No answer arrived — the result is unknown. Press again: the same request will be repeated, no duplicate.",
       "learnerNotActive": "This student is not active with you — add them back to your students first.",
       "generic": "Something went wrong. Please try again.",
       "load": "Could not load the program.",

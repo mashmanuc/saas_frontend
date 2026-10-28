@@ -47,15 +47,16 @@
 <script setup lang="ts">
 /**
  * Створення програми учню (ТЗ §5.1): учень — той самий вибір «З ким урок?», що на «Провести» (свої учні, учень без
- * акаунта, нове ім'я); шаблон — версія з сервера; рівень 1–5 обов'язковий для активної програми. Повтор натискання
- * не створює другу програму — кожне відкриття вікна несе новий ключ лише на момент «Створити».
+ * акаунта, нове ім'я); шаблон — версія з сервера; рівень 1–5 обов'язковий для активної програми. Повтор після
+ * втраченої відповіді йде з тим самим ключем і тілом (`intent.ts`) — другої програми не буде.
  */
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 import ConductStudentChoice from '@/modules/knowledge/components/ConductStudentChoice.vue'
-import { learningProgramsApi, errorCode, type ProgramDetail, type TemplateVersion } from '../api/learningProgramsApi'
+import { bodies, learningProgramsApi, errorCode, type ProgramDetail, type TemplateVersion } from '../api/learningProgramsApi'
+import { answered, createIntent } from '../intent'
 
 const props = defineProps<{ open: boolean; presetLearnerId?: number | null }>()
 const emit = defineEmits<{ (e: 'close'): void; (e: 'created', p: ProgramDetail): void }>()
@@ -71,6 +72,7 @@ const saving = ref(false)
 const failed = ref('')
 
 const canSave = computed(() => !!learnerId.value && !!templateId.value && !saving.value)
+const createIntentKey = createIntent<ReturnType<typeof bodies.create>>()
 
 watch(() => props.open, async (open) => {
   if (!open) return
@@ -97,16 +99,19 @@ async function save() {
   if (!canSave.value || !learnerId.value) return
   saving.value = true
   failed.value = ''
+  const params = { template_version_id: templateId.value, learnerId: learnerId.value, level: level.value,
+    status: 'active' as const }
+  const intent = createIntentKey.take(JSON.stringify(params), () => bodies.create(params))
   try {
-    const created = await learningProgramsApi.create({
-      template_version_id: templateId.value, learnerId: learnerId.value, level: level.value, status: 'active',
-    })
+    const created = await learningProgramsApi.create(intent.body, intent.key)
+    createIntentKey.settle()
     emit('created', created)
   } catch (e) {
+    createIntentKey.settle(e)
     const code = errorCode(e)
-    failed.value = code === 'learner_not_active'
-      ? t('learningPrograms.errors.learnerNotActive')
-      : t('learningPrograms.errors.generic')
+    failed.value = !answered(e) ? t('learningPrograms.errors.noAnswer')
+      : code === 'learner_not_active' ? t('learningPrograms.errors.learnerNotActive')
+        : t('learningPrograms.errors.generic')
   } finally {
     saving.value = false
   }

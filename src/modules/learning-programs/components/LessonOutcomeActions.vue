@@ -58,10 +58,11 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from '@/ui/Button.vue'
 import {
-  learningProgramsApi, errorCode, type MaterialUse, type PedagogicalAction, type ProgramDetail, type ProgramLesson,
+  bodies, learningProgramsApi, errorCode, type MaterialUse, type PedagogicalAction, type ProgramDetail, type ProgramLesson,
   type Ref,
 } from '../api/learningProgramsApi'
 import { reasonKeyText } from '../reasons'
+import { answered, createIntent } from '../intent'
 
 const props = defineProps<{
   program: ProgramDetail
@@ -81,6 +82,10 @@ const error = ref('')
 let revision = props.program.route_revision
 // Остання відома ревізія: власна відповідь або свіжо перечитана програма (рівень/темп могли змінити поруч).
 const latestRevision = () => Math.max(revision, props.program.route_revision)
+// Один намір — один event_id / ключ: повтор після втраченої відповіді не запише другу подію чи друге повторення.
+const outcomeIntent = createIntent<ReturnType<typeof bodies.outcome>>()
+const reviewIntent = createIntent<ReturnType<typeof bodies.addReview>>()
+const errorText = (e: unknown) => (answered(e) ? reasonKeyText(errorCode(e), t, te) : t('learningPrograms.errors.noAnswer'))
 
 const savedText = computed(() => ({
   next: t('learningPrograms.outcome.savedNext'),
@@ -98,15 +103,19 @@ async function record(attendance: 'held' | 'not_held', action: PedagogicalAction
   const materials: MaterialUse[] = attendance === 'held' && m
     ? [{ material_ref: m.material_ref, usage: usage.value, content_refs_used: [] }]
     : []
+  const sig = JSON.stringify([props.lesson.lesson_id, attendance, action, usage.value])
+  const intent = outcomeIntent.take(sig, (eventId) => bodies.outcome({ ...props.program, route_revision: latestRevision() },
+    props.lesson.lesson_id, { attendance, action, materials, calendarRef: props.calendarRef ?? null }, eventId))
   try {
-    const r = await learningProgramsApi.recordOutcome({ ...props.program, route_revision: latestRevision() }, props.lesson.lesson_id,
-      { attendance, action, materials, calendarRef: props.calendarRef ?? null })
+    const r = await learningProgramsApi.sendOutcome(props.program.id, props.lesson.lesson_id, intent.body)
+    outcomeIntent.settle()
     revision = r.route_revision
     done.value = attendance === 'held' ? (action as 'next' | 'repeat') : 'not_held'
     offerReview.value = done.value === 'repeat' && !!props.lesson.unit_refs?.length
     emit('changed')
   } catch (e) {
-    error.value = reasonKeyText(errorCode(e), t, te)
+    outcomeIntent.settle(e)
+    error.value = errorText(e)
     if (errorCode(e) === 'revision_conflict') emit('changed')
   } finally {
     busy.value = ''
@@ -117,14 +126,18 @@ async function addReview() {
   if (busy.value || !props.lesson.unit_refs?.length) return
   busy.value = 'review'
   error.value = ''
+  const refs = props.lesson.unit_refs
+  const intent = reviewIntent.take(props.lesson.lesson_id,
+    () => bodies.addReview({ ...props.program, route_revision: latestRevision() }, props.lesson.lesson_id, refs))
   try {
-    await learningProgramsApi.addReview({ ...props.program, route_revision: latestRevision() }, props.lesson.lesson_id,
-      props.lesson.unit_refs)
+    await learningProgramsApi.sendProposal(props.program.id, intent.body, intent.key)
+    reviewIntent.settle()
     offerReview.value = false
     done.value = 'review'
     emit('changed')
   } catch (e) {
-    error.value = reasonKeyText(errorCode(e), t, te)
+    reviewIntent.settle(e)
+    error.value = errorText(e)
   } finally {
     busy.value = ''
   }

@@ -79,9 +79,10 @@ import { useI18n } from 'vue-i18n'
 import Modal from '@/ui/Modal.vue'
 import Button from '@/ui/Button.vue'
 import {
-  learningProgramsApi, errorCode, materialRoute,
+  bodies, learningProgramsApi, errorCode, materialRoute,
   type Capabilities, type GenerationPreview, type ProgramDetail, type ProgramLesson, type Ref,
 } from '../api/learningProgramsApi'
+import { answered, createIntent, latestOnly } from '../intent'
 import { reasonKeyText } from '../reasons'
 import { TOPICS } from '@/modules/lesson_constructor/api/lessonConstructorApi'
 
@@ -103,6 +104,10 @@ const result = ref<string>('')
 const preparedRef = ref<Ref | null>(null)
 let previewSeq = 0
 let timer: ReturnType<typeof setTimeout> | null = null
+// Одна підготовка — один request_id (review F3): після втраченої відповіді повторне «Підготувати» з тими самими
+// параметрами — той самий запит; сервер упізнає повтор і другого уроку не створює.
+const prepareIntent = createIntent<ReturnType<typeof bodies.prepare>>()
+const capsLoads = latestOnly()
 
 const reasonText = (key: string | null) => reasonKeyText(key, t, te)
 // Учителю — лише зрозуміле: скільки задач не беремо (антиповтор). Службова примітка даних програми не показується.
@@ -124,19 +129,22 @@ const openRoute = computed(() => materialRoute(preparedRef.value
 
 watch(() => [props.open, props.lesson?.lesson_id], async ([open]) => {
   if (!open || !props.program || !props.lesson) return
+  const token = capsLoads.start()
   caps.value = null
   preview.value = null
   result.value = ''
   preparedRef.value = null
   loadingCaps.value = true
   try {
-    caps.value = await learningProgramsApi.capabilities(props.program.id, props.lesson.lesson_id)
-    if (caps.value.level) profile.value = caps.value.level.default
-    if (caps.value.volume) count.value = caps.value.volume.default
+    const fresh = await learningProgramsApi.capabilities(props.program.id, props.lesson.lesson_id)
+    if (!capsLoads.isCurrent(token)) return
+    caps.value = fresh
+    if (fresh.level) profile.value = fresh.level.default
+    if (fresh.volume) count.value = fresh.volume.default
   } catch {
-    caps.value = { status: 'unsupported', reason_key: 'load_failed', level: null, volume: null }
+    if (capsLoads.isCurrent(token)) caps.value = { status: 'unsupported', reason_key: 'load_failed', level: null, volume: null }
   } finally {
-    loadingCaps.value = false
+    if (capsLoads.isCurrent(token)) loadingCaps.value = false
   }
 }, { immediate: true })
 
@@ -167,9 +175,14 @@ async function go() {
   if (!props.program || !props.lesson || preparing.value) return
   preparing.value = true
   result.value = ''
+  const program = props.program
+  const lessonId = props.lesson.lesson_id
+  const sig = JSON.stringify([program.id, lessonId, profile.value, count.value, program.route_revision])
+  const intent = prepareIntent.take(sig, (requestId) => bodies.prepare(program, profile.value, count.value, requestId))
   try {
-    const accepted = await learningProgramsApi.prepare(props.program, props.lesson.lesson_id, profile.value, count.value)
-    const st = await learningProgramsApi.preparation(accepted.request_id)
+    await learningProgramsApi.sendPrepare(program.id, lessonId, intent.body)
+    const st = await learningProgramsApi.preparation(intent.key)
+    prepareIntent.settle()
     if (st.status === 'prepared') {
       result.value = 'prepared'
       preparedRef.value = st.material_ref
@@ -181,8 +194,10 @@ async function go() {
         : reasonText(st.reason_key)
     }
   } catch (e) {
+    prepareIntent.settle(e)
     const code = errorCode(e)
-    result.value = code === 'revision_conflict' ? t('learningPrograms.errors.revisionConflict') : reasonText(code)
+    result.value = !answered(e) ? t('learningPrograms.errors.noAnswer')
+      : code === 'revision_conflict' ? t('learningPrograms.errors.revisionConflict') : reasonText(code)
     if (code === 'revision_conflict') emit('prepared')
   } finally {
     preparing.value = false

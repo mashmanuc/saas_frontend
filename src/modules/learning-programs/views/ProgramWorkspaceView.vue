@@ -117,8 +117,9 @@ import Badge from '@/ui/Badge.vue'
 import LessonOutcomeActions from '../components/LessonOutcomeActions.vue'
 import PrepareLessonDialog from '../components/PrepareLessonDialog.vue'
 import {
-  learningProgramsApi, errorCode, errorStatus, materialRoute, type ProgramDetail, type ProgramLesson,
+  bodies, learningProgramsApi, errorCode, errorStatus, materialRoute, type ProgramDetail, type ProgramLesson,
 } from '../api/learningProgramsApi'
+import { answered, createIntent, latestOnly } from '../intent'
 
 const PACES = ['0.50', '0.75', '1.00', '1.25', '1.50', '2.00']
 const route = useRoute()
@@ -157,28 +158,41 @@ function itemBadge(state: string) {
   return ({ done: 'success', in_progress: 'warning', skipped: 'muted', deferred: 'muted' } as Record<string, string>)[state] ?? 'default'
 }
 
+// Лише відповідь для поточної адреси оновлює екран: запізніла відповідь іншої програми відкидається (review F4).
+const loads = latestOnly()
 async function reload() {
+  const token = loads.start()
+  const target = id.value
   loading.value = true
   failed.value = false
+  notFound.value = false
+  if (p.value && p.value.id !== target) p.value = null
   try {
-    p.value = await learningProgramsApi.detail(id.value)
+    const fresh = await learningProgramsApi.detail(target)
+    if (loads.isCurrent(token)) p.value = fresh
   } catch (e) {
+    if (!loads.isCurrent(token)) return
     if (errorStatus(e) === 404) notFound.value = true
     else failed.value = true
   } finally {
-    loading.value = false
+    if (loads.isCurrent(token)) loading.value = false
   }
 }
 
-async function propose(run: () => Promise<unknown>) {
+// Одна зміна плану — один ключ, поки сервер не відповів (review F3).
+const planIntent = createIntent<object>()
+async function propose(sig: string, build: () => object) {
   if (!p.value || saving.value) return
   saving.value = true
   notice.value = ''
+  const intent = planIntent.take(sig, build)
   try {
-    await run()
+    await learningProgramsApi.sendProposal(p.value.id, intent.body, intent.key)
+    planIntent.settle()
   } catch (e) {
-    notice.value = errorCode(e) === 'revision_conflict'
-      ? t('learningPrograms.errors.revisionConflict') : t('learningPrograms.errors.generic')
+    planIntent.settle(e)
+    notice.value = !answered(e) ? t('learningPrograms.errors.noAnswer')
+      : errorCode(e) === 'revision_conflict' ? t('learningPrograms.errors.revisionConflict') : t('learningPrograms.errors.generic')
   } finally {
     saving.value = false
     await reload()
@@ -188,13 +202,13 @@ async function propose(run: () => Promise<unknown>) {
 function changeLevel(n: number) {
   if (!p.value || p.value.level?.ordinal === n) return
   const cur = p.value
-  propose(() => learningProgramsApi.setLevel(cur, n))
+  propose(`${cur.id}:level:${n}`, () => bodies.setLevel(cur, n))
 }
 
 function changePace(v: string) {
   if (!p.value || p.value.pace === v) return
   const cur = p.value
-  propose(() => learningProgramsApi.setPace(cur, v))
+  propose(`${cur.id}:pace:${v}`, () => bodies.setPace(cur, v))
 }
 
 function prepare(l: ProgramLesson) {

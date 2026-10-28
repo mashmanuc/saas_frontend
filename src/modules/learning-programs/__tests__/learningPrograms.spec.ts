@@ -14,9 +14,10 @@ vi.mock('vue-router', () => ({
 }))
 vi.mock('@/modules/auth/store/authStore', () => ({ useAuthStore: () => ({ user: { id: 5, role: 'tutor' } }) }))
 
-import { learningProgramsApi, materialRoute, type ProgramDetail, type ProgramLesson } from '../api/learningProgramsApi'
+import { bodies, learningProgramsApi, materialRoute, type ProgramDetail, type ProgramLesson } from '../api/learningProgramsApi'
 import LessonOutcomeActions from '../components/LessonOutcomeActions.vue'
 import LearnerProgramPanel from '../components/LearnerProgramPanel.vue'
+import PrepareLessonDialog from '../components/PrepareLessonDialog.vue'
 
 const i18n = () => createI18n({ legacy: false, locale: 'uk', messages: { uk } })
 
@@ -39,10 +40,11 @@ beforeEach(() => {
   post.mockReset()
 })
 
-describe('learningProgramsApi.recordOutcome', () => {
+describe('тіло підсумку', () => {
   it('«далі» зараховує рівно це заняття й особисто учневі; ревізія з програми', async () => {
     post.mockResolvedValue({ route_revision: 5 })
-    await learningProgramsApi.recordOutcome(PROGRAM, 'l1', { attendance: 'held', action: 'next' })
+    await learningProgramsApi.sendOutcome('p1', 'l1',
+      bodies.outcome(PROGRAM, 'l1', { attendance: 'held', action: 'next' }, crypto.randomUUID()))
     const body = post.mock.calls[0][1]
     expect(post.mock.calls[0][0]).toBe('/v1/learning-programs/p1/lessons/l1/outcome/')
     expect(body).toMatchObject({
@@ -54,26 +56,22 @@ describe('learningProgramsApi.recordOutcome', () => {
   })
 
   it('«ще раз» нічого не зараховує; «не відбувся» — без дії й без матеріалів', async () => {
-    post.mockResolvedValue({ route_revision: 5 })
-    await learningProgramsApi.recordOutcome(PROGRAM, 'l1', { attendance: 'held', action: 'repeat' })
-    await learningProgramsApi.recordOutcome(PROGRAM, 'l1', {
+    const repeat = bodies.outcome(PROGRAM, 'l1', { attendance: 'held', action: 'repeat' }, 'e1')
+    const notHeld = bodies.outcome(PROGRAM, 'l1', {
       attendance: 'not_held', action: 'next',
       materials: [{ material_ref: { provider: 'winterboard.board', id: 'b1' }, usage: 'whole', content_refs_used: [] }],
-    })
-    expect(post.mock.calls[0][1]).toMatchObject({ pedagogical_action: 'repeat', credited_lesson_ids: [] })
-    expect(post.mock.calls[1][1]).toMatchObject({
+    }, 'e2')
+    expect(repeat).toMatchObject({ event_id: 'e1', pedagogical_action: 'repeat', credited_lesson_ids: [] })
+    expect(notHeld).toMatchObject({
       attendance: 'not_held', pedagogical_action: 'none', credited_lesson_ids: [], materials_used: [],
     })
   })
 
-  it('кожна команда має власний ключ повтору', async () => {
+  it('пропозиція йде з ключем наміру в заголовку', async () => {
     post.mockResolvedValue({})
-    await learningProgramsApi.addReview(PROGRAM, 'l1', ['t'])
-    await learningProgramsApi.setPace(PROGRAM, '1.50')
-    const k1 = post.mock.calls[0][2].headers['Idempotency-Key']
-    const k2 = post.mock.calls[1][2].headers['Idempotency-Key']
-    expect(k1).toBeTruthy()
-    expect(k1).not.toBe(k2)
+    await learningProgramsApi.sendProposal('p1', bodies.addReview(PROGRAM, 'l1', ['t']), 'k-1')
+    expect(post.mock.calls[0][0]).toBe('/v1/learning-programs/p1/proposals/')
+    expect(post.mock.calls[0][2].headers['Idempotency-Key']).toBe('k-1')
     expect(post.mock.calls[0][1]).toEqual({
       kind: 'add_review', expected_revision: 4,
       payload: { after_lesson_id: 'l1', lessons: 1, review_unit_refs: ['t'] },
@@ -146,5 +144,62 @@ describe('LearnerProgramPanel', () => {
     await flushPromises()
     expect(get.mock.calls.map((c) => c[0])).toEqual(['/v1/learning-programs/p1/learner-view/'])
     expect(w.text()).toContain('Пройдено 3 з 12')
+  })
+})
+
+
+const deferred = () => {
+  let resolve!: (value: unknown) => void
+  const promise = new Promise((r) => { resolve = r })
+  return { promise, resolve }
+}
+const view = (title: string) => ({ id: title, title, current_topic: null, plan: [],
+  progress: { done_lessons: 0, planned_lessons: 1 }, next_steps: [], materials: [] })
+
+describe('мережеві регресії (review Лови F3/F4)', () => {
+  it('пізня відповідь попередньої програми не підміняє поточний безпечний показ', async () => {
+    const a = deferred(), b = deferred()
+    get.mockImplementation((url: string) => (url.includes('/a/') ? a.promise : b.promise))
+    const w = mount(LearnerProgramPanel, { props: { programId: 'a' }, global: { plugins: [i18n()] } })
+    await w.setProps({ programId: 'b' })
+    b.resolve(view('Програма другого учня'))
+    await flushPromises()
+    a.resolve(view('Програма першого учня'))
+    await flushPromises()
+    expect(w.text()).toContain('Програма другого учня')
+    expect(w.text()).not.toContain('Програма першого учня')
+  })
+
+  it('повтор після втраченої відповіді — той самий request_id; нові параметри — новий намір', async () => {
+    vi.useFakeTimers()
+    const caps = { status: 'available', level: { codes: ['balanced', 'hard'], default: 'balanced' },
+      volume: { min: 1, max: 30, default: 10 } }
+    get.mockImplementation((url: string) => Promise.resolve(url.endsWith('/capabilities/') ? caps : {
+      status: 'prepared', material_ref: { provider: 'winterboard.board', id: 'board-1' }, shortage: [],
+    }))
+    let writes = 0
+    post.mockImplementation((url: string, body: any) => {
+      if (url.endsWith('/preview/')) return Promise.resolve({ can_prepare: true,
+        context: { unit_refs: [], role: 'PRACTICE', route_revision: 1 }, warnings: [], shortage: [] })
+      writes++
+      return writes === 1 ? Promise.reject(new Error('відповідь загубилася'))
+        : Promise.resolve({ request_id: body.request_id, status: 'prepared' })
+    })
+    const w = mount(PrepareLessonDialog, {
+      props: { open: true, program: { id: 'p', route_revision: 1 } as any, lesson: { lesson_id: 'l', title: 'Урок' } as any },
+      global: { plugins: [i18n()], stubs: { Modal: { template: '<div><slot/><slot name="footer"/></div>' } } },
+    })
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(300)
+    await flushPromises()
+    await w.get('[data-testid=lp-prepare-go]').trigger('click')
+    await flushPromises()
+    expect(w.text()).toContain('Відповідь не дійшла')
+    await w.get('[data-testid=lp-prepare-go]').trigger('click')
+    await flushPromises()
+    const sent = post.mock.calls.filter(([url]) => String(url).endsWith('/preparations/'))
+    expect(sent).toHaveLength(2)
+    expect(sent[1][1]).toEqual(sent[0][1])                       // той самий намір — те саме тіло й request_id
+    vi.useRealTimers()
   })
 })
