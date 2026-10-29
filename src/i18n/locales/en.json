@@ -13057,7 +13057,11 @@
       "allDone": "All lessons of the program are done",
       "next": "Next",
       "noNext": "No more lessons",
-      "plan": "Full plan"
+      "plan": "Full plan",
+      "delete": "Delete program",
+      "deleteTitle": "Delete program?",
+      "deleteText": "The program for {learner} will disappear from the programs list and from the board’s Program button. Prepared lessons stay in My lessons.",
+      "deleteConfirm": "Delete"
     },
     "pace": {
       "0_50": "Half speed",

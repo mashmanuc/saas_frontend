@@ -225,6 +225,10 @@ export const learningProgramsApi = {
   create(body: ReturnType<typeof bodies.create>, key: string): Promise<ProgramDetail> {
     return api.post(`${BASE}/`, body, withKey(key))
   },
+  // «Видалити програму» — архів: зі списків і з дошки зникає, історія учня на сервері лишається.
+  archive(p: ProgramDetail): Promise<ProgramDetail> {
+    return api.patch(`${BASE}/${p.id}/`, { expected_revision: p.route_revision, status: 'archived' })
+  },
   sendOutcome(programId: string, lessonId: string, body: ReturnType<typeof bodies.outcome>):
     Promise<{ route_revision: number; replayed: boolean }> {
     return api.post(`${BASE}/${programId}/lessons/${lessonId}/outcome/`, body)

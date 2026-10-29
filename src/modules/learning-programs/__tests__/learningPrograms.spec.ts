@@ -7,9 +7,13 @@ import uk from '@/i18n/locales/uk.json'
 
 const get = vi.fn()
 const post = vi.fn()
-vi.mock('@/utils/apiClient', () => ({ default: { get: (...a: any[]) => get(...a), post: (...a: any[]) => post(...a) } }))
+const patch = vi.fn()
+const push = vi.fn()
+vi.mock('@/utils/apiClient', () => ({ default: {
+  get: (...a: any[]) => get(...a), post: (...a: any[]) => post(...a), patch: (...a: any[]) => patch(...a),
+} }))
 vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: vi.fn(), resolve: () => ({ href: '/tutor/programs/x' }) }),
+  useRouter: () => ({ push: (...a: any[]) => push(...a), resolve: () => ({ href: '/tutor/programs/x' }) }),
   useRoute: () => ({ params: { id: 'p1' } }),
 }))
 vi.mock('@/modules/auth/store/authStore', () => ({ useAuthStore: () => ({ user: { id: 5, role: 'tutor' } }) }))
@@ -18,6 +22,7 @@ import { bodies, learningProgramsApi, materialRoute, type ProgramDetail, type Pr
 import LessonOutcomeActions from '../components/LessonOutcomeActions.vue'
 import LearnerProgramPanel from '../components/LearnerProgramPanel.vue'
 import PrepareLessonDialog from '../components/PrepareLessonDialog.vue'
+import ProgramWorkspaceView from '../views/ProgramWorkspaceView.vue'
 
 const i18n = () => createI18n({ legacy: false, locale: 'uk', messages: { uk } })
 
@@ -38,6 +43,8 @@ const LESSON = {
 beforeEach(() => {
   get.mockReset()
   post.mockReset()
+  patch.mockReset()
+  push.mockReset()
 })
 
 describe('тіло підсумку', () => {
@@ -326,5 +333,40 @@ describe('createIntent', () => {
     expect(box.take('A', () => ({ n: 4 })).key).toBe(a.key)
     box.settle(a, { response: { status: 409 } })
     expect(box.take('A', () => ({ n: 5 })).key).not.toBe(a.key)
+  })
+})
+
+describe('«Видалити програму» (власник 29.10)', () => {
+  const DETAIL = { ...PROGRAM, level: { ordinal: 3 }, pace: '1.00', items: [], lessons: [],
+    summary: { today: null, last: null, next: [] } } as unknown as ProgramDetail
+  const mountView = () => mount(ProgramWorkspaceView, { global: { plugins: [i18n()], stubs: { teleport: true, RouterLink: true } } })
+  const confirm = async (w: ReturnType<typeof mountView>) => {
+    await w.find('[data-testid="lp-delete"]').trigger('click'); await flushPromises()
+    const yes = w.findAll('button').find((b) => b.text() === uk.learningPrograms.workspace.deleteConfirm)!
+    await yes.trigger('click'); await flushPromises()
+  }
+
+  it('архів з поточною ревізією, потім — до списку програм', async () => {
+    get.mockResolvedValue(DETAIL)
+    patch.mockResolvedValue({ ...DETAIL, status: 'archived' })
+    const w = mountView(); await flushPromises()
+    await confirm(w)
+    expect(patch).toHaveBeenCalledWith('/v1/learning-programs/p1/', { expected_revision: 4, status: 'archived' })
+    expect(push).toHaveBeenCalledWith({ name: 'learning-programs' })
+  })
+
+  it('відповідь загубилась: програма вже в архіві — до списку; ні — пояснення, без переходу', async () => {
+    patch.mockRejectedValue(new Error('network'))
+    get.mockResolvedValueOnce(DETAIL).mockResolvedValueOnce({ ...DETAIL, status: 'archived' })
+    let w = mountView(); await flushPromises()
+    await confirm(w)
+    expect(push).toHaveBeenCalledWith({ name: 'learning-programs' })
+
+    push.mockReset()
+    get.mockReset(); get.mockResolvedValue(DETAIL)
+    w = mountView(); await flushPromises()
+    await confirm(w)
+    expect(push).not.toHaveBeenCalled()
+    expect(w.find('.lpw__notice').text()).toBe(uk.learningPrograms.errors.generic)
   })
 })

@@ -14,6 +14,7 @@
         </div>
         <div class="lpw__head-actions">
           <Button variant="secondary" data-testid="lp-show-learner" @click="showLearner">{{ t('learningPrograms.workspace.showLearner') }}</Button>
+          <Button variant="ghost" data-testid="lp-delete" @click="askDelete = true">{{ t('learningPrograms.workspace.delete') }}</Button>
         </div>
       </header>
       <p v-if="notice" class="lpw__notice" role="status">{{ notice }}</p>
@@ -99,6 +100,10 @@
     </template>
 
     <PrepareLessonDialog :open="!!preparing" :program="p" :lesson="preparing" @close="preparing = null" @prepared="reload" />
+    <ConfirmModal :open="askDelete" :title="t('learningPrograms.workspace.deleteTitle')"
+                  :message="t('learningPrograms.workspace.deleteText', { learner: learnerName })"
+                  :confirm-text="t('learningPrograms.workspace.deleteConfirm')" :cancel-text="t('common.cancel')"
+                  variant="danger" :loading="deleting" @confirm="removeProgram" @cancel="askDelete = false" />
   </div>
 </template>
 
@@ -114,6 +119,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Button from '@/ui/Button.vue'
 import Badge from '@/ui/Badge.vue'
+import ConfirmModal from '@/ui/ConfirmModal.vue'
 import LessonOutcomeActions from '../components/LessonOutcomeActions.vue'
 import PrepareLessonDialog from '../components/PrepareLessonDialog.vue'
 import {
@@ -218,6 +224,30 @@ function prepare(l: ProgramLesson) {
 function openMaterial(l: ProgramLesson) {
   const target = materialRoute(l.material?.open)
   if (target) router.push(target)
+}
+
+// «Видалити програму» = архів на сервері. Якщо відповідь загубилась або вкладка застаріла — перечитуємо програму:
+// уже в архіві → до списку, інакше пояснення без повтору наосліп.
+const askDelete = ref(false)
+const deleting = ref(false)
+async function removeProgram() {
+  if (!p.value || deleting.value) return
+  deleting.value = true
+  notice.value = ''
+  try {
+    await learningProgramsApi.archive(p.value)
+    router.push({ name: 'learning-programs' })
+  } catch (e) {
+    await reload()
+    if (p.value?.status === 'archived') {
+      router.push({ name: 'learning-programs' })
+      return
+    }
+    notice.value = errorCode(e) === 'revision_conflict' ? t('learningPrograms.errors.revisionConflict') : t('learningPrograms.errors.generic')
+  } finally {
+    deleting.value = false
+    askDelete.value = false
+  }
 }
 
 function showLearner() {
