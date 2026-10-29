@@ -412,3 +412,58 @@ describe('сторінка програми за макетом (власник 
     expect(w.get('[data-testid=lp-today-special]').text()).toBe(uk.learningPrograms.reasons.manualScenario)
   })
 })
+
+describe('«Повернути в план» (власник 29.10: «учень забувся тему, і треба повернутися»)', () => {
+  const ITEM = { item_id: 'i1', order: 1, title: 'Дроби', scope: 'MUST', state: 'in_progress', deferred_reason_key: null }
+  const LESSONS = [
+    { lesson_id: 'l1', item_id: 'i1', position: 1, title: 'Дроби: вступ', role: 'INTRO', unit_refs: [], credit_state: 'credited', material: null },
+    { lesson_id: 'l2', item_id: 'i1', position: 2, title: 'Дроби: практика', role: 'PRACTICE', unit_refs: [], credit_state: 'open', material: null },
+  ]
+  const DETAIL = { ...PROGRAM, level: { ordinal: 3 }, pace: '1.00', items: [ITEM], lessons: LESSONS,
+    summary: { today: { lesson_id: 'l2', title: 'Дроби: практика' }, last: null, next: [] } } as unknown as ProgramDetail
+  const mountView = () => mount(ProgramWorkspaceView, { global: { plugins: [i18n()], stubs: { teleport: true, RouterLink: true } } })
+  const W = uk.learningPrograms.workspace
+
+  it('кнопка видна біля пройденої теми (не лише при наведенні) і лише там', async () => {
+    get.mockResolvedValue(DETAIL)
+    const w = mountView(); await flushPromises()
+    const buttons = w.findAll('[data-testid=lp-reopen]')
+    expect(buttons).toHaveLength(1)
+    expect(buttons[0].text()).toBe(W.reopen)
+    expect(buttons[0].attributes('title')).toBe(W.reopenHint)
+  })
+
+  it('один натиск — тема повернута, вгорі «Тему повернуто…» і «Скасувати»; скасування — корекція саме того запису', async () => {
+    get.mockResolvedValue(DETAIL)
+    post.mockResolvedValueOnce({ route_revision: 5, replayed: false, event: { event_id: 'ev-back' } })
+    const w = mountView(); await flushPromises()
+    await w.get('[data-testid=lp-reopen]').trigger('click'); await flushPromises()
+    expect(post.mock.calls[0][0]).toBe('/v1/learning-programs/p1/lessons/l1/reopen/')
+    expect(post.mock.calls[0][1]).toEqual({ event_id: expect.any(String), expected_revision: 4 })
+    expect(w.get('[data-testid=lp-reopened]').text()).toContain(W.reopened.replace('{title}', 'Дроби: вступ'))
+
+    post.mockResolvedValueOnce({ route_revision: 6, replayed: false })
+    await w.get('[data-testid=lp-reopen-undo]').trigger('click'); await flushPromises()
+    expect(post.mock.calls[1][0]).toBe('/v1/learning-programs/p1/lessons/l1/reopen/undo/')
+    expect(post.mock.calls[1][1]).toMatchObject({ reopen_event_id: 'ev-back', expected_revision: 4 })
+    expect(w.find('[data-testid=lp-reopened]').exists()).toBe(false)
+    expect(w.text()).toContain(W.reopenUndone)
+  })
+
+  it('відповідь загубилась — пояснення, і повторний натиск іде з тим самим ключем (без другого запису)', async () => {
+    get.mockResolvedValue(DETAIL)
+    post.mockRejectedValueOnce(new Error('network'))
+    const w = mountView(); await flushPromises()
+    await w.get('[data-testid=lp-reopen]').trigger('click'); await flushPromises()
+    expect(w.text()).toContain(uk.learningPrograms.errors.noAnswer)
+    post.mockResolvedValueOnce({ route_revision: 5, replayed: true, event: { event_id: 'ev-back' } })
+    await w.get('[data-testid=lp-reopen]').trigger('click'); await flushPromises()
+    expect(post.mock.calls[1][1].event_id).toBe(post.mock.calls[0][1].event_id)
+  })
+
+  it('групова програма — без кнопки (тему забуває учень, а не клас)', async () => {
+    get.mockResolvedValue({ ...DETAIL, target: { ...DETAIL.target, kind: 'group' } })
+    const w = mountView(); await flushPromises()
+    expect(w.find('[data-testid=lp-reopen]').exists()).toBe(false)
+  })
+})

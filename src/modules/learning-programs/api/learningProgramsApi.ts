@@ -189,6 +189,14 @@ export const bodies = {
     return { kind: 'add_review', expected_revision: p.route_revision,
       payload: { after_lesson_id: afterLessonId, lessons: 1, review_unit_refs: unitRefs } }
   },
+  /** «Повернути в план» пройдену тему (2026-10-29): новий запис історії, нічого не стирається. */
+  reopen(p: ProgramDetail, eventId: string) {
+    return { event_id: eventId, expected_revision: p.route_revision }
+  },
+  /** Скасувати повернення — корекція саме того запису. */
+  undoReopen(p: ProgramDetail, reopenEventId: string, eventId: string) {
+    return { event_id: eventId, expected_revision: p.route_revision, reopen_event_id: reopenEventId }
+  },
   setLevel(p: ProgramDetail, ordinal: number) {
     return { kind: 'set_level', expected_revision: p.route_revision,
       payload: { level: { ordinal }, scope: 'program', item_id: null } }
@@ -232,6 +240,14 @@ export const learningProgramsApi = {
   sendOutcome(programId: string, lessonId: string, body: ReturnType<typeof bodies.outcome>):
     Promise<{ route_revision: number; replayed: boolean }> {
     return api.post(`${BASE}/${programId}/lessons/${lessonId}/outcome/`, body)
+  },
+  sendReopen(programId: string, lessonId: string, body: ReturnType<typeof bodies.reopen>):
+    Promise<{ route_revision: number; replayed: boolean; event: { event_id: string } }> {
+    return api.post(`${BASE}/${programId}/lessons/${lessonId}/reopen/`, body)
+  },
+  sendUndoReopen(programId: string, lessonId: string, body: ReturnType<typeof bodies.undoReopen>):
+    Promise<{ route_revision: number; replayed: boolean }> {
+    return api.post(`${BASE}/${programId}/lessons/${lessonId}/reopen/undo/`, body)
   },
   sendProposal(programId: string, body: object, key: string): Promise<{ route_revision: number; replayed: boolean }> {
     return api.post(`${BASE}/${programId}/proposals/`, body, withKey(key))

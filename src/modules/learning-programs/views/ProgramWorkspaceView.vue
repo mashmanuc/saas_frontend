@@ -18,6 +18,12 @@
         </div>
       </header>
       <p v-if="notice" class="lpw__notice" role="status">{{ notice }}</p>
+      <p v-if="returned" class="lpw__notice lpw__notice--back" role="status" data-testid="lp-reopened">
+        <span>{{ t('learningPrograms.workspace.reopened', { title: returned.title }) }}</span>
+        <button type="button" class="lpw__undo" :disabled="saving" data-testid="lp-reopen-undo" @click="undoReopen">
+          {{ t('learningPrograms.workspace.reopenUndo') }}
+        </button>
+      </p>
 
       <!-- Загальний прогрес: смужка з відрізками-розділами, поруч рівень і темп -->
       <section class="lpw__prog">
@@ -108,6 +114,10 @@
               <span class="lpw__tt">{{ l.title }}</span>
               <span class="lpw__ra">
                 <span v-if="pill(l)" class="lpw__st" :class="`lpw__st--${pill(l)}`">{{ t(`learningPrograms.workspace.pill.${pill(l)}`) }}</span>
+                <button v-if="canReopen(l)" type="button" class="lpw__reopen" :disabled="saving" data-testid="lp-reopen"
+                        :title="t('learningPrograms.workspace.reopenHint')" @click="reopenLesson(l)">
+                  {{ t('learningPrograms.workspace.reopen') }}
+                </button>
                 <template v-if="l.lesson_id !== today?.lesson_id">
                   <button v-if="materialRoute(l.material?.open)" type="button" class="lpw__hv" @click="openMaterial(l)">{{ t('learningPrograms.lesson.open') }}</button>
                   <button v-if="l.credit_state !== 'credited' && l.unit_refs?.length" type="button" class="lpw__hv" @click="prepare(l)">
@@ -276,6 +286,63 @@ function changePace(v: string) {
   propose(`${cur.id}:pace:${v}`, () => bodies.setPace(cur, v))
 }
 
+// «Повернути в план» (власник 29.10: «учень забувся тему, і треба повернутися»). Один натиск — без діалогу: тема
+// знову «Сьогодні», вгорі «Тему повернуто… Скасувати» на випадок помилки. Нічого не стирається (запис історії).
+// Лише індивідуальна програма: у групі тему забуває учень, а не клас.
+const reopenIntent = createIntent<ReturnType<typeof bodies.reopen>>()
+const undoIntent = createIntent<ReturnType<typeof bodies.undoReopen>>()
+const returned = ref<{ lessonId: string; eventId: string; title: string } | null>(null)
+const canReopen = (l: ProgramLesson) => p.value?.target.kind === 'learner' && l.credit_state === 'credited'
+
+function planError(e: unknown) {
+  return !answered(e) ? t('learningPrograms.errors.noAnswer')
+    : errorCode(e) === 'revision_conflict' ? t('learningPrograms.errors.revisionConflict') : t('learningPrograms.errors.generic')
+}
+
+async function reopenLesson(l: ProgramLesson) {
+  if (!p.value || saving.value) return
+  const cur = p.value
+  saving.value = true
+  notice.value = ''
+  returned.value = null
+  const intent = reopenIntent.take(`${cur.id}:${l.lesson_id}:${cur.route_revision}`, (key) => bodies.reopen(cur, key))
+  try {
+    const r = await learningProgramsApi.sendReopen(cur.id, l.lesson_id, intent.body)
+    reopenIntent.settle(intent)
+    returned.value = { lessonId: l.lesson_id, eventId: r.event.event_id, title: l.title }
+    // Тема тепер «Сьогодні» вгорі — туди й дивитись, разом із «Скасувати».
+    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') window.scrollTo({ top: 0, behavior: 'smooth' })
+  } catch (e) {
+    reopenIntent.settle(intent, e)
+    notice.value = planError(e)
+  } finally {
+    saving.value = false
+    await reload()
+  }
+}
+
+async function undoReopen() {
+  if (!p.value || !returned.value || saving.value) return
+  const cur = p.value
+  const back = returned.value
+  saving.value = true
+  notice.value = ''
+  const intent = undoIntent.take(`${cur.id}:${back.eventId}:${cur.route_revision}`,
+    (key) => bodies.undoReopen(cur, back.eventId, key))
+  try {
+    await learningProgramsApi.sendUndoReopen(cur.id, back.lessonId, intent.body)
+    undoIntent.settle(intent)
+    returned.value = null
+    notice.value = t('learningPrograms.workspace.reopenUndone')
+  } catch (e) {
+    undoIntent.settle(intent, e)
+    notice.value = planError(e)
+  } finally {
+    saving.value = false
+    await reload()
+  }
+}
+
 function prepare(l: ProgramLesson) {
   preparing.value = l
 }
@@ -336,6 +403,18 @@ onMounted(reload)
 .lpw__title { margin: 2px 0 0; color: var(--text-secondary); }
 .lpw__head-actions { display: flex; gap: 8px; }
 .lpw__notice { margin: 0; padding: 10px 12px; border-radius: var(--radius-md); background: var(--lp-act); color: var(--text-primary); }
+.lpw__notice--back { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.lpw__undo {
+  border: 1.5px solid var(--accent); background: var(--surface-card, #fff); color: var(--accent); border-radius: 8px;
+  padding: 4px 12px; font: inherit; font-weight: 600; cursor: pointer;
+}
+.lpw__undo:disabled { opacity: .5; cursor: default; }
+.lpw__reopen {
+  border: 0; background: none; color: var(--text-muted); font: inherit; font-size: 13px; font-weight: 600;
+  padding: 4px 6px; border-radius: 6px; cursor: pointer; white-space: nowrap;
+}
+.lpw__reopen:hover, .lpw__reopen:focus-visible { color: var(--accent); background: var(--lp-act); }
+.lpw__reopen:disabled { opacity: .5; cursor: default; }
 .lpw__muted { margin: 0; color: var(--text-secondary); }
 .lpw__small { font-size: 13px; }
 .lpw__error { color: var(--ui-color-danger); }

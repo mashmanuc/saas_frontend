@@ -13083,6 +13083,11 @@
       "after": "After the lesson",
       "expandAll": "Expand all",
       "collapseAll": "Collapse",
+      "reopen": "↺ Back to the plan",
+      "reopenHint": "Did the student forget this topic? Bring it back: it becomes today's topic again and lessons will be prepared for it. Nothing that was done is erased.",
+      "reopened": "The topic “{title}” is back in the plan — it is today's topic again.",
+      "reopenUndo": "Undo",
+      "reopenUndone": "Return undone — the topic is marked as done again.",
       "pill": {
         "ok": "Done",
         "rep": "Repeat",
