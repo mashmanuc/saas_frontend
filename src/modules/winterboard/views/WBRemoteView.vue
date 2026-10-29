@@ -661,8 +661,9 @@
           :readonly="dictSending"
           :placeholder="t('winterboard.remote.dictation.placeholder')"
         />
+        <!-- v1.73: почуте — одразу в полі; тут лише «слухаю» -->
         <p v-if="dictVoice.listening.value" class="wb-remote__why" role="status" data-testid="dictation-heard">
-          {{ dictRaw ? t('winterboard.remote.dictation.heard', { text: dictRaw }) : t('winterboard.remote.listening') }}
+          {{ t('winterboard.remote.listening') }}
         </p>
         <!-- v1.69: натиснув — слухає, доки не натиснеш ще раз (паузи не зупиняють); звук не залишає телефона -->
         <button
@@ -671,7 +672,7 @@
           class="wb-remote__video-mic"
           :class="{ 'wb-remote__video-mic--on': dictVoice.listening.value }"
           data-testid="dictation-mic"
-          :disabled="!isReady || dictSending || dictAutoPunctuating"
+          :disabled="!isReady || dictSending"
           :aria-pressed="dictVoice.listening.value"
           @click="toggleDictationVoice"
         >
@@ -680,9 +681,6 @@
         </button>
         <!-- v1.70: телефон перестав слухати — причина словами, сказане до того лишилось у полі -->
         <p v-if="dictVoiceNote" class="wb-remote__why" role="status" data-testid="dictation-voice-note">{{ dictVoiceNote }}</p>
-        <p v-if="dictAutoPunctuating" class="wb-remote__why" role="status" data-testid="dictation-auto-punct">
-          {{ t('winterboard.remote.dictation.punctuating') }}
-        </p>
         <!-- LAW §9 v1.64 «Розставити знаки» (власник 2026-10-26): розпізнавання дає лише слова — Інтегралик розставляє
              знаки в полі, вчитель бачить і править ДО «Написати на дошці». Там, де ввімкнено мовний розбір. -->
         <button
@@ -690,7 +688,7 @@
           type="button"
           class="wb-remote__video-mic"
           data-testid="dictation-punctuate"
-          :disabled="!dictHasText || dictPunctuating || dictSending || dictVoice.listening.value || dictAutoPunctuating"
+          :disabled="!dictHasText || dictPunctuating || dictSending || dictVoice.listening.value"
           @click="punctuateDictationText"
         >
           <span aria-hidden="true">✨</span>
@@ -701,7 +699,7 @@
           type="button"
           class="wb-remote__ai-btn"
           data-testid="dictation-send"
-          :disabled="!isReady || !dictHasText || dictSending || dictationState === 'writing' || dictVoice.listening.value || dictAutoPunctuating"
+          :disabled="!isReady || !dictHasText || dictSending || dictationState === 'writing' || dictVoice.listening.value"
           @click="sendDictation"
         >
           {{ t('winterboard.remote.dictation.write') }}
@@ -1071,6 +1069,8 @@ const canDictate = computed(() => caps.value?.includes('dictation') === true)
 const canDictateCenter = computed(() => caps.value?.includes('dictation_center') === true)
 const canSentence = computed(() => caps.value?.includes('dictation_line_v1') === true)
 const canAnalysis = computed(() => caps.value?.includes('dictation_analysis_v1') === true)
+// v1.73: знаки ставить ноутбук перед письмом — телефон шле сказане одразу, нічого не чекаючи
+const canPunctuateOnBoard = computed(() => caps.value?.includes('dictation_punctuate_v1') === true)
 const sentence = ref<RemoteSentence | null>(null)
 const sentenceResult = shallowRef<SentenceResult | null>(null)
 function sendSentenceRequest(request: SentenceRequest) { return sendCmd('dictation.action', { ...request }) }
@@ -1738,29 +1738,30 @@ function startRemoteVoice(): void {
  * v1.70 (власник 29.10: на його Android у диктанті мікрофон мовчить, у відео — працює): слухає фраза за фразою тими
  * самими налаштуваннями, що й відео (`usePhraseDictation`); телефон перестав слухати — причина словами й у журнал.
  */
+// v1.73 (власник 2026-10-29: «на екрані треба зразу, щоб показувалося на телефоні, що було почуте… телефон не буде
+// тормозити і чекати обробку тексту»): кожна фраза — одразу в поле (розмітка голосом — як і була); знаки ставить
+// ноутбук перед письмом (`punctuate`), «✨ Розставити знаки» лишається для поля.
 const dictVoiceNote = ref('')
 const dictVoice = usePhraseDictation({
+  onPhrase: addSpokenToField,
   onFinish(text, reason) {
     tel('dictation_voice', { event: 'end', reason: reason ?? 'teacher', len: text.length })
     if (reason) dictVoiceNote.value = dictVoiceReasonNote(reason)
-    void finishDictationVoice(text)
   },
 })
-const dictRaw = dictVoice.text
-const dictAutoPunctuating = ref(false)
 function toggleDictationVoice(): void {
   if (dictVoice.listening.value) {
-    dictVoice.stop()   // остання фраза прийде від телефона — тоді onFinish
+    dictVoice.stop()   // остання фраза прийде від телефона — одразу в поле
     return
   }
-  if (!isReady.value || sheet.value !== 'dictation' || dictSending.value || dictAutoPunctuating.value) return
+  if (!isReady.value || sheet.value !== 'dictation' || dictSending.value) return
   if (document.activeElement instanceof HTMLTextAreaElement) document.activeElement.blur()
   dictPunctuateNote.value = ''
   dictVoiceNote.value = ''
   tel('dictation_voice', { event: 'start', lang: dictLang.value })
   dictVoice.start(DICTATION_SPEECH_LANG[dictLang.value])
 }
-// Пішли з вікна диктанту, поки мікрофон слухав — зупинити й не загубити сказане (onFinish покладе його в поле)
+// Пішли з вікна диктанту, поки мікрофон слухав — зупинити (сказане вже в полі, остання фраза теж туди ляже)
 watch(sheet, (s) => {
   if (s !== 'dictation' && dictVoice.listening.value) dictVoice.stop()
 })
@@ -1771,20 +1772,10 @@ function dictVoiceReasonNote(reason: string): string {
   if (reason === 'language-not-supported') return t('winterboard.remote.dictation.voice.language')
   return t('winterboard.remote.dictation.voice.stopped')
 }
-async function finishDictationVoice(raw: string): Promise<void> {
+function addSpokenToField(raw: string): void {
   const lang = dictLang.value
-  let parsed = parseSpoken(raw, lang)
+  const parsed = parseSpoken(raw, lang)
   if (parsed.continues && !parsed.lines.some((l) => l.text || l.center)) return
-  if (canAnalysis.value && parsed.lines.some((l) => l.text)) {
-    dictAutoPunctuating.value = true
-    try {
-      parsed = await punctuateParsed(parsed, lang)
-    } catch (error) {
-      dictPunctuateNote.value = punctuateErrorNote(error)
-    } finally {
-      dictAutoPunctuating.value = false
-    }
-  }
   dictText.value = mergeSpoken(dictText.value, parsed, lang)
 }
 /** «Розставити знаки» для рядків (без «↔» і порожніх) — порціями ≤ 300 знаків; не вийшло — виняток, текст як був. */
@@ -1813,7 +1804,7 @@ function sendDictation(): void {
 function sendNextChunk(): void {
   const next = dictQueue.value[0]
   if (!next) return
-  sheetDictationId = dictateText(next.text, dictLang.value, next.align === 'center', next.skip)
+  sheetDictationId = dictateText(next.text, dictLang.value, next.align === 'center', next.skip, canPunctuateOnBoard.value)
   if (!sheetDictationId) {
     dictQueue.value = []
     dictQueueTotal.value = 0
@@ -1823,7 +1814,7 @@ function sendNextChunk(): void {
  * Один шлях `board.dictate` для вікна диктанту й «Перекладу» з мовного розбору (v1.62): той самий текст для сервера,
  * той самий стан «Пишу… / Готово / причина» і та сама межа 8 с без відповіді. → id запиту або null (не надіслано).
  */
-function dictateText(raw: string, lang: DictationLang, center = false, skip = 0): string | null {
+function dictateText(raw: string, lang: DictationLang, center = false, skip = 0, punctuate = false): string | null {
   const text = normalizeDictation(raw)
   if (!text) return null
   const requestId = newRequestId()
@@ -1832,6 +1823,7 @@ function dictateText(raw: string, lang: DictationLang, center = false, skip = 0)
   if (canSentence.value) args.lang = lang
   if (center && canDictateCenter.value) args.align = 'center'
   if (skip > 0) args.skip = skip
+  if (punctuate && args.lang) args.punctuate = true
   if (!sendCmd('board.dictate', args)) { dictationRequestId.value = null; return null }
   if (dictationAckTimer) clearTimeout(dictationAckTimer)
   dictationAckTimer = setTimeout(giveUpDictation, DICTATION_ACK_TIMEOUT_MS)

@@ -34,8 +34,11 @@ export type RemoteChannelState = 'idle' | 'connecting' | 'connected' | 'reconnec
  * картки, картинки; «випадайку» відео замінює перемикач, дотик у «Сценарії» обирає об'єкт.
  */
 export type RemoteCap = 'photo' | 'video' | 'scenario' | 'objects' | 'dictation' | 'dictation_center' | 'dictation_line_v1' | 'dictation_analysis_v1'
-export const REMOTE_CAPS: readonly RemoteCap[] = ['photo', 'video', 'scenario', 'objects', 'dictation', 'dictation_center', 'dictation_line_v1', 'dictation_analysis_v1']
-const REMOTE_CAPS_MAX = 8
+  | 'dictation_punctuate_v1'  // v1.73: ноутбук сам ставить знаки перед письмом
+export const REMOTE_CAPS: readonly RemoteCap[] = ['photo', 'video', 'scenario', 'objects', 'dictation', 'dictation_center', 'dictation_line_v1', 'dictation_analysis_v1',
+  'dictation_punctuate_v1']
+// v1.73: стеля 16, як на сервері — повний ноутбук оголошує вже 9; при 8 список відкидався б цілим
+const REMOTE_CAPS_MAX = 16
 
 /** v1.15 «Сценарій»: наш вид об'єкта (не провайдер). v1.25: + картка й картинка (лише сторінка на екрані). */
 export type RemoteScenarioKind = 'video' | 'audio' | 'presentation' | 'pdf' | 'document' | 'card' | 'image'

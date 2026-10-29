@@ -40,15 +40,16 @@ async function setup() {
   ;(window as any).webkitSpeechRecognition = FakeRecognition
   const mod = await import('../composables/usePhraseDictation')
   const finished: Array<{ text: string; reason: string | null }> = []
+  const phrases: string[] = []
   let api: ReturnType<typeof mod.usePhraseDictation> | null = null
   const C = defineComponent({
     setup() {
-      api = mod.usePhraseDictation({ onFinish: (text, reason) => finished.push({ text, reason }) })
+      api = mod.usePhraseDictation({ onPhrase: (p) => phrases.push(p), onFinish: (text, reason) => finished.push({ text, reason }) })
       return () => h('div')
     },
   })
   const w = mount(C)
-  return { mod, api: api!, finished, w, rec: () => FakeRecognition.last! }
+  return { mod, api: api!, finished, phrases, w, rec: () => FakeRecognition.last! }
 }
 
 describe('usePhraseDictation — диктант фраза за фразою', () => {
@@ -167,5 +168,25 @@ describe('usePhraseDictation — диктант фраза за фразою', (
     }
     expect(finished).toEqual([{ text: '', reason: 'start_failed' }])
     expect(api.listening.value).toBe(false)
+  })
+})
+
+describe('usePhraseDictation — v1.73 фраза одразу', () => {
+  beforeEach(() => { vi.useFakeTimers(); FakeRecognition.last = null })
+  afterEach(() => { vi.useRealTimers(); delete (window as any).webkitSpeechRecognition })
+
+  it('кожна почута фраза — у `onPhrase` тієї ж миті, тиша — нічого; остання після «Зупинити» — теж', async () => {
+    const { mod, api, rec, phrases, finished } = await setup()
+    api.start('uk-UA')
+    rec().say('Сонце сходило')
+    expect(phrases).toEqual(['Сонце сходило'])
+    vi.advanceTimersByTime(mod.RESTART_DELAY_MS)
+    rec().fail('no-speech')
+    vi.advanceTimersByTime(mod.RESTART_DELAY_MS)
+    expect(phrases).toEqual(['Сонце сходило'])
+    api.stop()
+    rec().say('птахи співали')
+    expect(phrases).toEqual(['Сонце сходило', 'птахи співали'])
+    expect(finished).toEqual([{ text: 'Сонце сходило птахи співали', reason: null }])
   })
 })

@@ -48,7 +48,7 @@ import { ref, computed, watch, onMounted, onUnmounted, type Ref, type ComputedRe
 import { derivePair } from '../remote/remotePair'
 import { remoteEntryUrl } from '../remote/remoteEntry'
 import { readPhotoRequest, type RemotePhotoResult } from '../remote/photoContract'
-import { readDictateArgs, type DictationReason, type RemoteDictationResult } from '../remote/dictationContract'
+import { DICTATE_TEXT_MAX_LEN, readDictateArgs, type DictationReason, type RemoteDictationResult } from '../remote/dictationContract'
 import type { RemotePhotoAdapter } from '../remote/remotePhotoAdapter'
 import type { RemoteScenarioAdapter } from '../remote/remoteScenarioAdapter'
 import type { RemoteRecordingAdapter } from '../remote/remoteRecordingAdapter'
@@ -57,7 +57,8 @@ import type { RemoteViewAdapter } from './useRemoteViewAdapter'
 import { setShowMode } from '../board/showMode'
 import type { RemoteSentenceAdapter } from '../remote/remoteSentenceAdapter'
 import { readSentenceRequest, type SentenceResult } from '../remote/dictationLineContract'
-import { analysisAvailable } from '../api/dictationAnalysis'
+import { analysisAvailable, punctuateDictation } from '../api/dictationAnalysis'
+import { notifyWarning } from '@/utils/notify'
 import { floatingObstacles } from '../board/floatingObstacles'
 
 export interface BoardRemoteStore {
@@ -72,6 +73,8 @@ export interface BoardRemoteStore {
 export interface UseBoardRemoteOptions {
   /** Read-only серверне підтвердження rollout; ін'єкція лише для локальних тестів. */
   analysisAvailability?: () => Promise<boolean>
+  /** v1.73: знаки в реченні перед письмом (за замовчуванням — сервер, «Розставити знаки»); ін'єкція — для тестів. */
+  punctuate?: (text: string, lang: 'uk' | 'en') => Promise<string>
   sentence?: RemoteSentenceAdapter
   sessionId: Ref<string | null>
   store: BoardRemoteStore
@@ -248,6 +251,22 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
   let availabilityGeneration = 0
   onUnmounted(() => { disposed = true })
   const dictationRequests = new Map<string, RemoteDictationResult>()
+
+  /**
+   * v1.73 (власник 2026-10-29: «телефон… не буде тормозити і чекати обробку тексту. А от вже текст на дошці буде
+   * чекати»): знаки ставить ноутбук перед письмом — той самий сервер, що «✨ Розставити знаки» (слова ті самі, лише
+   * знаки й великі літери). Не вийшло — пишемо сказане як є і кажемо про це на дошці (не тиша, §12); без повторів.
+   */
+  async function punctuateOrKeep(text: string, lang: 'uk' | 'en'): Promise<string> {
+    try {
+      const out = await (opts.punctuate ?? punctuateDictation)(text, lang)
+      return out.length <= DICTATE_TEXT_MAX_LEN ? out : text
+    } catch (error) {
+      console.warn('[WB:dictation] знаки не розставлено — пишу як є', error instanceof Error ? error.name : 'request_failed')
+      notifyWarning(tAssistantGlobal('winterboard.remote.dictation.boardUnpunctuated'))
+      return text
+    }
+  }
   /** v1.20: остання відповідь Інтегралика на запит із пульта — іде в кожен remote.state */
   const assistantReply = ref<RemoteAssistantReply | null>(null)
   /** v1.28: відповідь на останню команду запису від Дзеркала — лише в пам'яті вкладки, іде в кожен remote.state */
@@ -297,6 +316,8 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       ...(opts.dictate ? ['dictation', 'dictation_center'] : []),
       ...(opts.dictate && opts.sentence ? ['dictation_line_v1'] : []),
       ...(analysisEnabled.value && opts.dictate && opts.sentence?.applyAnalysis ? ['dictation_analysis_v1'] : []),
+      // v1.73: ноутбук сам ставить знаки перед письмом — телефон шле сказане без очікування (`punctuate`)
+      ...(analysisEnabled.value && opts.dictate && opts.sentence ? ['dictation_punctuate_v1'] : []),
     ]
     if (photoResult.value) msg.photo = photoResult.value
     // v1.49: відповідь на останнє речення диктанту («Пишу… / Готово / причина» на пульті)
@@ -805,8 +826,10 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
           if (dictationRequests.size > 100) dictationRequests.delete(dictationRequests.keys().next().value!)
         }
         sendState()
-        const task = req.skip ? opts.dictate(req.text, req.align, req.lang, req.skip)
-          : req.lang ? opts.dictate(req.text, req.align, req.lang) : opts.dictate(req.text, req.align)
+        const dictate = opts.dictate
+        const ready = req.punctuate && req.lang ? punctuateOrKeep(req.text, req.lang) : Promise.resolve(req.text)
+        const task = ready.then((text) => req.skip ? dictate(text, req.align, req.lang, req.skip)
+          : req.lang ? dictate(text, req.align, req.lang) : dictate(text, req.align))
         task.then(
           (r) => {
             dictationResult.value = r.status === 'written'

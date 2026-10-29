@@ -57,6 +57,10 @@ describe('телефон: продиктоване → речення', () => {
   it('аргументи команди на ноутбуці — закритий набір і межі, як на сервері', () => {
     expect(readDictateArgs({ request_id: RID, text: '  Речення.  ' })).toEqual({ requestId: RID, text: 'Речення.', align: 'left' })
     expect(readDictateArgs({ request_id: RID, text: 'Класна робота', align: 'center' })?.align).toBe('center')
+    // v1.73: `punctuate` — рівно true і лише з мовою
+    expect(readDictateArgs({ request_id: RID, text: 'речення', lang: 'uk', punctuate: true })?.punctuate).toBe(true)
+    expect(readDictateArgs({ request_id: RID, text: 'речення', punctuate: true })).toBeNull()
+    expect(readDictateArgs({ request_id: RID, text: 'речення', lang: 'uk', punctuate: 'true' })).toBeNull()
     expect(readDictateArgs({ request_id: RID, text: 'Речення.', align: 'right' })).toBeNull()
     for (const bad of [
       { request_id: RID }, { request_id: RID, text: '' }, { request_id: RID, text: 'а'.repeat(301) },
@@ -174,13 +178,13 @@ describe('пульт ноутбука: команда й стан', () => {
   afterEach(() => { while (mounted.length) mounted.pop()!.unmount(); vi.useRealTimers() })
   const settle = () => vi.advanceTimersByTimeAsync(REMOTE_STATE_THROTTLE_MS + 10)
 
-  function setup(dictate?: (text: string) => Promise<any>) {
+  function setup(dictate?: (text: string) => Promise<any>, extra: Record<string, unknown> = {}) {
     const store = reactive({ currentPageIndex: 0, pageCount: 1, goToPage: vi.fn(), addPage: vi.fn() })
     const sendMessage = vi.fn()
     let api!: ReturnType<typeof useBoardRemote>
     mounted.push(mount(defineComponent({
       setup() {
-        api = useBoardRemote({ sessionId: ref<string | null>(SID), store, undo: vi.fn(), sendMessage, enabled: ref(true), dictate })
+        api = useBoardRemote({ sessionId: ref<string | null>(SID), store, undo: vi.fn(), sendMessage, enabled: ref(true), dictate, ...extra })
         return () => h('div')
       },
     })))
@@ -226,6 +230,48 @@ describe('пульт ноутбука: команда й стан', () => {
     command('board.dictate', { request_id: RID, text: 'Речення.' })
     await settle()
     expect(states().slice(-1)[0].dictation).toEqual({ request_id: RID, status: 'refused', reason: 'error' })
+  })
+
+  it('v1.73: `punctuate` — спершу знаки, потім письмо; «пишу» одразу, телефон не чекає', async () => {
+    let resolvePunct!: (t: string) => void
+    const punctuate = vi.fn(() => new Promise<string>((r) => { resolvePunct = r }))
+    const dictate = vi.fn(async () => ({ status: 'written' }))
+    const sentence = { state: () => null, apply: vi.fn(), applyAnalysis: vi.fn() } as any
+    const { command, states } = setup(dictate, { punctuate, sentence, analysisAvailability: async () => true })
+    command('hello')
+    await settle()
+    expect(states().slice(-1)[0].caps).toContain('dictation_punctuate_v1')
+    command('board.dictate', { request_id: RID, text: 'доброго вечора ми з україни', lang: 'uk', punctuate: true })
+    await settle()
+    expect(states().slice(-1)[0].dictation).toEqual({ request_id: RID, status: 'writing' })
+    expect(punctuate).toHaveBeenCalledWith('доброго вечора ми з україни', 'uk')
+    expect(dictate).not.toHaveBeenCalled()                       // дошка чекає знаків
+    resolvePunct('Доброго вечора, ми з України.')
+    await settle()
+    expect(dictate).toHaveBeenCalledWith('Доброго вечора, ми з України.', 'left', 'uk')
+    expect(states().slice(-1)[0].dictation).toEqual({ request_id: RID, status: 'done' })
+  })
+
+  it('v1.73: знаки не вийшли — пишемо сказане як є (без повторів), «готово»', async () => {
+    const punctuate = vi.fn(async () => { throw new Error('409') })
+    const dictate = vi.fn(async () => ({ status: 'written' }))
+    const sentence = { state: () => null, apply: vi.fn(), applyAnalysis: vi.fn() } as any
+    const { command, states } = setup(dictate, { punctuate, sentence, analysisAvailability: async () => true })
+    command('board.dictate', { request_id: RID, text: 'він жартував', lang: 'uk', punctuate: true })
+    await settle()
+    expect(punctuate).toHaveBeenCalledTimes(1)
+    expect(dictate).toHaveBeenCalledWith('він жартував', 'left', 'uk')
+    expect(states().slice(-1)[0].dictation).toEqual({ request_id: RID, status: 'done' })
+  })
+
+  it('без `punctuate` — знаків не ставить, пише одразу', async () => {
+    const punctuate = vi.fn(async (t: string) => t)
+    const dictate = vi.fn(async () => ({ status: 'written' }))
+    const { command } = setup(dictate, { punctuate })
+    command('board.dictate', { request_id: RID, text: 'Речення.', lang: 'uk' })
+    await settle()
+    expect(punctuate).not.toHaveBeenCalled()
+    expect(dictate).toHaveBeenCalledWith('Речення.', 'left', 'uk')
   })
 
   it('зіпсовані аргументи — нічого не пише', () => {
@@ -334,6 +380,10 @@ describe('v1.51: диктант як у зошиті', () => {
 
   it('ноутбук оголошує «посередині» і передає вирівнювання; телефон розуміє нову можливість', () => {
     expect(parseRemoteCaps(['dictation', 'dictation_center'])).toEqual(['dictation', 'dictation_center'])
+    // v1.73: повний ноутбук оголошує 9 можливостей — список не відкидається (стеля була 8)
+    const full = ['photo', 'video', 'scenario', 'objects', 'dictation', 'dictation_center', 'dictation_line_v1',
+      'dictation_analysis_v1', 'dictation_punctuate_v1']
+    expect(parseRemoteCaps(full)).toEqual(full)
   })
 
   it('v1.66 «Пропустити рядок»: на зошиті — на лінію нижче; команда — ціле 1…3', async () => {

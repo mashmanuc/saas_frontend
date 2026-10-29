@@ -26,6 +26,8 @@ export const RESTART_DELAY_MS = 300
 export const STOP_WAIT_MS = 3000
 
 export interface PhraseDictationOptions {
+  /** v1.73: кожна почута фраза — одразу, щойно телефон її віддав (поле на телефоні наповнюється під час диктування). */
+  onPhrase?: (phrase: string) => void
   /**
    * Рівно раз на кожен `start`: увесь сказаний текст і причина зупинки
    * (`null` — зупинив учитель; інакше код відмови телефона або `stopped_listening` / `start_failed`).
@@ -102,6 +104,7 @@ export function usePhraseDictation(opts: PhraseDictationOptions) {
       if (sessionText) {
         text.value = `${text.value} ${sessionText}`.trim()
         quickEnds = 0
+        opts.onPhrase?.(sessionText)
       }
       if (!active) { finish(null); return }
       if (fatal) { finish(fatal); return }

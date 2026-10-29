@@ -9486,6 +9486,7 @@
         }
       },
       "dictation": {
+        "boardUnpunctuated": "Punctuation was not added — the sentence is written as dictated",
         "voice": {"denied": "The browser blocked the microphone — allow it for this site in the browser settings and tap “Speak” again", "busy": "The microphone is busy or unavailable — close other apps using it and tap “Speak” again", "network": "The phone can’t recognise speech without the internet — check the connection and tap “Speak” again", "language": "The phone can’t recognise this language — choose another dictation language", "stopped": "The phone stopped listening — tap “Speak” again"},
         "langLabel": "Dictation language",
         "center": "Centre",
@@ -9493,10 +9494,10 @@
           "uk": "Українська",
           "en": "English"
         },
-        "hintEn": "Tap 🎙 and dictate in English; tap again to stop. Say «centre», «new line», «skip a line» for layout. Punctuation appears by itself, or say «comma», «full stop».",
+        "hintEn": "Tap 🎙 and dictate in English; tap again to stop. Say «centre», «new line», «skip a line» for layout. The board adds punctuation as it writes, or say «comma», «full stop».",
         "button": "Dictation",
         "title": "Dictate to the board",
-        "hint": "Tap 🎙 and dictate — pauses are fine; tap again to stop. Say «посередині», «з нового рядка», «пропусти рядок» for layout. Punctuation appears by itself after you stop, or say «кома», «крапка».",
+        "hint": "Tap 🎙 and dictate — pauses are fine; tap again to stop. Say «посередині», «з нового рядка», «пропусти рядок» for layout. The board adds punctuation as it writes, or say «кома», «крапка».",
         "placeholder": "The sentence will appear here — you can edit it",
         "holdToSpeak": "Hold and dictate",
         "write": "Write on the board",

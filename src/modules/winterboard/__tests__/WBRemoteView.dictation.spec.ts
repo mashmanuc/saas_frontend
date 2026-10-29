@@ -33,20 +33,23 @@ vi.mock('../composables/useRemoteChannel', async (importOriginal) => {
 vi.mock('../composables/usePushToTalk', () => ({
   usePushToTalk: () => ({ supported: true, listening: ref(false), press: vi.fn(), release: vi.fn() }),
 }))
-// v1.70: слухання фраза за фразою — підмінене; `heard` — що «сказав» учитель до натиску «Зупинити»,
-// `reason` — чому телефон закінчив (null — зупинив учитель)
+// v1.70: слухання фраза за фразою — підмінене; `heard` — фраза, яку телефон почув одразу після «Говорити»
+// (v1.73: віддає її в `onPhrase` тієї ж миті), `reason` — чому телефон закінчив (null — зупинив учитель)
 const voice = vi.hoisted(() => ({ heard: '', lang: '', reason: null as string | null }))
 vi.mock('../composables/usePhraseDictation', async () => {
   const { ref: vref } = await import('vue')
   return {
-    usePhraseDictation: (opts: { onFinish: (text: string, reason: string | null) => void }) => {
+    usePhraseDictation: (opts: { onPhrase?: (phrase: string) => void; onFinish: (text: string, reason: string | null) => void }) => {
       const listening = vref(false)
       const text = vref('')
       return {
         supported: true,
         listening,
         text,
-        start: (lang: string) => { listening.value = true; voice.lang = lang; text.value = voice.heard },
+        start: (lang: string) => {
+          listening.value = true; voice.lang = lang; text.value = voice.heard
+          if (voice.heard) opts.onPhrase?.(voice.heard)
+        },
         stop: () => { listening.value = false; opts.onFinish(text.value, voice.reason) },
       }
     },
@@ -70,7 +73,7 @@ vi.mock('../api/dictationAnalysis', async (importOriginal) => ({
 import WBRemoteView from '../views/WBRemoteView.vue'
 
 const MSG = {
-  connected: 'Зв\'язок є', serverRejected: 'Сервер відхилив ({code})',
+  connected: 'Зв\'язок є', serverRejected: 'Сервер відхилив ({code})', listening: 'Слухаю…',
   dictation: { button: 'Диктант', write: 'Написати на дошці', writing: 'Пишу на дошці…', done: 'Готово', noAnswer: 'Дошка не прийняла речення',
     punctuate: 'Розставити знаки', punctuating: 'Розставляю знаки…', punctuateFailed: 'Не вдалося розставити знаки',
     punctuateChanged: 'Ви змінили текст', writingOf: 'Пишу {n} з {total}', tapToSpeak: 'Говорити', stopSpeaking: 'Зупинити',
@@ -230,20 +233,22 @@ describe('LAW §9 v1.69 · вільний диктант', () => {
       dictation: reason ? { request_id: rid, status: st, reason } : { request_id: rid, status: st } })
   }
 
-  it('мікрофон: натиснув — слухає, ще раз — розмітка голосом і знаки самі; на сервер — лише рядки тексту', async () => {
-    punctuateDictation.mockResolvedValue('Класна робота.\nДиктант.')
+  it('v1.73: почуте — одразу в полі (розмітка голосом), телефон знаків не чекає; знаки ставить дошка — `punctuate`', async () => {
     voice.heard = 'посередині класна робота пропусти рядок диктант'
-    const w = await connected([...CAPS, 'dictation_analysis_v1'])
+    const w = await connected([...CAPS, 'dictation_analysis_v1', 'dictation_punctuate_v1'])
     const mic = w.find('[data-testid="dictation-mic"]')
     await mic.trigger('click')
     expect(voice.lang).toBe('uk-UA')
-    expect(w.find('[data-testid="dictation-heard"]').text()).toContain('посередині класна робота')
+    expect(field(w)).toBe('↔ Класна робота\n\nДиктант')                                 // ще під час слухання
+    expect(w.find('[data-testid="dictation-heard"]').text()).toBe('Слухаю…')
     expect(w.find('[data-testid="dictation-send"]').attributes('disabled')).toBeDefined()   // спершу «Зупинити»
     await mic.trigger('click')
     await flushPromises()
-    expect(punctuateDictation).toHaveBeenCalledWith('Класна робота\nДиктант', 'uk')
-    expect(field(w)).toBe('↔ Класна робота.\n\nДиктант.')
+    expect(punctuateDictation).not.toHaveBeenCalled()                                     // телефон не чекає знаків
+    expect(field(w)).toBe('↔ Класна робота\n\nДиктант')
     expect(dictates()).toHaveLength(0)                                                    // на дошку — лише «Написати»
+    await w.find('[data-testid="dictation-send"]').trigger('click')
+    expect(dictates()[0].args).toMatchObject({ text: 'Класна робота', align: 'center', lang: 'uk', punctuate: true })
   })
 
   it('без мовного розбору — розмітка й розділові слова, без запиту знаків', async () => {
@@ -254,6 +259,9 @@ describe('LAW §9 v1.69 · вільний диктант', () => {
     await flushPromises()
     expect(punctuateDictation).not.toHaveBeenCalled()
     expect(field(w)).toBe('Сонце сходило, птахи співали\nВечоріло')
+    // ноутбук не оголосив, що ставить знаки, — прапорця немає (старий ноутбук відкинув би команду)
+    await w.find('[data-testid="dictation-send"]').trigger('click')
+    expect(dictates()[0].args.punctuate).toBeUndefined()
   })
 
   it('«Написати» — шматки по одному: наступний лише після «Готово», написане зникає з поля', async () => {
@@ -327,13 +335,15 @@ describe('LAW §9 v1.69 · вільний диктант', () => {
     expect(w.find('[data-testid="dictation-voice-note"]').text()).toContain('Телефон перестав слухати')
   })
 
-  it('ліміт Інтегралика вичерпано — словами, текст лишився, як розпізнано', async () => {
+  it('«✨ Розставити знаки»: ліміт Інтегралика вичерпано — словами, текст лишився, як розпізнано', async () => {
     punctuateDictation.mockRejectedValue({ response: { status: 403, data: { error: 'LIMIT_EXCEEDED' } } })
     voice.heard = 'він жартував'
     const w = await connected([...CAPS, 'dictation_analysis_v1'])
     await w.find('[data-testid="dictation-mic"]').trigger('click')
     await w.find('[data-testid="dictation-mic"]').trigger('click')
+    await w.find('[data-testid="dictation-punctuate"]').trigger('click')
     await flushPromises()
+    expect(punctuateDictation).toHaveBeenCalledWith('Він жартував', 'uk')
     expect(field(w)).toBe('Він жартував')
     expect(w.find('[data-testid="dictation-punctuate-note"]').text()).toBe('Ліміт вичерпано')
   })
