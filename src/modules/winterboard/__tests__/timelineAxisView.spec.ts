@@ -193,3 +193,30 @@ describe('перевірка не підказує відповіді', () => {
     expect(w.find('.tl-axis__row b').text()).toBe('1385')
   })
 })
+
+describe('«на всю дошку» (власник 2026-10-29: «щоб діти могли це бачити»)', () => {
+  it('розгорнута картка позначена й не просить висоти (вигляд одного екрана не записується)', async () => {
+    const w = mount(TimelineCardRenderer, {
+      props: { asset: axisAsset(), isSelected: false, interactive: true, isExpanded: true },
+      global: { plugins: [i18n()] },
+    })
+    expect(w.find('.timeline-card').classes()).toContain('is-expanded')
+    await w.vm.$nextTick()
+    expect(w.emitted('request-height')).toBeUndefined()
+  })
+
+  it('шкалу можна розгорнути: ⛶ дає спільна панель картки, реєстр передає isExpanded і expand', async () => {
+    const { isFullscreenAsset } = await import('../board/objectStandard')
+    const { OVERLAY_RENDERERS } = await import('../components/canvas/overlayRegistry')
+    expect(isFullscreenAsset('timeline_card')).toBe(true)
+    const entry = OVERLAY_RENDERERS.timeline_card
+    expect(entry.expandable).toBe(true)
+    const toggle = vi.fn()
+    const ctx = { expandedId: 'tl1', toggleExpand: toggle, onUpdate: vi.fn(), onDelete: vi.fn(), onActivateLinked: vi.fn(),
+      onSelectOther: vi.fn(), onRequestHeight: vi.fn(), isTutor: true, boardMode: 'edit', interactive: true,
+      isSelected: () => false, selectedIds: new Set(), canFit: true } as never
+    expect(entry.buildProps(axisAsset(), ctx)).toMatchObject({ isExpanded: true })
+    ;(entry.buildEvents(axisAsset(), ctx) as Record<string, () => void>).expand()
+    expect(toggle).toHaveBeenCalledWith('tl1')
+  })
+})

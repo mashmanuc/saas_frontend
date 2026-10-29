@@ -168,10 +168,9 @@ export const BOARD_ASSET_STANDARD: Readonly<Record<string, BoardObjectStandardEn
   dictation_line: card('overlay'),
   // H2–H3: шкала й карта — звичайні картки-оверлеї. Власних списків
   // можливостей у них немає (ТЗ §9.2), лише спільний стандарт.
-  // Без `fullscreen`: розгортання потребує підтримки `isExpanded` у
-  // рендерері, а стандарт забороняє кнопки без дії. У v1 картки
-  // працюють вбудовано, як картка теорії.
-  timeline_card: card('overlay', TEXT_CARD),
+  // Шкала — з ⛶ «на всю дошку» (власник 2026-10-29: «щоб діти могли це бачити», LAW §9 v1.74): рендерер
+  // підтримує `isExpanded` (більший шрифт, без виміру висоти). Карта — поки вбудовано, як картка теорії.
+  timeline_card: card('overlay', { fullscreen: true, ...TEXT_CARD }),
   map_card: card('overlay', TEXT_CARD),
   mash_scene: card('overlay'),
   geomash_scene: card('overlay', { fullscreen: true }),

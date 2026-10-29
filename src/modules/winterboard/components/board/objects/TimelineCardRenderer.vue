@@ -21,7 +21,7 @@
   <div
     ref="rootEl"
     class="timeline-card"
-    :class="{ 'is-selected': isSelected, 'is-readonly': !interactive }"
+    :class="{ 'is-selected': isSelected, 'is-readonly': !interactive, 'is-expanded': isExpanded }"
     :style="textScaleStyle"
     :data-testid="`timeline-card-${asset.id}`"
   >
@@ -113,13 +113,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { WBAsset, TimelineCardData, WBTimelineDate, WBTimelineEvent } from '../../../types/winterboard'
 import { useHostWindowControls } from '../../../composables/boardWindowControls'
 import { useExportCapture } from '../../../composables/useExportCapture'
 import { snapshotElement } from '../../../utils/snapshotElement'
-import { cardTextScaleStyle, presentationScaleOf } from '../../../board/cardPresentation'
+import { CARD_TEXT_SCALE_VAR, presentationScaleOf } from '../../../board/cardPresentation'
 import { isMinimizedOnBoard } from '../../../board/objectStandard'
 import { useCardContentFit } from '../../../composables/useCardContentFit'
 import { TIMELINE_LABELS, formatTimelineDate } from '../../../board/timelinePresentation'
@@ -129,8 +129,8 @@ import TimelineAxisView from './TimelineAxisView.vue'
 const { t } = useI18n()
 
 const props = withDefaults(
-  defineProps<{ asset: WBAsset; isSelected?: boolean; interactive?: boolean; canFit?: boolean }>(),
-  { isSelected: false, interactive: true, canFit: true },
+  defineProps<{ asset: WBAsset; isSelected?: boolean; interactive?: boolean; canFit?: boolean; isExpanded?: boolean }>(),
+  { isSelected: false, interactive: true, canFit: true, isExpanded: false },
 )
 
 const emit = defineEmits<{
@@ -215,13 +215,33 @@ function step(delta: number): void {
 }
 
 const hostWindowControls = useHostWindowControls()
-const textScaleStyle = computed(() => cardTextScaleStyle(props.asset))
+// «На всю дошку» (LAW §9 v1.74): шрифт росте з шириною — макет розрахований на ~1100 px, далі до ×1,8, щоб
+// дати й назви було видно з останньої парти. Лише цей екран; збережений масштаб картки не змінюється.
+const DESIGN_WIDTH = 1100
+const MAX_EXPAND_SCALE = 1.8
+const expandScale = ref(1)
+let resize: ResizeObserver | null = null
+watch(() => props.isExpanded, (on) => {
+  resize?.disconnect()
+  resize = null
+  expandScale.value = 1
+  if (!on || !rootEl.value || typeof ResizeObserver === 'undefined') return
+  resize = new ResizeObserver(([entry]) => {
+    expandScale.value = Math.min(MAX_EXPAND_SCALE, Math.max(1, entry.contentRect.width / DESIGN_WIDTH))
+  })
+  resize.observe(rootEl.value)
+}, { immediate: true, flush: 'post' })
+onBeforeUnmount(() => resize?.disconnect())
+const textScaleStyle = computed(() => ({
+  [CARD_TEXT_SCALE_VAR]: String(presentationScaleOf(props.asset) * (props.isExpanded ? expandScale.value : 1)),
+}))
 
 useCardContentFit({
   root: rootEl,
   body: bodyEl,
   flow: flowEl,
-  canMeasure: () => props.canFit && !isMinimizedOnBoard(props.asset),
+  // Розгорнута картка висоту не міряє: інакше автопідгонка записала б висоту від вигляду одного екрана (Б-109).
+  canMeasure: () => !props.isExpanded && props.canFit && !isMinimizedOnBoard(props.asset),
   sources: [
     () => data.value.title,
     () => JSON.stringify(events.value),
@@ -250,6 +270,7 @@ useExportCapture(() => props.asset?.id, (signal) => snapshotElement(rootEl.value
   pointer-events: none; overflow: hidden;
 }
 .timeline-card.is-selected { border-color: #2563eb; }
+.timeline-card.is-expanded { border-radius: 0; }
 .timeline-card__header {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px; background: #eff6ff; border-bottom: 1px solid #dbeafe;

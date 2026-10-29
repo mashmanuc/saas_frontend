@@ -427,13 +427,14 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
     dataAttr: 'data-timeline-card-id',
     testidPrefix: 'timeline-card-overlay',
     buildProps: (asset, ctx) => ({
-      ...stdProps(asset, ctx),
+      // ⛶ «на всю дошку» (LAW §9 v1.74) — той самий локальний board-expand, що в задачі.
+      ...expProps(asset, ctx),
       // Явні кнопки шкали працюють і з активним олівцем; решта картки
       // залишається прозорою для малювання по полотну.
       navigable: ctx.isTutor && ctx.boardMode === 'edit',
     }),
     buildEvents: (asset, ctx) => ({
-      ...stdEvents(asset, ctx),
+      ...expEvents(asset, ctx),
       'activate-linked': (ids: string[]) => ctx.onActivateLinked(asset, ids),
     }),
   },
