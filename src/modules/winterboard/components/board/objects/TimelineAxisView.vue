@@ -140,6 +140,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { WBTimelineEra, WBTimelineEvent } from '../../../types/winterboard'
 import { TIMELINE_LABELS, formatTimelineDate, type MaterialLanguage } from '../../../board/timelinePresentation'
+import { isTimelinePlaying, setTimelinePlaying } from '../../../board/timelinePlayback'
 import SourceList from './SourceList.vue'
 
 const props = withDefaults(defineProps<{
@@ -148,7 +149,9 @@ const props = withDefaults(defineProps<{
   activeId: string | null
   interactive?: boolean
   language?: MaterialLanguage
-}>(), { eras: () => [], interactive: true, language: 'uk' })
+  /** Id картки: «▶ по черзі» — спільний стан екрана з пультом (LAW §9 v1.75). Без нього — лише цей екземпляр. */
+  assetId?: string
+}>(), { eras: () => [], interactive: true, language: 'uk', assetId: '' })
 
 const emit = defineEmits<{ select: [id: string] }>()
 
@@ -291,26 +294,35 @@ const progressText = computed(() =>
   labels.value.progress.replace('{n}', String(activeIndex.value + 1)).replace('{m}', String(props.events.length)))
 
 // ── «▶»: те саме «Наступна» раз на 4,5 с, до кінця шкали ──────────────────
-const playing = ref(false)
+// «Грає» — спільний стан екрана (`board/timelinePlayback`): ▶ на пульті вмикає саме цей таймер (LAW §9 v1.75).
+const playKey = props.assetId || `timeline-local-${Math.random().toString(36).slice(2)}`
+const playing = computed(() => isTimelinePlaying(playKey))
 let timer: ReturnType<typeof setInterval> | null = null
 
-function stopPlay(): void {
+function clearTimer(): void {
   if (timer) clearInterval(timer)
   timer = null
-  playing.value = false
 }
 
-function togglePlay(): void {
-  if (playing.value) { stopPlay(); return }
-  if (!props.events.length) return
-  playing.value = true
+function stopPlay(): void {
+  setTimelinePlaying(playKey, false)
+}
+
+function startTimer(): void {
+  clearTimer()
+  if (!props.events.length) { stopPlay(); return }
   if (activeIndex.value < 0 || activeIndex.value >= props.events.length - 1) emit('select', props.events[0].id)
   timer = setInterval(() => {
     if (activeIndex.value >= props.events.length - 1) { stopPlay(); return }
     step(1)
   }, PLAY_STEP_MS)
 }
-onBeforeUnmount(stopPlay)
+
+function togglePlay(): void {
+  setTimelinePlaying(playKey, !playing.value)
+}
+watch(playing, (on) => (on ? startTimer() : clearTimer()), { immediate: true })
+onBeforeUnmount(() => { clearTimer(); stopPlay() })
 
 // Активна фішка — у полі зору рядка (макет: прокрутка до неї).
 const chipsEl = ref<HTMLElement | null>(null)

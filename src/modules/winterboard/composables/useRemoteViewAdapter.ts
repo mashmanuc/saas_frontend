@@ -37,7 +37,7 @@ import { getNmtPresentationScale, resetNmtPresentationScales, setNmtPresentation
 import { closeMediaShow, isImageShowAsset, isShowAsset, mediaShow, openMediaShow } from '../board/mediaShow'
 import { setShowMode, showMode } from '../board/showMode'
 import { isMinimizedOnBoard } from '../board/objectStandard'
-import { currentPageKind, scenarioKind } from '../remote/remoteScenarioAdapter'
+import { TIMELINE_ASSET_TYPE, currentPageKind, scenarioKind } from '../remote/remoteScenarioAdapter'
 import {
   hasSharedTextScale, nextPresentationScale, presentationScaleOf, withPresentationScale,
 } from '../board/cardPresentation'
@@ -170,6 +170,14 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     const page = store.pages[store.currentPageIndex]
     const asset = page?.assets.find((a) => a && a.id === assetId)
     if (!asset) return false
+    // v1.75: шкала подій — своє «на всю дошку» (v1.74): той самий локальний board-expand, що ⛶ на картці, зі
+    // шрифтом за шириною. Без ops; «Уся сторінка» (`resetFocus`) згортає, як «Задачу на екран».
+    if (asset.type === TIMELINE_ASSET_TYPE) {
+      if (savedView || objectFocus) endObjectFocus()
+      if (store.expandedAssetId) endTaskPresentation()
+      store.expandedAssetId = assetId
+      return true
+    }
     // Власник 2026-09-28 («так»): відео — не масштаб полотна, а показ на весь екран, як
     // презентація (`board/mediaShow.ts`). Той самий програвач, лише вигляд цього екрана.
     // v1.60: картинка — так само (вікно `WBImageShow`), і вмикає режим показу (v1.56).
@@ -305,12 +313,23 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
    */
   function objectFocusId(): string | null {
     const showId = mediaShow.id
-    if (!objectFocus) return null
+    if (!objectFocus) return expandedTimelineId()
     const page = store.pages[store.currentPageIndex]
     const asset = page?.assets.find((a) => a && a.id === objectFocus)
     if (!asset) return null
     if (isShowAsset(asset) && showId !== objectFocus) return null
     return objectFocus
+  }
+
+  /**
+   * v1.75: шкала подій поточної сторінки «на всю дошку» — для пульта це її «На весь екран» (там «▭ Уся сторінка»).
+   * Байдуже, хто розгорнув — пульт чи ⛶ на картці: `expandedAssetId` реактивний, телефон отримає стан сам.
+   */
+  function expandedTimelineId(): string | null {
+    const id = store.expandedAssetId
+    if (!id) return null
+    const asset = store.pages[store.currentPageIndex]?.assets.find((a) => a && a.id === id)
+    return asset?.type === TIMELINE_ASSET_TYPE && !isMinimizedOnBoard(asset) ? id : null
   }
 
   /** v1.34: вид об'єкта для пульта або null — пульт із ним не працює (маніфест П1). */

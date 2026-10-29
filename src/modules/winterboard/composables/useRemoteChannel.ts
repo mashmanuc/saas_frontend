@@ -59,6 +59,12 @@ export interface RemoteScenarioItem {
   /** Лише для документів сторінки, що на екрані: 0 ≤ docPage < docPages */
   docPage?: number
   docPages?: number
+  /** v1.75: лише шкала подій (картка) сторінки, що на екрані: скільки подій, відкрита (немає — жодна), її назва */
+  eventCount?: number
+  eventIndex?: number
+  eventTitle?: string
+  /** v1.75: «по черзі» — лише шкала з віссю; немає поля — кнопок ▶/❚❚ немає */
+  playing?: boolean
 }
 
 export interface RemoteStateDetail {
@@ -321,6 +327,8 @@ const SCENARIO_ID_MAX = 64
 const SCENARIO_TITLE_MAX = 200
 const SCENARIO_PAGE_INDEX_MAX = 10000
 const SCENARIO_DOC_PAGES_MAX = 10000
+/** v1.75: стеля подій шкали — як на сервері (`REMOTE_TIMELINE_EVENTS_MAX`). */
+const TIMELINE_EVENTS_MAX = 100
 const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v)
 /** v1.57: секунди часової шкали — як на сервері (`REMOTE_MEDIA_TIME_MAX`, доба). */
 const MEDIA_TIME_MAX = 24 * 3600
@@ -350,6 +358,25 @@ export function parseRemoteScenario(raw: any): RemoteStateDetail['scenario'] | u
     const item: RemoteScenarioItem = { objectId: id, kind, title: title.slice(0, SCENARIO_TITLE_MAX), pageIndex, minimized }
     // Необов'язкові поля: null = немає, як `is not None` на сервері
     const { state, error, volume, doc_page: docPage, doc_pages: docPages, pos, dur } = it
+    // v1.75: поля шкали подій — лише в картки (як `_validate_remote_timeline` на сервері)
+    const { event_count: eventCount, event_index: eventIndex, event_title: eventTitle, playing } = it
+    if (eventCount != null || eventIndex != null || eventTitle != null || playing != null) {
+      if (kind !== 'card') return undefined
+      if (eventCount == null || !isInt(eventCount) || eventCount < 1 || eventCount > TIMELINE_EVENTS_MAX) return undefined
+      item.eventCount = eventCount
+      if (eventIndex != null) {
+        if (!isInt(eventIndex) || eventIndex < 0 || eventIndex >= eventCount) return undefined
+        item.eventIndex = eventIndex
+      }
+      if (eventTitle != null) {
+        if (eventIndex == null || typeof eventTitle !== 'string') return undefined
+        item.eventTitle = eventTitle.slice(0, SCENARIO_TITLE_MAX)
+      }
+      if (playing != null) {
+        if (typeof playing !== 'boolean') return undefined
+        item.playing = playing
+      }
+    }
     if (kind === 'video' || kind === 'audio') {
       if (docPage != null || docPages != null) return undefined
       if (state != null) {

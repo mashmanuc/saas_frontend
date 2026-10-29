@@ -143,6 +143,7 @@ describe('один штатний запис', () => {
     const updates = w.emitted('update:asset')!
     expect(updates).toHaveLength(1)
     expect((updates[0][0] as WBAsset).data).toMatchObject({ active_event_id: 'event-2' })
+    w.unmount()   // «грає» — спільний стан екрана (LAW §9 v1.75): не лишати його іншим тестам
   })
 })
 

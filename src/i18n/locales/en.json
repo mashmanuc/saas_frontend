@@ -9912,7 +9912,17 @@
         "whyLastDocPage": "This is the last page of the document",
         "whyMuted": "Sound is already off",
         "whyMax": "Can't go louder",
-        "whyNoVolume": "Volume — once the player has loaded"
+        "whyNoVolume": "Volume — once the player has loaded",
+        "eventOf": "event {n} of {total}",
+        "eventNone": "{total} events, none open",
+        "eventPrev": "Previous event",
+        "eventNext": "Next event",
+        "noEventTitle": "No event open",
+        "tell": "One by one",
+        "telling": "Telling",
+        "stopTelling": "Stop",
+        "whyFirstEvent": "This is the first event",
+        "whyLastEvent": "This is the last event"
       },
       "busySaving": "The laptop is saving the template…",
       "busySavingWhy": "Wait — the laptop is saving the template",

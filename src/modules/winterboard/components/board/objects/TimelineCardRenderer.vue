@@ -52,6 +52,7 @@
             :active-id="data.active_event_id"
             :interactive="interactive"
             :language="materialLanguage"
+            :asset-id="asset.id"
             @select="selectExact"
           />
           <SourceList :sources="data.sources" :language="materialLanguage" />

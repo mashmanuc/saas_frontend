@@ -20,10 +20,17 @@
  * діють тільки там, а медіа інших сторінок не випадають зі списку через стелю 50. Картка —
  * «Згорнути / Повернути»; картинка — ще «На весь екран». Задачі НМТ тут не з'являються: у них
  * свій блок пульта («Задача на екран», «Відповідь», «Розбір»).
+ *
+ * v1.75 (власник 2026-10-29: «Розгортати на цілий екран. Переключати події. Або вмикати. Або ставити на паузу»):
+ * шкала подій — картка з подіями. У стані — скільки подій, яка відкрита і її назва, чи «по черзі»; дії — ті самі,
+ * що кнопки картки: крок — один `asset_update` `active_event_id` (з картою — ще її підсвітка, як на картці),
+ * «по черзі» — той самий ▶ (`board/timelinePlayback`), «На весь екран» — те саме «на всю дошку», що ⛶ на картці.
  */
 import type { WBAsset } from '../types/winterboard'
 import { canMinimize, canShowTray, minimizedAsset, restoredAsset, type TrayViewer } from '../board/boardTray'
 import { isMinimizableAsset, isMinimizedOnBoard } from '../board/objectStandard'
+import { linkedEvidenceUpdate } from '../board/evidenceLinkage'
+import { isTimelinePlaying, setTimelinePlaying } from '../board/timelinePlayback'
 import {
   changeVideoVolume, pauseVideo, playVideo, videoTime, ytPlayErrors, ytPlayStates, ytTimeMarks, ytVolumes,
 } from '../board/youtubeRemoteControl'
@@ -48,6 +55,11 @@ export interface RemoteScenarioItem {
   dur?: number
   doc_page?: number
   doc_pages?: number
+  /** v1.75: шкала подій сторінки, що на екрані — скільки подій, відкрита (немає — жодна), її назва, «по черзі». */
+  event_count?: number
+  event_index?: number
+  event_title?: string
+  playing?: boolean
 }
 
 export interface RemoteScenarioState {
@@ -59,6 +71,9 @@ export interface RemoteScenarioState {
 export const SCENARIO_ITEMS_MAX = 50
 export const SCENARIO_OBJECT_ID_MAX = 64
 export const SCENARIO_TITLE_MAX = 200
+/** v1.75: стеля подій шкали в стані пульта (сервер — `REMOTE_TIMELINE_EVENTS_MAX`). */
+export const TIMELINE_EVENTS_MAX = 100
+export const TIMELINE_ASSET_TYPE = 'timeline_card'
 
 export interface RemoteScenarioView {
   focusObject: (id: string) => boolean
@@ -163,6 +178,34 @@ function round1(seconds: number): number {
   return Math.round(seconds * 10) / 10
 }
 
+type TimelineEventLike = { id?: unknown; label?: unknown; place_ids?: unknown }
+
+/** Події шкали в порядку картки (той самий масив, що гортають її кнопки). */
+function timelineEvents(asset: WBAsset): TimelineEventLike[] {
+  const events = ((asset as { data?: { events?: unknown } }).data ?? {}).events
+  return Array.isArray(events) ? events : []
+}
+
+function activeEventIndex(asset: WBAsset, events: TimelineEventLike[]): number {
+  const activeId = ((asset as { data?: { active_event_id?: unknown } }).data ?? {}).active_event_id
+  return activeId ? events.findIndex((e) => e?.id === activeId) : -1
+}
+
+/** v1.75: поля шкали для пульта. «По черзі» — лише шкала з віссю (v1.71): у старого списку цієї кнопки немає. */
+function timelineFields(asset: WBAsset): Pick<RemoteScenarioItem, 'event_count' | 'event_index' | 'event_title' | 'playing'> {
+  const events = timelineEvents(asset)
+  if (!events.length || events.length > TIMELINE_EVENTS_MAX) return {}
+  const index = activeEventIndex(asset, events)
+  const label = index >= 0 ? events[index]?.label : ''
+  return {
+    event_count: events.length,
+    ...(index >= 0
+      ? { event_index: index, event_title: (typeof label === 'string' ? label.replace(/\s+/g, ' ').trim() : '').slice(0, SCENARIO_TITLE_MAX) }
+      : {}),
+    ...((asset as { data?: { view?: unknown } }).data?.view === 'axis' ? { playing: isTimelinePlaying(asset.id) } : {}),
+  }
+}
+
 function docFields(asset: WBAsset): Pick<RemoteScenarioItem, 'doc_page' | 'doc_pages'> {
   const total = Math.trunc(Number(asset.totalPages ?? 0))
   if (!(total >= 1)) return {}
@@ -212,6 +255,7 @@ export function createRemoteScenarioAdapter(deps: RemoteScenarioDeps) {
         if (p === current) {
           if (kind === 'video' || kind === 'audio') Object.assign(item, playbackFields(asset))
           else if (isDocKind(kind)) Object.assign(item, docFields(asset))
+          else if (asset.type === TIMELINE_ASSET_TYPE) Object.assign(item, timelineFields(asset))
         }
         items.push(item)
       }
@@ -245,11 +289,55 @@ export function createRemoteScenarioAdapter(deps: RemoteScenarioDeps) {
   /**
    * ⛶ — полотно цього екрана до об'єкта; в аудіо цієї кнопки немає. У картці теж (v1.25):
    * текст картки не росте з полотном (§9.C), «на весь екран» дав би велику рамку з дрібним текстом.
+   * v1.75: крім шкали подій — у неї своє «на всю дошку» зі шрифтом за шириною (v1.74), його й вмикає вигляд.
    */
   function focus(id: string): void {
     const found = findCurrent(id)
-    if (!found || found.kind === 'audio' || found.kind === 'card' || isMinimizedOnBoard(found.asset)) return
+    if (!found || found.kind === 'audio' || isMinimizedOnBoard(found.asset)) return
+    if (found.kind === 'card' && found.asset.type !== TIMELINE_ASSET_TYPE) return
     deps.view.focusObject(id)
+  }
+
+  /** v1.75: шкала подій поточної сторінки, з якою можна працювати як на дошці (учитель, редагування, запис). */
+  function editableTimeline(id: string): WBAsset | null {
+    const found = findCurrent(id)
+    if (!found || found.asset.type !== TIMELINE_ASSET_TYPE || isMinimizedOnBoard(found.asset) || !canEditBoard()) return null
+    return timelineEvents(found.asset).length ? found.asset : null
+  }
+
+  /**
+   * v1.75 ◀/▶ події — те саме, що кнопки картки (`TimelineCardRenderer.step`): жодна не відкрита — «Наступна» відкриває
+   * першу, «Попередня» — останню; на межі нічого. Один `asset_update`; з картою того самого набору — ще її підсвітка.
+   */
+  function timelineStep(id: string, dir: -1 | 1): void {
+    const asset = editableTimeline(id)
+    if (!asset) return
+    const events = timelineEvents(asset)
+    const current = activeEventIndex(asset, events)
+    const i = current < 0 ? (dir > 0 ? -1 : events.length) : current
+    const target = events[i + dir]
+    if (!target || typeof target.id !== 'string') return
+    const data = ((asset as unknown as { data?: Record<string, unknown> }).data ?? {})
+    const next = { ...asset, data: { ...data, active_event_id: target.id } } as WBAsset
+    deps.updateAsset(next)
+    const places = Array.isArray(target.place_ids) ? (target.place_ids as string[]) : []
+    if (places.length) {
+      const linked = linkedEvidenceUpdate([...(deps.pages()[deps.currentPageIndex()]?.assets ?? [])], next, places)
+      if (linked) deps.updateAsset(linked)
+    }
+  }
+
+  /** v1.75 «▶ По черзі» / «❚❚ Зупинити» — той самий ▶ картки (таймер у картці, кожен крок — її запис). */
+  function timelinePlay(id: string): void {
+    const asset = editableTimeline(id)
+    if (!asset || (asset as { data?: { view?: unknown } }).data?.view !== 'axis') return
+    setTimelinePlaying(asset.id, true)
+  }
+
+  function timelinePause(id: string): void {
+    const found = findCurrent(id)
+    // Зупинити можна завжди — зупинка нічого не пише
+    if (found?.asset.type === TIMELINE_ASSET_TYPE) setTimelinePlaying(id, false)
   }
 
   /** «— Згорнути» — те саме, що на картці: програвач спершу на паузу, потім asset_update. */
@@ -282,7 +370,7 @@ export function createRemoteScenarioAdapter(deps: RemoteScenarioDeps) {
     deps.updateAsset({ ...found.asset, currentPage: next })
   }
 
-  return { state, play, pause, volume, focus, minimize, restore, docPage }
+  return { state, play, pause, volume, focus, minimize, restore, docPage, timelineStep, timelinePlay, timelinePause }
 }
 
 export type RemoteScenarioAdapter = ReturnType<typeof createRemoteScenarioAdapter>

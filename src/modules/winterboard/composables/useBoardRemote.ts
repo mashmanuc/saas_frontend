@@ -161,6 +161,7 @@ export interface RemoteCommandDetail {
     | 'video.add' | 'video.play' | 'video.pause'
     | 'photo.add' | 'photo.background' | 'photo.background_clear'
     | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
+    | 'timeline.step' | 'timeline.play' | 'timeline.pause'
     | 'assistant.ask' | 'assistant.answer'
     | 'recording.start' | 'recording.stop'
     | 'card.handwrite' | 'card.handwrite_next' | 'object.select' | 'board.dictate' | 'dictation.action'
@@ -757,6 +758,26 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         opts.scenario.docPage(objectId, dir as -1 | 1)
         adoptScenarioObject(objectId)
         return   // новий currentPage → watch надішле стан
+      }
+      // v1.75: шкала подій — крок ±1, «по черзі», стоп. Пише ноутбук тим самим записом, що кнопки картки;
+      // стан (відкрита подія, «грає») реактивний — watch сценарію надішле його сам.
+      case 'timeline.step': {
+        const objectId = String(d.args?.object_id ?? '')
+        const dir = d.args?.dir
+        if (!opts.scenario || !objectId || (dir !== 1 && dir !== -1)) return
+        opts.scenario.timelineStep(objectId, dir as -1 | 1)
+        adoptScenarioObject(objectId)
+        return
+      }
+      case 'timeline.play':
+      case 'timeline.pause': {
+        const objectId = String(d.args?.object_id ?? '')
+        if (!opts.scenario || !objectId) return
+        if (d.cmd === 'timeline.play') opts.scenario.timelinePlay(objectId)
+        else opts.scenario.timelinePause(objectId)
+        adoptScenarioObject(objectId)
+        sendState()   // не вийшло (учень, перегляд, згорнута) — телефон усе одно бачить справжній стан
+        return
       }
       // v1.9: фото вже в «Матеріалах»; перевіряє й кладе ноутбук, пульт лише просить
       // v1.49 «✍️ Диктант»: речення рукописом під уже написаним; відповідь — `dictation` у стані (П5 «не тиша»)

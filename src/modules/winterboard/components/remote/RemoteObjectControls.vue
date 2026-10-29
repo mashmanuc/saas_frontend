@@ -90,8 +90,36 @@
       </div>
     </template>
 
-    <!-- Презентація, PDF, документ; v1.25 — картинка (⛶ і «Згорнути») і картка (лише «Згорнути») -->
+    <!-- Презентація, PDF, документ; v1.25 — картинка (⛶ і «Згорнути») і картка (лише «Згорнути»);
+         v1.75 — шкала подій: ◀ назва події ▶, «по черзі» (лише з віссю), ⛶ «на всю дошку» -->
     <template v-else>
+      <template v-if="isTimeline">
+        <div class="wb-scn__row wb-scn__row--pager">
+          <div class="wb-scn__slot" @click="why('eventPrev')">
+            <button type="button" class="wb-scn__btn" :data-testid="`${idPrefix}-event-prev`" :disabled="!canEventPrev" :aria-label="t('winterboard.remote.scenario.eventPrev')" @click="send('timeline.step', { object_id: item.objectId, dir: -1 })">◀</button>
+          </div>
+          <span class="wb-scn__pager wb-scn__pager--event" :data-testid="`${idPrefix}-event-label`">{{ item.eventTitle || t('winterboard.remote.scenario.noEventTitle') }}</span>
+          <div class="wb-scn__slot" @click="why('eventNext')">
+            <button type="button" class="wb-scn__btn" :data-testid="`${idPrefix}-event-next`" :disabled="!canEventNext" :aria-label="t('winterboard.remote.scenario.eventNext')" @click="send('timeline.step', { object_id: item.objectId, dir: 1 })">▶</button>
+          </div>
+        </div>
+        <div v-if="item.playing !== undefined" class="wb-scn__row">
+          <button
+            type="button"
+            class="wb-scn__btn"
+            :class="{ 'wb-scn__btn--playing': item.playing }"
+            :data-testid="`${idPrefix}-tell`"
+            :aria-pressed="item.playing"
+            :disabled="!ready"
+            @click="send('timeline.play', { object_id: item.objectId })"
+          >
+            ▶ {{ item.playing ? t('winterboard.remote.scenario.telling') : t('winterboard.remote.scenario.tell') }}
+          </button>
+          <button type="button" class="wb-scn__btn" :data-testid="`${idPrefix}-tell-stop`" :disabled="!ready" @click="send('timeline.pause', { object_id: item.objectId })">
+            ❚❚ {{ t('winterboard.remote.scenario.stopTelling') }}
+          </button>
+        </div>
+      </template>
       <div v-if="item.docPages" class="wb-scn__row wb-scn__row--pager">
         <div class="wb-scn__slot" @click="why('docPrev')">
           <button type="button" class="wb-scn__btn" :data-testid="`${idPrefix}-doc-prev`" :disabled="!canDocPrev" :aria-label="t('winterboard.remote.scenario.docPrev')" @click="send('doc.page', { object_id: item.objectId, dir: -1 })">◀</button>
@@ -101,9 +129,10 @@
           <button type="button" class="wb-scn__btn" :data-testid="`${idPrefix}-doc-next`" :disabled="!canDocNext" :aria-label="t('winterboard.remote.scenario.docNext')" @click="send('doc.page', { object_id: item.objectId, dir: 1 })">▶</button>
         </div>
       </div>
-      <div class="wb-scn__row" :class="{ 'wb-scn__row--one': item.kind === 'card' }">
-        <!-- Картка «на весь екран» не має сенсу: текст не росте з полотном (§9.C) -->
-        <template v-if="item.kind !== 'card'">
+      <div class="wb-scn__row" :class="{ 'wb-scn__row--one': item.kind === 'card' && !isTimeline }">
+        <!-- Картка «на весь екран» не має сенсу: текст не росте з полотном (§9.C). Шкала подій — має: її «на всю
+             дошку» збільшує шрифт за шириною (v1.74), пульт вмикає саме його (v1.75) -->
+        <template v-if="item.kind !== 'card' || isTimeline">
           <button v-if="focusId === item.objectId" type="button" class="wb-scn__btn" :data-testid="`${idPrefix}-whole-page`" :disabled="!ready" @click="send('view.page', {})">
             ▭ {{ t('winterboard.remote.fitPage') }}
           </button>
@@ -144,10 +173,13 @@ const emit = defineEmits<{ send: [cmd: string, args: Record<string, unknown>] }>
 const { t } = useI18n()
 
 const isPlayable = (it: RemoteScenarioItem) => it.kind === 'video' || it.kind === 'audio'
+/** v1.75: шкала подій — картка, для якої ноутбук прислав події. Немає поля — звичайна картка (П1). */
+const isTimeline = computed(() => props.item.kind === 'card' && typeof props.item.eventCount === 'number')
 
-/** Грає просто зараз (незгорнутий програвач) — зелена крапка в рядку стану. */
+/** Грає просто зараз (незгорнутий програвач чи шкала «по черзі») — зелена крапка в рядку стану. */
 function isPlayingNow(it: RemoteScenarioItem): boolean {
-  return isPlayable(it) && !it.minimized && it.state === 'playing'
+  if (it.minimized) return false
+  return isPlayable(it) ? it.state === 'playing' : it.playing === true
 }
 
 /** Підпис ▶ за станом програвача: «Грає» / «Запускається…» / «Грати». */
@@ -174,6 +206,11 @@ function statusOf(it: RemoteScenarioItem): string {
     return typeof it.volume === 'number'
       ? `${text} · ${t('winterboard.remote.scenario.volume', { v: it.volume })}`
       : text
+  }
+  if (typeof it.eventCount === 'number') {
+    return typeof it.eventIndex === 'number'
+      ? t('winterboard.remote.scenario.eventOf', { n: it.eventIndex + 1, total: it.eventCount })
+      : t('winterboard.remote.scenario.eventNone', { total: it.eventCount })
   }
   if (!it.docPages) return ''
   const key = it.kind === 'presentation' ? 'slideOf' : 'pageOf'
@@ -222,6 +259,10 @@ const canQuieter = computed(() => props.ready && typeof props.item.volume === 'n
 const canLouder = computed(() => props.ready && typeof props.item.volume === 'number' && props.item.volume < 100)
 const canDocPrev = computed(() => props.ready && !!props.item.docPages && (props.item.docPage ?? 0) > 0)
 const canDocNext = computed(() => props.ready && !!props.item.docPages && (props.item.docPage ?? 0) < props.item.docPages - 1)
+// v1.75: жодна подія не відкрита — «Наступна» відкриває першу, «Попередня» — останню (як кнопки картки)
+const canEventPrev = computed(() => props.ready && isTimeline.value && (props.item.eventIndex ?? 1) > 0)
+const canEventNext = computed(() => props.ready && isTimeline.value
+  && (props.item.eventIndex ?? -1) < (props.item.eventCount ?? 0) - 1)
 
 // ── Вид Б: тап по вимкненій кнопці пояснює причину одним рядком під об'єктом ──
 const whyText = ref('')
@@ -231,13 +272,15 @@ function showWhy(text: string): void {
   if (whyTimer) clearTimeout(whyTimer)
   whyTimer = setTimeout(() => { whyText.value = '' }, 2500)
 }
-function why(which: 'quieter' | 'louder' | 'docPrev' | 'docNext'): void {
+function why(which: 'quieter' | 'louder' | 'docPrev' | 'docNext' | 'eventPrev' | 'eventNext'): void {
   const enabled = which === 'quieter' ? canQuieter.value : which === 'louder' ? canLouder.value
-    : which === 'docPrev' ? canDocPrev.value : canDocNext.value
+    : which === 'docPrev' ? canDocPrev.value : which === 'docNext' ? canDocNext.value
+      : which === 'eventPrev' ? canEventPrev.value : canEventNext.value
   if (enabled) return
   if (!props.ready) { showWhy(t('winterboard.remote.waitingBoard')); return }
   const it = props.item
-  const key = which === 'docPrev' ? 'whyFirstDocPage'
+  const key = which === 'eventPrev' ? 'whyFirstEvent' : which === 'eventNext' ? 'whyLastEvent'
+    : which === 'docPrev' ? 'whyFirstDocPage'
     : which === 'docNext' ? 'whyLastDocPage'
       : typeof it.volume !== 'number' ? 'whyNoVolume'
         : which === 'quieter' ? 'whyMuted' : 'whyMax'
@@ -271,6 +314,11 @@ function send(cmd: string, args: Record<string, unknown>): void {
 .wb-scn__row--one { grid-template-columns: minmax(0, 1fr); }
 .wb-scn__row--pager { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); align-items: center; }
 .wb-scn__pager { text-align: center; font-size: 15px; font-weight: 700; color: var(--text); }
+/* v1.75: назва події — до двох рядків, далі «…» (назви бувають довгими) */
+.wb-scn__pager--event {
+  font-size: 14px; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow-wrap: anywhere;
+}
 .wb-scn__slot { display: flex; }
 .wb-scn__btn {
   flex: 1; width: 100%; min-height: 48px; border: 0; border-radius: 14px; background: var(--scn-btn); color: var(--text);

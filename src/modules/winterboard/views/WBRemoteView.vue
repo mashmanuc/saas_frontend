@@ -1638,6 +1638,7 @@ type RemoteCmd = 'hello' | 'page.goto' | 'page.new' | 'undo' | 'phrase' | 'view.
   | 'video.add' | 'video.play' | 'video.pause'
   | 'photo.add' | 'photo.background' | 'photo.background_clear'
   | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
+  | 'timeline.step' | 'timeline.play' | 'timeline.pause'
   | 'assistant.ask' | 'assistant.answer'
   | 'card.handwrite' | 'card.handwrite_next' | 'object.select'
   | RemoteRecordingCmd
