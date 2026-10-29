@@ -103,6 +103,31 @@ export function parseSpoken(raw: string, lang: DictationLang = 'uk'): ParsedSpok
   return { continues, lines: lines.map((line) => ({ center: line.center, text: spokenToText(line.text, lang) })) }
 }
 
+/**
+ * v1.76 (власник 2026-10-29: мікрофон клавіатури «тут не губить слова зовсім», а «з нового рядка посередині» дошка
+ * написала словами): текст із клавіатури приходить у поле як є. Перед «Написати на дошці» розмітку голосом застосовуємо
+ * до кожного рядка поля — так само, як до сказаного кнопкою «Говорити». Рядок без команд не змінюється.
+ */
+export function applySpokenLayout(field: string, lang: DictationLang = 'uk'): string {
+  const lines = fieldLines(field)
+  const re = commandRegex(lang)
+  const out: FieldLine[] = []
+  lines.forEach((line, i) => {
+    re.lastIndex = 0
+    if (!line.text || !re.test(line.text)) { out.push(line); return }
+    const spoken = parseSpoken(line.text, lang)
+    // команди не було («стояли посередині поля» — звичайне слово): рядок лишається рівно як у полі
+    if (spoken.continues && spoken.lines.length === 1 && !spoken.lines[0].center) { out.push(line); return }
+    const parsed = spoken.lines.map((l) => ({ ...l }))
+    if (parsed.length && line.center) parsed[0].center = true
+    // «…з нового рядка» в кінці рядка поля: наступний рядок поля й так новий — зайвий порожній рядок став би пропуском
+    const last = parsed[parsed.length - 1]
+    if (i < lines.length - 1 && parsed.length > 1 && last && !last.text && !last.center) parsed.pop()
+    out.push(...parsed)
+  })
+  return renderField(out).slice(0, FREE_DICTATION_MAX_LEN)
+}
+
 /** Рядки поля (порожні — пропущені рядки). */
 export function fieldLines(field: string): FieldLine[] {
   if (!field) return []

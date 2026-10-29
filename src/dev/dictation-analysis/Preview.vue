@@ -71,6 +71,7 @@ function resetExample() {
 }
 function send(request: SentenceRequest) {
   if (request.action === 'apply_analysis') adapter.applyAnalysis!(request).then((answer) => { result.value = answer })
+  else if (request.action === 'set_text') adapter.applyText!(request).then((answer) => { result.value = answer })
   else result.value = adapter.apply(request)
   return true
 }

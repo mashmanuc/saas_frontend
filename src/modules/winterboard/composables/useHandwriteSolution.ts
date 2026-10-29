@@ -27,7 +27,7 @@ import { i18n } from '@/i18n'
 import { notifyError, notifyInfo, notifyWarning } from '@/utils/notify'
 import { tAssistantGlobal } from '@/modules/intent/assistantLook'
 import {
-  HANDWRITE_GAP, HANDWRITE_INK, HANDWRITE_MARGIN, HANDWRITE_MIN_W, LAYOUT_MAX_H, LAYOUT_MAX_W, PAGE_OBJECT_LIMIT,
+  DICTATION_GAP, HANDWRITE_GAP, HANDWRITE_INK, HANDWRITE_MARGIN, HANDWRITE_MIN_W, LAYOUT_MAX_H, LAYOUT_MAX_W, PAGE_OBJECT_LIMIT,
   answerTextOf,
   dictationArea, hasHandwritableSolution, isIntegralykSolvable, notebookRuling, occupiedRects, wholePageArea,
   writingAreasNear, type Rect,
@@ -38,6 +38,9 @@ import {
 } from '../board/handwriteSteps'
 import type { WBStroke } from '../types/winterboard'
 import { dictationFromLayout } from '../board/dictationFromLayout'
+import { dictationInkBounds } from '../board/dictationInkBounds'
+import type { DictationLineData } from '../board/dictationLine'
+import { normalizeDictation } from '../remote/dictationContract'
 import { revealDictation } from '../board/dictationReveal'
 import { selectQuietly } from '../board/quietSelection'
 
@@ -88,6 +91,8 @@ export interface HandwriteStore {
   addPageUndoable: (opts?: { afterCurrent?: boolean; inheritLook?: boolean }) => string
   addAsset: (asset: any, pageId: string, opts?: { skipHistory?: boolean }) => void
   deleteAsset: (id: string, opts?: { skipHistory?: boolean }) => void
+  /** v1.76: переписати речення диктанту на місці — одна зміна об'єкта. */
+  updateAsset?: (asset: any, opts?: { skipHistory?: boolean }) => void
   selectItems?: (ids: string[]) => void
   /** Висота, яку показує полотно на поточній сторінці (добірка задач буває вищою за аркуш). */
   currentPageCanvasHeight?: number
@@ -764,6 +769,82 @@ export const FREE_SKIP_PX = 56
  * (`/solution/`, `mode: 'full'`, без «Відповідь:»), клієнт кладе штатні `stroke_add` у темпі руки одним кроком
  * «Скасувати». Місце — під усім, що вже є на поточній сторінці (`dictationArea`).
  */
+export type RewriteResult = { status: 'written' } | { status: 'refused'; reason: 'blocked' | 'stale' | 'invalid' | 'no_space' }
+
+/**
+ * LAW §9 v1.76 (власник 2026-10-29: «пізніше може побачити користувач помилку на дошці, він виправити не може, а з пульта
+ * він може як текст виправити»): речення диктанту переписується виправленим текстом на ТОМУ САМОМУ місці — той самий
+ * почерк, ширина, вирівнювання, мова; на зошиті — ті самі лінії. Униз — лише до наступного запису (не налазить на
+ * написане нижче), інакше «немає місця». Одна зміна об'єкта — один крок «Скасувати»; рука переписує речення наново.
+ */
+export async function rewriteDictation(
+  target: { pageId: string; objectId: string; sourceRevision: string; text: string },
+  canWrite: () => boolean = () => true, depsIn?: HandwriteDeps,
+): Promise<RewriteResult> {
+  const refuse = (reason: 'blocked' | 'stale' | 'invalid' | 'no_space'): RewriteResult => ({ status: 'refused', reason })
+  if (active || handwriteBusyId.value !== null) return refuse('blocked')
+  const deps = depsIn ?? await defaultDeps()
+  const { store, sync } = deps
+  const page = store.pages[store.currentPageIndex]
+  const writable = () => canWrite() && store.mode === 'edit' && sync.mode === 'SYNC' && !sync.inputLocked
+    && store.pages[store.currentPageIndex]?.id === target.pageId
+  if (!page || !writable() || !store.updateAsset) return refuse('blocked')
+  const find = () => store.pages[store.currentPageIndex]?.assets.find((a: any) => a?.id === target.objectId && a.type === 'dictation_line')
+  const asset: any = find()
+  if (!asset || asset.data?.source?.revision !== target.sourceRevision) return refuse('stale')
+  const text = normalizeDictation(target.text)
+  if (!text) return refuse('invalid')
+  const data = asset.data as DictationLineData
+  const bounds = dictationInkBounds(data)
+  const x0 = Math.max(0, asset.x - bounds.x)
+  const y0 = Math.max(0, asset.y - bounds.y)
+  const width = data.layout.width
+  const pageW = page.width ?? 1920
+  const pageH = store.currentPageCanvasHeight ?? page.height ?? 1080
+  // Нижче — до першого запису під реченням (що перетинає його смугу по ширині); речення не налазить на написане далі
+  const below = occupiedRects({ ...page, assets: page.assets.filter((a: any) => a?.id !== asset.id) } as PageLike)
+    .filter((r) => r.y >= asset.y + asset.h - 1 && r.x < x0 + width && r.x + r.w > x0)
+  const bottom = Math.min(pageH, ...below.map((r) => r.y - DICTATION_GAP))
+  // область — у межах аркуша 1920×1080 (так перевіряє речення createDictationLine)
+  const height = Math.min(LAYOUT_MAX_H, 1080 - y0, Math.floor(bottom - y0))
+  const ruling = notebookRuling(page as any, pageW)
+  let req: HandwriteLayoutRequest
+  if (ruling) {
+    if (height < ruling.pitch) return refuse('no_space')
+    req = { text, width, height, mode: 'full', answer: '', hand: DICTATION_HAND,
+      ruling: { ...ruling, first_baseline: data.layout.baselines[0], align: data.layout.align } }
+  } else {
+    if (height < 60) return refuse('no_space')
+    req = { text, width, height, mode: 'full', answer: '', hand: DICTATION_HAND, tokens: true, align: data.layout.align }
+  }
+  handwriteBusyId.value = DICTATION_BUSY_ID
+  try {
+    let layout: HandwriteLayout
+    try {
+      layout = await deps.fetchLayout(req)
+    } catch (err) {
+      if (err instanceof HandwriteUnsupported) return refuse('invalid')
+      console.warn('[WB:dictation] rewrite layout failed:', err)
+      return refuse('blocked')
+    }
+    if (!layout.fits) return refuse('no_space')
+    if (!writable()) return refuse('blocked')
+    if (find() !== asset || asset.data?.source?.revision !== target.sourceRevision) return refuse('stale')
+    try {
+      const next = dictationFromLayout(layout, { id: asset.id, text, lang: data.source.lang, align: data.layout.align,
+        x: x0, y: y0, width, height })
+      revealDictation(asset.id)
+      store.updateAsset({ ...next, locked: asset.locked ?? false })
+      return { status: 'written' }
+    } catch (err) {
+      console.warn('[WB:dictation] rewrite refused', err)
+      return refuse('invalid')
+    }
+  } finally {
+    handwriteBusyId.value = null
+  }
+}
+
 export async function handwriteDictation(
   text: string, depsIn?: HandwriteDeps, opts: { align?: DictateAlign; lang?: 'uk' | 'en'; skip?: number } = {},
 ): Promise<DictationResult> {

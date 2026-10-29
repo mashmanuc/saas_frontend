@@ -9470,6 +9470,9 @@
     },
     "remote": {
       "sentence": {
+        "edit": "Fix the text",
+        "rewrite": "Rewrite on the board",
+        "cancel": "Cancel",
         "title": "Sentence — choose a word",
         "hideWord": "Hide word",
         "showWord": "Show word",
@@ -9481,6 +9484,7 @@
         "noConnection": "No connection to the board.",
         "noAnswer": "No answer came. Check the connection.",
         "reason": {
+          "no_space": "It does not fit: the corrected text would overlap what is written below — shorten it.",
           "blocked": "Failed: the sentence is not selected on the laptop or the board cannot be changed now.",
           "stale": "Failed: the sentence on the board changed or is gone — choose it again.",
           "invalid": "Failed: this action does not fit this sentence."
@@ -9499,7 +9503,7 @@
         "button": "Dictation",
         "title": "Dictate to the board",
         "hint": "Tap 🎙 and dictate — pauses are fine; tap again to stop. Say «посередині», «з нового рядка», «пропусти рядок» for layout. The board adds punctuation as it writes, or say «кома», «крапка».",
-        "placeholder": "The sentence will appear here — you can edit it",
+        "placeholder": "Tap here and dictate with the keyboard microphone 🎤",
         "holdToSpeak": "Hold and dictate",
         "write": "Write on the board",
         "writing": "Writing on the board…",

@@ -878,8 +878,8 @@ import RemoteSentenceControls from '../components/remote/RemoteSentenceControls.
 import RemoteSentenceAnalysis from '../components/remote/RemoteSentenceAnalysis.vue'
 import { punctuateDictation } from '../api/dictationAnalysis'
 import {
-  FREE_DICTATION_MAX_LEN, addNewLine, addSkippedLine, chunksToField, fieldLines, fieldToChunks, lastLineCentered,
-  mergeSpoken, parseSpoken, punctuationBatches, renderField, toggleCenterLast, withPunctuated,
+  FREE_DICTATION_MAX_LEN, addNewLine, addSkippedLine, applySpokenLayout, chunksToField, fieldLines, fieldToChunks,
+  lastLineCentered, mergeSpoken, parseSpoken, punctuationBatches, renderField, toggleCenterLast, withPunctuated,
   type DictationChunk, type ParsedSpoken,
 } from '../remote/freeDictation'
 import type { RemoteSentence, SentenceRequest, SentenceResult } from '../remote/dictationLineContract'
@@ -1796,6 +1796,9 @@ function punctuateErrorNote(error: unknown): string {
 /** v1.69: «Написати на дошці» — поле → шматки, ноутбуку по одному (пише він, відповідь — полем `dictation` стану). */
 function sendDictation(): void {
   if (dictSending.value) return
+  // v1.76: текст із мікрофона клавіатури — «з нового рядка», «посередині», «пропусти рядок» стають розміткою поля
+  const laid = applySpokenLayout(dictText.value, dictLang.value)
+  if (laid !== dictText.value) dictText.value = laid
   const chunks = fieldToChunks(dictText.value, canDictateCenter.value)
   if (!chunks.length) return
   dictQueue.value = chunks

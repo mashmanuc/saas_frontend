@@ -784,6 +784,28 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
       case 'dictation.action': {
         const req = readSentenceRequest(d.args)
         if (!req) return
+        // v1.76: виправлений текст — ноутбук переписує речення на місці (сервер письма — тому асинхронно, як розбір)
+        if (req.action === 'set_text') {
+          const known = sentenceRequests.get(req.request_id)
+          if (known) { sentenceResult.value = known; sendState(); return }
+          if (pendingAnalysisRequests.has(req.request_id)) return
+          pendingAnalysisRequests.add(req.request_id)
+          const session = opts.sessionId.value
+          const task = opts.sentence?.applyText?.(req, () => !disposed && opts.enabled.value && opts.sessionId.value === session)
+            ?? Promise.resolve({ request_id: req.request_id, status: 'refused' as const, reason: 'blocked' as const })
+          task.then((answer) => {
+            sentenceRequests.set(req.request_id, answer); sentenceResult.value = answer
+          }, (error) => {
+            console.warn('[WB:sentence] виправлення не вдалося', error instanceof Error ? error.name : 'request_failed')
+            const answer = { request_id: req.request_id, status: 'refused' as const, reason: 'blocked' as const }
+            sentenceRequests.set(req.request_id, answer); sentenceResult.value = answer
+          }).finally(() => {
+            pendingAnalysisRequests.delete(req.request_id)
+            if (sentenceRequests.size > 100) sentenceRequests.delete(sentenceRequests.keys().next().value!)
+            sendState()
+          })
+          return
+        }
         if (req.action === 'apply_analysis') {
           const identity = JSON.stringify([req.proposal_id, req.page_id, req.object_id, req.source_revision])
           const previous = analysisIdentities.get(req.request_id)

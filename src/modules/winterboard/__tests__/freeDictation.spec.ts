@@ -1,7 +1,7 @@
 // LAW §9 v1.69 «Вільний диктант»: сказане → рядки поля (розмітка голосом), поле → шматки для `board.dictate` по одному.
 import { describe, it, expect } from 'vitest'
 import {
-  CENTER_MARK, addNewLine, addSkippedLine, chunksToField, fieldToChunks, lastLineCentered, mergeSpoken, parseSpoken,
+  CENTER_MARK, addNewLine, addSkippedLine, applySpokenLayout, chunksToField, fieldToChunks, lastLineCentered, mergeSpoken, parseSpoken,
   textForPunctuation, toggleCenterLast, withPunctuated,
 } from '../remote/freeDictation'
 import { DICTATE_TEXT_MAX_LEN } from '../remote/dictationContract'
@@ -94,5 +94,24 @@ describe('вільний диктант · знаки після зупинки'
     expect(textForPunctuation(parsed)).toBe('Класна робота\nОсінь прийшла тихо а сад мовчав')
     const fixed = withPunctuated(parsed, 'Класна робота.\nОсінь прийшла тихо, а сад мовчав.')
     expect(mergeSpoken('', fixed)).toBe(`${CENTER_MARK} Класна робота.\n\nОсінь прийшла тихо, а сад мовчав.`)
+  })
+})
+
+describe('v1.76 · текст із мікрофона клавіатури', () => {
+  it('слова розмітки в тексті з клавіатури стають розміткою (знімок власника 29.10)', () => {
+    const typed = 'Світає край неба палає, соловейко в темі гаї. Дуже офігенно записує з нового рядка посередині бувай здорова.'
+    expect(applySpokenLayout(typed)).toBe(
+      `Світає край неба палає, соловейко в темі гаї. Дуже офігенно записує\n${CENTER_MARK} Бувай здорова.`)
+  })
+
+  it('«пропусти рядок» — порожній рядок; «з нового рядка» в кінці рядка поля не робить зайвого пропуску', () => {
+    expect(applySpokenLayout('Перше речення пропусти рядок друге речення')).toBe('Перше речення\n\nДруге речення')
+    expect(applySpokenLayout('Перше з нового рядка\nДруге')).toBe('Перше\nДруге')
+  })
+
+  it('рядки без команд і розмітка поля — без змін; «посередині» посеред речення — звичайне слово', () => {
+    const field = `${CENTER_MARK} 30 жовтня\n\nОсінь прийшла тихо, а сад мовчав`
+    expect(applySpokenLayout(field)).toBe(field)
+    expect(applySpokenLayout('стояли посередині поля')).toBe('стояли посередині поля')
   })
 })

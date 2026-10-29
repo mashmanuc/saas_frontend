@@ -1,13 +1,27 @@
 import type { useWBStore } from '../board/state/boardStore'
 import { assertDictationLine, DictationLineError } from '../board/dictationLine'
 import { commitDictationAction } from '../board/commitDictationAction'
-import { parseRemoteSentence, sentenceRefusal, type RemoteSentence, type MechanicalSentenceRequest, type ApprovedAnalysisRequest, type SentenceResult } from './dictationLineContract'
+import { parseRemoteSentence, sentenceRefusal, type RemoteSentence, type MechanicalSentenceRequest, type ApprovedAnalysisRequest, type SentenceResult, type TextSentenceRequest } from './dictationLineContract'
 import { loadApprovedAnalysis, type ApprovedAnalysis } from '../api/dictationAnalysis'
 import { selectQuietly } from '../board/quietSelection'
+import { rewriteDictation } from '../composables/useHandwriteSolution'
 export interface RemoteSentenceAdapter { state: () => RemoteSentence | null; apply: (request: MechanicalSentenceRequest) => SentenceResult;
-  applyAnalysis?: (request: ApprovedAnalysisRequest, canWrite?: () => boolean) => Promise<SentenceResult> }
-export function makeRemoteSentenceAdapter(store: ReturnType<typeof useWBStore>, sync: { mode: string; inputLocked: boolean }, load: (proposalId: string) => Promise<ApprovedAnalysis> = loadApprovedAnalysis): RemoteSentenceAdapter {
+  applyAnalysis?: (request: ApprovedAnalysisRequest, canWrite?: () => boolean) => Promise<SentenceResult>
+  /** v1.76: виправлений текст — речення переписується на тому самому місці. */
+  applyText?: (request: TextSentenceRequest, canWrite?: () => boolean) => Promise<SentenceResult> }
+export function makeRemoteSentenceAdapter(store: ReturnType<typeof useWBStore>, sync: { mode: string; inputLocked: boolean }, load: (proposalId: string) => Promise<ApprovedAnalysis> = loadApprovedAnalysis,
+  rewrite: typeof rewriteDictation = rewriteDictation): RemoteSentenceAdapter {
   return {
+    async applyText(request, canWrite = () => true) {
+      const allowed = () => canWrite() && sync.mode === 'SYNC' && !sync.inputLocked && store.mode === 'edit'
+        && store.pages[store.currentPageIndex]?.id === request.page_id && store.selectedIds.length === 1 && store.selectedIds[0] === request.object_id
+      if (!allowed()) return { request_id: request.request_id, status: 'refused', reason: 'blocked' }
+      const result = await rewrite({ pageId: request.page_id, objectId: request.object_id, sourceRevision: request.source_revision,
+        text: request.text }, allowed)
+      if (result.status === 'refused') return { request_id: request.request_id, status: 'refused', reason: result.reason }
+      selectQuietly(request.object_id) // LAW §9 v1.67: робота з пульта — тихо (без панелі на проєкторі)
+      return { request_id: request.request_id, status: 'done' }
+    },
     async applyAnalysis(request, canWrite = () => true) {
       const allowed = () => canWrite() && sync.mode === 'SYNC' && !sync.inputLocked && store.mode === 'edit'
         && store.pages[store.currentPageIndex]?.id === request.page_id && store.selectedIds.length === 1 && store.selectedIds[0] === request.object_id
@@ -34,7 +48,7 @@ export function makeRemoteSentenceAdapter(store: ReturnType<typeof useWBStore>, 
       const data = asset.data
       return parseRemoteSentence({ page_id: page.id, object_id: asset.id, source_revision: data.source.revision,
         words: data.tokens.filter((t) => t.kind === 'word').map((t) => ({ id: t.id, text: t.text, hidden: data.hidden.words.includes(t.id) })),
-        punct: data.hidden.punct })
+        punct: data.hidden.punct, text: data.source.text })
     },
     apply(request) {
       const { request_id, page_id, object_id, ...action } = request

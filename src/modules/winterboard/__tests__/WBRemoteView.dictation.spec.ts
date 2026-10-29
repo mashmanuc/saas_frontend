@@ -285,6 +285,16 @@ describe('LAW §9 v1.69 · вільний диктант', () => {
     expect(status(w)).toBe('Готово')
   })
 
+  it('v1.76: текст із мікрофона клавіатури — «з нового рядка посередині» стає розміткою при «Написати»', async () => {
+    const w = await connected()
+    await write(w, 'Дуже добре записує з нового рядка посередині бувай здорова')
+    expect(dictates()[0].args).toMatchObject({ text: 'Дуже добре записує' })
+    expect(dictates()[0].args.align).toBeUndefined()
+    answer(dictates()[0].args.request_id, 'done')
+    await nextTick(); await nextTick()
+    expect(dictates()[1].args).toMatchObject({ text: 'Бувай здорова', align: 'center' })
+  })
+
   it('відмова посеред черги — зупинка, решта лишається в полі, кнопка знову доступна', async () => {
     const w = await connected()
     await write(w, 'Перше.\n\nДруге.\n\nТретє.')
