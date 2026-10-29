@@ -12,6 +12,7 @@
  *   INV-NMT-MT-4  вибір не пише в дошку (локальний, як у single_choice)
  *   INV-NMT-MT-5  стара картка лише з `pairs` малюється як раніше
  */
+import { readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
@@ -120,5 +121,17 @@ describe('Задача на відповідність — бланк НМТ', (
     expect(w.find('[data-testid="nmt-match"]').exists()).toBe(false)
     expect(w.findAll('.nmt-task__pair')).toHaveLength(3)
     expect(w.text()).toContain('зростає')
+  })
+})
+
+describe('видно відповідь з парти', () => {
+  // Власник 2026-10-29: «відповіді майже не видно… треба, щоб повністю зеленим заливало». Пунктир — заборонено.
+  it('правильна клітинка, варіант і коротка відповідь після «Показати відповідь» — суцільна зелена заливка', () => {
+    const src = readFileSync('src/modules/winterboard/components/board/objects/NmtTaskRenderer.vue', 'utf8')
+    const rule = (sel: string) => src.match(new RegExp(sel.replace(/[.]/g, '\\.') + '\\s*\\{([^}]+)\\}'))?.[1] ?? ''
+    for (const sel of ['.nmt-task__match-cell.is-correct', '.nmt-task__option.is-correct', '.nmt-task__correct-hint']) {
+      expect(rule(sel), sel).toMatch(/background:\s*var\(--m4-primary\)/)
+      expect(rule(sel), sel).not.toMatch(/dashed/)
+    }
   })
 })

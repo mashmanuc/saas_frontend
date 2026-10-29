@@ -915,9 +915,11 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   background: var(--m4-primary-tint);
 }
 
+/* Правильний варіант після «Показати відповідь» — суцільно зелений, як у бланку відповідності */
 .nmt-task__option.is-correct {
   border-color: var(--m4-primary);
-  background: var(--m4-primary-soft);
+  background: var(--m4-primary);
+  color: #fff;
 }
 
 .nmt-task__option.is-wrong {
@@ -931,8 +933,8 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   color: var(--m4-ink-3);
 }
 
-.nmt-task__option.is-selected .nmt-task__option-letter,
-.nmt-task__option.is-correct .nmt-task__option-letter { color: var(--m4-primary-dark); }
+.nmt-task__option.is-selected .nmt-task__option-letter { color: var(--m4-primary-dark); }
+.nmt-task__option.is-correct .nmt-task__option-letter { color: #fff; }
 .nmt-task__option.is-wrong .nmt-task__option-letter { color: var(--m4-bad); }
 
 .nmt-task__option-text {
@@ -1002,9 +1004,9 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   gap: 7px;
   font-size: var(--nmt-font-14);
   font-weight: 700;
-  color: var(--m4-primary-dark);
-  background: var(--m4-primary-tint);
-  border: 1px solid var(--m4-primary-soft);
+  color: #fff;
+  background: var(--m4-primary);
+  border: 1px solid var(--m4-primary);
   border-radius: 10px;
   padding: 5px 12px;
 }
@@ -1131,13 +1133,11 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   background: #fff;
 }
 
-/* «Показати відповідь»: правильна, яку не обрали, — зелений пунктир; обрана хибна — червона */
+/* «Показати відповідь»: правильна — суцільна зелена заливка (власник 29.10: «щоб повністю зеленим заливало»,
+   пунктир майже не було видно); обрана правильна — ще й з білою крапкою; обрана хибна — червона */
 .nmt-task__match-cell.is-correct {
-  border: 2px dashed var(--m4-primary);
-}
-.nmt-task__match-cell.is-selected.is-correct {
-  border-style: solid;
   background: var(--m4-primary);
+  border-color: var(--m4-primary);
 }
 .nmt-task__match-cell.is-wrong {
   border-color: var(--m4-bad);
