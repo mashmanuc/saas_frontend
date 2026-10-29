@@ -764,6 +764,19 @@ export interface WBTimelineEvent {
   place_ids: string[]
   image: string | null
   sources: WBSourceRef[]
+  /** Вигляд «вісь» (2026-10-29): вид події нашим словом («битва», «унія»), без сирого класу джерела. */
+  kind?: string
+  /** Індекс етапу в `TimelineCardData.eras`. */
+  era?: number
+  /** Учасники — підписи джерела мовою матеріалу, до 4. */
+  participants?: string[]
+}
+
+/** Етап теми: назву дає модель, межі — дати джерела (сервер). */
+export interface WBTimelineEra {
+  name: string
+  from: number
+  to: number
 }
 
 export interface TimelineCardData {
@@ -777,6 +790,9 @@ export interface TimelineCardData {
   active_event_id: string | null
   /** Спільний id одного knowledge_build-пакета для зв'язку шкали з картою. */
   knowledge_set_id?: string
+  /** `axis` — вигляд за макетом дизайнера (вісь у масштабі часу, етапи, «Перевір себе»); без поля — список. */
+  view?: 'axis'
+  eras?: WBTimelineEra[]
   sources: WBSourceRef[]
   /** LAW §9.D, INV-26 — як у решти матеріалів Інтегралика. */
   content_language?: WBMaterialData['content_language']

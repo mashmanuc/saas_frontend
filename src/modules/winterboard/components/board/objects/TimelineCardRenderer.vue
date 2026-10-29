@@ -28,6 +28,7 @@
     <header class="timeline-card__header">
       <span class="timeline-card__icon">🕘</span>
       <span class="timeline-card__title">{{ data.title || labels.untitled }}</span>
+      <span v-if="isAxis && yearsLabel" class="timeline-card__years">{{ yearsLabel }}</span>
       <button
         v-if="!hostWindowControls && !asset.locked && isSelected"
         type="button"
@@ -42,6 +43,19 @@
     <div ref="bodyEl" class="timeline-card__body">
       <div ref="flowEl" class="timeline-card__flow">
         <p v-if="!events.length" class="timeline-card__empty">{{ labels.empty }}</p>
+
+        <!-- Вигляд «вісь» за макетом дизайнера (2026-10-29). Запис — той самий `selectExact` нижче. -->
+        <template v-else-if="isAxis">
+          <TimelineAxisView
+            :events="events"
+            :eras="data.eras ?? []"
+            :active-id="data.active_event_id"
+            :interactive="interactive"
+            :language="materialLanguage"
+            @select="selectExact"
+          />
+          <SourceList :sources="data.sources" :language="materialLanguage" />
+        </template>
 
         <!-- Вісь. `ordinal` — рівні проміжки; `linear` — відстань за часом. -->
         <ol
@@ -71,14 +85,14 @@
         </ol>
 
         <!-- Розгорнута подія: опис і джерела. Підписи — мовою МАТЕРІАЛУ. -->
-        <div v-if="activeEvent" class="timeline-card__detail">
+        <div v-if="activeEvent && !isAxis" class="timeline-card__detail">
           <p v-if="activeEvent.description" class="timeline-card__description">
             {{ activeEvent.description }}
           </p>
           <SourceList :sources="activeEvent.sources" :language="materialLanguage" />
         </div>
 
-        <div class="timeline-card__nav" v-if="events.length > 1">
+        <div class="timeline-card__nav" v-if="events.length > 1 && !isAxis">
           <button
             type="button" class="timeline-card__navbtn"
             :disabled="activeIndex <= 0"
@@ -92,7 +106,7 @@
         </div>
 
         <!-- Джерела всієї шкали — окремо від джерел конкретної події. -->
-        <SourceList :sources="data.sources" :language="materialLanguage" />
+        <SourceList v-if="!isAxis" :sources="data.sources" :language="materialLanguage" />
       </div>
     </div>
   </div>
@@ -110,6 +124,7 @@ import { isMinimizedOnBoard } from '../../../board/objectStandard'
 import { useCardContentFit } from '../../../composables/useCardContentFit'
 import { TIMELINE_LABELS, formatTimelineDate } from '../../../board/timelinePresentation'
 import SourceList from './SourceList.vue'
+import TimelineAxisView from './TimelineAxisView.vue'
 
 const { t } = useI18n()
 
@@ -176,6 +191,23 @@ function selectEvent(id: string): void {
   }
 }
 
+/** Вигляд «вісь»: одна подія розгорнута завжди — натиск на неї ж нічого не пише (без перемикання в «жодної»).
+ *  Учень не пише — це вже стереже `selectEvent`. */
+function selectExact(id: string): void {
+  if (data.value.active_event_id === id) return
+  selectEvent(id)
+}
+
+const isAxis = computed(() => data.value.view === 'axis')
+const yearsLabel = computed(() => {
+  const years = events.value.flatMap(e => [e.date_start?.year, e.date_end?.year])
+    .filter((y): y is number => typeof y === 'number')
+  if (!years.length) return ''
+  const lo = Math.min(...years)
+  const hi = Math.max(...years)
+  return lo === hi ? String(lo) : `${lo} — ${hi}`
+})
+
 function step(delta: number): void {
   const i = activeIndex.value < 0 ? (delta > 0 ? -1 : events.value.length) : activeIndex.value
   const target = events.value[i + delta]
@@ -196,6 +228,8 @@ useCardContentFit({
     () => data.value.active_event_id,
     () => data.value.layout,
     () => data.value.orientation,
+    () => data.value.view,
+    () => JSON.stringify(data.value.eras ?? []),
     () => JSON.stringify(data.value.sources ?? []),
     () => data.value.content_language,
     () => presentationScaleOf(props.asset),
@@ -224,6 +258,9 @@ useExportCapture(() => props.asset?.id, (signal) => snapshotElement(rootEl.value
 .timeline-card__title {
   flex: 1; font-weight: 600; color: #1e3a5f;
   font-size: calc(14px * var(--wb-card-text-scale, 1));
+}
+.timeline-card__years {
+  color: #5f8379; font-variant-numeric: tabular-nums; font-size: calc(13px * var(--wb-card-text-scale, 1));
 }
 .timeline-card__delete {
   pointer-events: auto; background: none; border: none; cursor: pointer;

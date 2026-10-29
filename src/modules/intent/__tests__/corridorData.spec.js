@@ -24,7 +24,7 @@ vi.mock('@/modules/winterboard/board/state/boardStore', () => ({
 vi.mock('@/modules/ship/sceneRecorder', () => ({ recordCompanionScene: vi.fn() }))
 vi.mock('@/modules/winterboard/constants/nmt3dDefaults', () => ({ NMT3D_TEMPLATE_LABELS: {} }))
 
-import { corridorData, runBoardAction } from '../boardActions'
+import { corridorData, runBoardAction, sanitizeEras } from '../boardActions'
 
 const PROVENANCE = {
   subject: 'history', content_language: 'uk', requested_content_language: 'en', source_language: 'uk',
@@ -174,5 +174,47 @@ describe('створення матеріалу з мовою', () => {
       projection: 'mercator', historical_boundary_mode: 'none', content_language: 'en',
     })
     expect(assets[1].data.basemap_version).toMatch(/^natural-earth-110m-/)
+  })
+})
+
+// Шкала «вісь» за макетом дизайнера (2026-10-29): той самий `add_timeline`, той самий тип об'єкта.
+describe('add_timeline — вигляд «вісь»', () => {
+  const event = (id, year, extra = {}) => ({ id, date_start: { year, precision: 'year' }, label: id, ...extra })
+
+  it('view: axis — більша картка, етапи, вид/етап/учасники подій, перша подія відкрита', async () => {
+    await runBoardAction({ kind: 'add_timeline', payload: {
+      title: 'Річ Посполита', view: 'axis',
+      eras: [{ name: 'Унії', from: 1385, to: 1596 }, { name: 'Поділи', from: 1772, to: 1795 }],
+      events: [
+        event('event-1', 1385, { era: 0, kind: 'унія', participants: ['Польща', ' ', 7, 'ВКЛ'] }),
+        event('event-2', 1772, { era: 1, kind: '  ', participants: [] }),
+      ],
+    } })
+    const [asset] = assets
+    expect([asset.w, asset.h]).toEqual([1120, 640])
+    expect(asset.data).toMatchObject({ view: 'axis', active_event_id: 'event-1' })
+    expect(asset.data.eras).toHaveLength(2)
+    expect(asset.data.events[0]).toMatchObject({ kind: 'унія', era: 0, participants: ['Польща', 'ВКЛ'] })
+    expect(asset.data.events[1]).not.toHaveProperty('kind')
+    expect(asset.data.events[1]).not.toHaveProperty('participants')
+  })
+
+  it('без view — як і досі: список 760×440, жодна подія не відкрита, нових полів немає', async () => {
+    await runBoardAction({ kind: 'add_timeline', payload: { title: 'Мазепа', events: [event('e1', 1639)] } })
+    const [asset] = assets
+    expect([asset.w, asset.h]).toEqual([760, 440])
+    expect(asset.data.active_event_id).toBeNull()
+    expect(asset.data).not.toHaveProperty('view')
+    expect(asset.data).not.toHaveProperty('eras')
+  })
+
+  it('зіпсовані етапи — без смужки цілком, а не наполовину', () => {
+    const ok = [{ name: 'А', from: 1, to: 5 }, { name: 'Б', from: 6, to: 9 }]
+    expect(sanitizeEras(ok)).toEqual(ok)
+    expect(sanitizeEras([ok[0]])).toEqual([])
+    expect(sanitizeEras([ok[1], ok[0]])).toEqual([])
+    expect(sanitizeEras([{ name: '', from: 1, to: 2 }, ok[1]])).toEqual([])
+    expect(sanitizeEras([{ name: 'А', from: 5, to: 1 }, ok[1]])).toEqual([])
+    expect(sanitizeEras('etapy')).toEqual([])
   })
 })

@@ -297,6 +297,10 @@ const GRAPH_H = 480
 // людини стали поруч на аркуші 1920 (40 + 880 + 40 + 880 + 40). З 980 друга лягала поверх першої (стенд).
 const MUSEUM_CARD = [880, 560]
 
+// Шкала «вісь» за макетом дизайнера (2026-10-29): у макеті 1080 завширшки — вісь, фішки й картка події з бічною
+// колонкою; на аркуші 1920×1080 лягає з полями. Висоту далі підганяє сама картка (INV-25).
+const AXIS_TIMELINE = [1120, 640]
+
 const FOOTPRINT = {
   add_history_card: [520, 440],
   add_card: [520, 440],
@@ -320,7 +324,8 @@ export async function planFitsCurrentPage(actions) {
   for (const action of actions || []) {
     const size = action?.kind === 'add_formula' ? formulaFootprint(action.payload)
       : action?.kind === 'add_history_card' && sanitizeMuseum(action.payload?.museum) ? MUSEUM_CARD
-        : FOOTPRINT[action?.kind]
+        : action?.kind === 'add_timeline' && action.payload?.view === 'axis' ? AXIS_TIMELINE
+          : FOOTPRINT[action?.kind]
     if (!size) continue
     const [w, reserveH] = size
     const h = _reserveFor(0, reserveH, ph)
@@ -460,6 +465,7 @@ export function sourcesData(sources, status) {
 // без придатних координат — не marker; домальовувати їх не можна.
 const PRECISIONS = ['day', 'month', 'year', 'decade', 'range', 'unknown']
 const MAX_EVENTS = 12   // ТЗ §6.2: 1–12 подій у v1
+const MAX_ERAS = 5      // етапи теми у вигляді «вісь» (2026-10-29)
 
 function sanitizeDate(raw) {
   if (!raw || typeof raw !== 'object') return null
@@ -639,9 +645,29 @@ export function sanitizeEvents(raw) {
       place_ids: Array.isArray(ev.place_ids) ? ev.place_ids.map(String).slice(0, 12) : [],
       image: typeof ev.image === 'string' && ev.image ? ev.image : null,
       sources: sanitizeSourceList(ev.sources),
+      // Вигляд «вісь»: вид події, етап і учасники. Порожнього не вигадуємо — поля просто немає.
+      ...(typeof ev.kind === 'string' && ev.kind.trim() ? { kind: ev.kind.trim().slice(0, 40) } : {}),
+      ...(Number.isInteger(ev.era) && ev.era >= 0 && ev.era < MAX_ERAS ? { era: ev.era } : {}),
+      ...(Array.isArray(ev.participants) && ev.participants.some((p) => typeof p === 'string' && p.trim())
+        ? { participants: ev.participants.filter((p) => typeof p === 'string' && p.trim())
+          .map((p) => p.trim().slice(0, 60)).slice(0, 4) }
+        : {}),
     })
   }
   return out
+}
+
+/** Етапи шкали: назва й межі-роки; зіпсований етап — без смужки цілком (межі мусять іти по черзі). */
+export function sanitizeEras(raw) {
+  if (!Array.isArray(raw)) return []
+  const out = []
+  for (const era of raw.slice(0, MAX_ERAS)) {
+    const name = typeof era?.name === 'string' ? era.name.trim().slice(0, 40) : ''
+    if (!name || !Number.isInteger(era.from) || !Number.isInteger(era.to) || era.to < era.from) return []
+    if (out.length && era.from < out[out.length - 1].from) return []
+    out.push({ name, from: era.from, to: era.to })
+  }
+  return out.length >= 2 ? out : []
 }
 
 export function sanitizeMarkers(raw) {
@@ -864,20 +890,26 @@ const HANDLERS = {
   // для розв'язків/пояснень (гарна картка замість голого текстового поля).
   // H2: шкала подій. Один запис штатним `addAsset` — власного write-path,
   // окремого REST чи мутації стану повз операцію немає (ТЗ §9.3).
-  async add_timeline({ title, layout, orientation, events, knowledge_set_id, corridor, sources, source_status }, ctx) {
+  async add_timeline({ title, layout, orientation, events, knowledge_set_id, corridor, sources, source_status, view, eras }, ctx) {
     const { store, page } = await _store(ctx)
-    const { cx, cy } = _center(page, 760, 440)
+    // Вигляд «вісь» приходить лише зі шкали теми (сервер, історія, гейт); решта — як і досі, список.
+    const axis = view === 'axis'
+    const [w, h] = axis ? AXIS_TIMELINE : [760, 440]
+    const { cx, cy } = _center(page, w, h)
     const assetId = _uuid()
+    const cleanEvents = sanitizeEvents(events)
     store.addAsset({
       id: assetId, type: 'timeline_card', src: '',
-      x: cx - 380, y: cy - 220, w: 760, h: 440, rotation: 0, locked: false,
+      x: cx - w / 2, y: cy - h / 2, w, h, rotation: 0, locked: false,
       data: {
         version: 1,
         title: title || '',
         layout: layout === 'linear' ? 'linear' : 'ordinal',
         orientation: orientation === 'vertical' ? 'vertical' : 'horizontal',
-        events: sanitizeEvents(events),
-        active_event_id: null,
+        ...(axis ? { view: 'axis', eras: sanitizeEras(eras) } : {}),
+        events: cleanEvents,
+        // У макеті одна подія розгорнута завжди — перша; у списку, як і досі, жодна.
+        active_event_id: axis && cleanEvents.length ? cleanEvents[0].id : null,
         ...(knowledge_set_id ? { knowledge_set_id: String(knowledge_set_id).slice(0, 120) } : {}),
         ...corridorData(corridor),
         ...sourcesData(sources, source_status),
