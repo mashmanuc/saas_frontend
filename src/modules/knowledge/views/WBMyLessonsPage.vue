@@ -1,7 +1,7 @@
 <!-- Phase 21: My Lessons page — list of tutor's saved lessons
      Ref: PHASE21_KNOWLEDGE_CORE.md -->
 <template>
-  <div class="wb-my-lessons max-w-7xl mx-auto px-4 py-8">
+  <div class="wb-my-lessons max-w-[90rem] mx-auto px-4 py-8">
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-bold text-gray-900">{{ $t('winterboard.lesson.myLessonsTitle') }}</h1>
@@ -294,10 +294,12 @@
               <!-- Обкладинка (макет «Мої уроки», 2026-10-22): знімок дошки, а без нього — знак теми
                    з назви або монограма, як у Студії (utils/boardCover.ts). Статусу «Чернетка/Опублікований»
                    більше немає: поле означає доступ за посиланням, а не готовність уроку. -->
+              <!-- Макет Поли 29.10: колір обкладинки — від папки; частина уроку «(3)» — бейджем «ч. 3»;
+                   клік по обкладинці теж запускає урок (як «Провести»). -->
               <div
                 class="ml-cover"
                 :class="{ 'ml-cover--mono': coverOf(lesson.title).mono }"
-                :style="{ '--h': coverOf(lesson.title).hue }"
+                :style="{ '--h': cardHue(lesson) }"
               >
                 <img
                   v-if="lesson.board_thumbnail_url"
@@ -308,19 +310,34 @@
                   @error="onThumbnailError($event, lesson)"
                 />
                 <template v-else>{{ coverOf(lesson.title).glyph }}</template>
+                <span v-if="lessonTitleParts(lesson.title).part" class="ml-part" data-testid="lesson-part">
+                  {{ $t('knowledge.lesson.partBadge', { n: lessonTitleParts(lesson.title).part }) }}
+                </span>
+                <button
+                  type="button"
+                  class="ml-play"
+                  :aria-label="$t('knowledge.lesson.prepare.button')"
+                  :disabled="openingLessonId === lesson.id"
+                  data-testid="lesson-cover-play"
+                  @click="openLesson(lesson)"
+                ><span aria-hidden="true" /></button>
               </div>
 
               <!-- Info -->
               <div class="ml-info">
                 <div class="ml-text">
-                  <p v-if="subjectLabel(lesson.subject_tag)" class="ml-subj">{{ subjectLabel(lesson.subject_tag) }}</p>
+                  <p class="ml-subj" :style="{ '--h': cardHue(lesson) }" data-testid="lesson-folder">{{ folderName(lesson) }}</p>
                   <h3 class="ml-title" :title="lesson.title">
-                    {{ lesson.title }}
+                    {{ lessonTitleParts(lesson.title).title }}
                   </h3>
                   <p class="ml-meta">
                     <span>{{ $t('winterboard.boards.pageCount', { n: lesson.page_count }) }}</span>
-                    <!-- Власник 2026-10-15: дата І час збереження (кілька збережень за день розрізняються) — не лише день, як у макеті -->
-                    <span>{{ formatDate(lesson.created_at) }}</span>
+                    <span v-if="lessonTitleParts(lesson.title).part" class="ml-part-meta">
+                      {{ $t('knowledge.lesson.partBadge', { n: lessonTitleParts(lesson.title).part }) }}
+                    </span>
+                    <!-- Макет 29.10: відносна дата («вчора, 20:15», «3 дні тому»). Власник 15.10 хотів дату й час
+                         збереження — повні вони в підказці при наведенні. -->
+                    <span :title="formatDate(lesson.created_at)" data-testid="lesson-date">{{ relativeDate(lesson.created_at) }}</span>
                   </p>
                 </div>
 
@@ -343,6 +360,7 @@
                   <div class="flex items-center gap-2">
                   <!-- Одна кнопка «Поділитися ▾»: 👁 Показати (демо-лінк) / 🎁 Передати копію (grant) -->
                   <ShareLessonMenu
+                    compact
                     :busy="sharingInProgress[lesson.id] || quickGrantingId === lesson.id"
                     @share="handleShare(lesson)"
                     @transfer="quickGrant(lesson)"
@@ -354,7 +372,7 @@
                   <div class="relative" :data-lesson-menu="lesson.id">
                     <button
                       type="button"
-                      class="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                      class="ml-ic-btn"
                       :title="$t('knowledge.lesson.moreActions')"
                       :aria-label="$t('knowledge.lesson.moreActions')"
                       aria-haspopup="menu"
@@ -899,7 +917,8 @@
    Кольори обкладинки — ті самі --wb-cover-* теми, що в Студії (main.css); картка дає лише відтінок --h. */
 .ml-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  /* макет 29.10: картка від 210px (вужче не вміщаються «Провести» і дві кнопки) — на широкому екрані п'ять у ряд */
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 14px;
 }
 
@@ -963,6 +982,59 @@
   font-size: 40px;
 }
 
+/* «ч. 3» — частина уроку бейджем на обкладинці */
+.ml-part {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font: 700 11px/1 system-ui, sans-serif;
+  font-style: normal;
+  letter-spacing: 0;
+  background: rgba(255, 255, 255, 0.8);
+  color: hsl(var(--h, 165) var(--wb-cover-is, 45%) var(--wb-cover-il, 32%));
+}
+
+.ml-part-meta { display: none; }
+
+/* Клік по обкладинці запускає урок: при наведенні — затемнення і кругла кнопка ▶ */
+.ml-play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: rgba(13, 74, 62, 0);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.ml-play span {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--wb-brand, #047857);
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.2s, transform 0.2s;
+  box-shadow: 0 8px 20px -8px rgba(4, 120, 87, 0.7);
+}
+
+.ml-play span::before {
+  content: "";
+  margin-left: 4px;
+  border-left: 15px solid #fff;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+}
+
+.ml-card:hover .ml-play { background: rgba(13, 74, 62, 0.12); }
+.ml-card:hover .ml-play span { opacity: 1; transform: none; }
+
 .ml-cover__img {
   position: absolute;
   inset: 0;
@@ -985,7 +1057,11 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--wb-fg-secondary, #1f6b5a);
+  /* колір папки, приглушений, щоб читався на білому */
+  color: hsl(var(--h, 165) 45% 34%);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ml-title {
@@ -1019,9 +1095,33 @@
 
 .ml-acts {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 6px;
+  margin-top: auto;
+}
+
+/* «⋯» і «Поділитися» — значками 38×38 (макет 29.10) */
+.ml-ic-btn,
+.ml-acts :deep(.share-menu__btn--compact) {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--wb-border, rgba(5, 150, 105, 0.18));
+  border-radius: 11px;
+  background: var(--wb-card-bg, #ffffff);
+  font-size: 15px;
+  color: var(--wb-fg-secondary, #1f6b5a);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.ml-ic-btn:hover,
+.ml-acts :deep(.share-menu__btn--compact:hover) {
+  border-color: var(--wb-brand, #059669);
+  color: var(--wb-brand, #047857);
 }
 
 /* «Провести» — головна дія картки; «Починаємо…» з трикутником, що відлітає, поки відкривається дошка */
@@ -1037,14 +1137,17 @@
   padding: 9px 16px;
   font-size: 14px;
   font-weight: 700;
-  background: var(--wb-brand, #047857);
-  color: var(--color-on-accent, #ffffff);
+  /* макет 29.10: світла, темнішає, коли курсор на картці */
+  background: var(--wb-bg-active, #e3f5ee);
+  color: var(--wb-brand, #047857);
   cursor: pointer;
-  transition: filter 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
-.ml-go:hover {
-  filter: brightness(1.06);
+.ml-card:hover .ml-go,
+.ml-go:focus-visible {
+  background: var(--wb-brand, #047857);
+  color: var(--color-on-accent, #ffffff);
 }
 
 .ml-go:disabled {
@@ -1173,6 +1276,11 @@
   flex: 0 0 auto;
 }
 
+/* У списку обкладинка — значок 52px: без кнопки запуску на ній, «ч. N» — у рядку даних */
+.ml-grid--list .ml-play,
+.ml-grid--list .ml-part { display: none; }
+.ml-grid--list .ml-part-meta { display: inline; }
+
 /* Проведені: стрічка за днями */
 .ml-tl {
   display: flex;
@@ -1300,6 +1408,11 @@
     transition: none !important;
   }
 }
+
+@media (hover: none) {
+  .ml-go { background: var(--wb-brand, #047857); color: var(--color-on-accent, #ffffff); }
+  .ml-play { display: none; }
+}
 </style>
 
 <script setup lang="ts">
@@ -1381,6 +1494,7 @@ import { SAVE_COPY_QUERY, SAVE_COPY_TITLE_QUERY } from '@/modules/winterboard/bo
 import MoveToFolderDropdown from '../components/MoveToFolderDropdown.vue'
 import ErrorBoundary from '@/components/ErrorBoundary.vue'
 import { getBoardCover } from '@/modules/winterboard/utils/boardCover'
+import { folderHue, lessonTitleParts } from '../utils/folderHue'
 
 const router = useRouter()
 const route = useRoute()
@@ -1562,6 +1676,33 @@ let conductedSearchTimer: ReturnType<typeof setTimeout> | null = null
 
 function coverOf(name: string | null | undefined) {
   return getBoardCover(name, String(locale.value))
+}
+
+// Макет Поли 29.10: над назвою — папка уроку, і колір обкладинки — від папки (без папки — від назви, як було)
+const folderById = computed(() => new Map((sidebarFolders.value ?? []).map((f) => [f.id, f])))
+function lessonFolder(lesson: MyLesson): LessonFolder | null {
+  return lesson.folder ? folderById.value.get(lesson.folder) ?? null : null
+}
+function folderName(lesson: MyLesson): string {
+  return lessonFolder(lesson)?.name ?? t('knowledge.folder.unfiled')
+}
+function cardHue(lesson: MyLesson): number {
+  const folder = lessonFolder(lesson)
+  return folder ? folderHue(folder.id) : coverOf(lesson.title).hue
+}
+
+/** «сьогодні, 20:15» · «вчора, 20:15» · «3 дні тому» · «22 жовт.» (макет 29.10) */
+function relativeDate(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  const now = new Date()
+  const days = Math.round((new Date(now.toDateString()).getTime() - new Date(d.toDateString()).getTime()) / 864e5)
+  if (days <= 0) return t('knowledge.lesson.date.today', { time: formatTime(iso) })
+  if (days === 1) return t('knowledge.lesson.date.yesterday', { time: formatTime(iso) })
+  if (days < 7) return t(days < 5 ? 'knowledge.lesson.date.daysFew' : 'knowledge.lesson.date.daysMany', { n: days })
+  return d.toLocaleDateString(locale.value, {
+    day: 'numeric', month: 'short', ...(d.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}),
+  })
 }
 
 // Предмет над назвою — лише відомі коди `subject_tag` (поле буває порожнім або довільним рядком)

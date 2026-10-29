@@ -187,14 +187,18 @@ describe('WBMyLessonsPage', () => {
     expect(wrapper.text()).toContain('Physics Forces')
   })
 
-  // Власник 2026-10-15: на картці — дата І час збереження, щоб кілька збережень за день розрізнялись.
-  it('картка показує дату й час збереження', async () => {
+  // Власник 2026-10-15: дата І час збереження, щоб кілька збережень за день розрізнялись.
+  // Макет 29.10: на картці — відносна дата, повна дата з часом — у підказці.
+  it('картка показує відносну дату, повну дату й час — у підказці', async () => {
     vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue(MOCK_FILTERED_RESPONSE)
     const wrapper = createWrapper()
     await flushPromises()
 
     const card = wrapper.findAll('.wb-lesson-card').find(c => c.text().includes('Algebra Basics'))!
-    expect(card.text()).toMatch(/18 бер\. 2026 р\., \d{2}:\d{2}/)
+    const date = card.get('[data-testid="lesson-date"]')
+    expect(date.attributes('title')).toMatch(/18 бер\. 2026 р\., \d{2}:\d{2}/)
+    // рік дописується лише для минулих років — тест не прив'язаний до поточного року
+    expect(date.text()).toMatch(/^18 бер\.( 2026 р\.)?$/)
   })
 
   // Власник 2026-10-25: «меню ховається під плитку наступну» — піднята наведенням картка замикала меню у своєму

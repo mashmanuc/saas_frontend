@@ -7,7 +7,18 @@
 -->
 <template>
   <div ref="rootEl" class="share-menu">
+    <!-- compact (макет «Мої уроки» 29.10): лише значок ↗, підпис — у підказці -->
     <button
+      v-if="compact"
+      type="button"
+      class="share-menu__btn share-menu__btn--compact disabled:opacity-50"
+      :title="$t('knowledge.grants.shareMenu')"
+      :aria-label="$t('knowledge.grants.shareMenu')"
+      :disabled="busy"
+      @click.stop="open = !open"
+    >{{ busy ? '⏳' : '↗' }}</button>
+    <button
+      v-else
       type="button"
       class="share-menu__btn px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
       :disabled="busy"
@@ -38,7 +49,8 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-const props = defineProps<{ busy?: boolean }>()
+// compact — лише значок ↗ (макет «Мої уроки» 29.10); без нього — кнопка «🔗 Поділитися ▾», як була
+const props = defineProps<{ busy?: boolean; compact?: boolean }>()
 const emit = defineEmits<{ share: []; transfer: []; 'open-change': [open: boolean] }>()
 
 const open = ref(false)

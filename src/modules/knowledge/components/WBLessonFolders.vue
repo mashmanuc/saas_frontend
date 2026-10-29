@@ -42,13 +42,13 @@
       <li>
         <button
           type="button"
-          class="w-full text-left px-2 py-1.5 text-sm rounded-lg transition-colors"
+          class="w-full text-left px-2 py-1.5 text-sm rounded-lg transition-colors wb-folder__btn"
           :aria-current="activeFolder === null ? 'true' : undefined"
           :class="activeFolder === null ? 'wb-folder--active' : 'text-gray-700 hover:bg-gray-50'"
           @click="selectFolder(null)"
         >
-          {{ $t('knowledge.folder.allLessons') }}
-          <span class="text-xs text-gray-400 ml-1">({{ totalCount }})</span>
+          <span class="wb-folder__name">{{ $t('knowledge.folder.allLessons') }}</span>
+          <span class="wb-folder__n">({{ totalCount }})</span>
         </button>
       </li>
 
@@ -85,15 +85,15 @@
           <button
             v-else
             type="button"
-            class="flex-1 text-left px-2 py-1.5 text-sm rounded-lg transition-colors truncate"
+            class="flex-1 text-left px-2 py-1.5 text-sm rounded-lg transition-colors wb-folder__btn"
             :aria-current="activeFolder === f0.id ? 'true' : undefined"
-            :class="activeFolder === f0.id ? 'wb-folder--active' : 'text-gray-700 hover:bg-gray-50'"
+            :class="[activeFolder === f0.id ? 'wb-folder--active' : 'text-gray-700 hover:bg-gray-50', { 'wb-folder--empty': !f0.lesson_count && !f0.children_count }]"
             @click="selectFolder(f0.id)"
             @dblclick.prevent="startRename(f0)"
             :title="f0.name"
           >
-            📁 {{ f0.name }}
-            <span class="text-xs text-gray-400 ml-1">({{ f0.lesson_count }})</span>
+            <span class="wb-folder__dot" :style="{ '--h': folderHue(f0.id) }" aria-hidden="true" /><span class="wb-folder__name">{{ f0.name }}</span>
+            <span class="wb-folder__n">({{ f0.lesson_count }})</span>
           </button>
           <!-- Rename button (Phase 25 BUG-3) -->
           <button
@@ -150,15 +150,15 @@
               <button
                 v-else
                 type="button"
-                class="flex-1 text-left px-2 py-1 text-sm rounded-lg transition-colors truncate"
+                class="flex-1 text-left px-2 py-1 text-sm rounded-lg transition-colors wb-folder__btn"
                 :aria-current="activeFolder === f1.id ? 'true' : undefined"
-                :class="activeFolder === f1.id ? 'wb-folder--active' : 'text-gray-600 hover:bg-gray-50'"
+                :class="[activeFolder === f1.id ? 'wb-folder--active' : 'text-gray-600 hover:bg-gray-50', { 'wb-folder--empty': !f1.lesson_count && !f1.children_count }]"
                 @click="selectFolder(f1.id)"
                 @dblclick.prevent="startRename(f1)"
                 :title="f1.name"
               >
-                📁 {{ f1.name }}
-                <span class="text-xs text-gray-400 ml-1">({{ f1.lesson_count }})</span>
+                <span class="wb-folder__dot" :style="{ '--h': folderHue(f1.id) }" aria-hidden="true" /><span class="wb-folder__name">{{ f1.name }}</span>
+                <span class="wb-folder__n">({{ f1.lesson_count }})</span>
               </button>
               <!-- Rename button (Phase 25 BUG-3) -->
               <button
@@ -214,15 +214,15 @@
                   <button
                     v-else
                     type="button"
-                    class="flex-1 text-left px-2 py-1 text-xs rounded-lg transition-colors truncate"
+                    class="flex-1 text-left px-2 py-1 text-xs rounded-lg transition-colors wb-folder__btn"
                     :aria-current="activeFolder === f2.id ? 'true' : undefined"
-                    :class="activeFolder === f2.id ? 'wb-folder--active' : 'text-gray-500 hover:bg-gray-50'"
+                    :class="[activeFolder === f2.id ? 'wb-folder--active' : 'text-gray-500 hover:bg-gray-50', { 'wb-folder--empty': !f2.lesson_count && !f2.children_count }]"
                     @click="selectFolder(f2.id)"
                     @dblclick.prevent="startRename(f2)"
                     :title="f2.name"
                   >
-                    📁 {{ f2.name }}
-                    <span class="text-xs text-gray-400 ml-1">({{ f2.lesson_count }})</span>
+                    <span class="wb-folder__dot" :style="{ '--h': folderHue(f2.id) }" aria-hidden="true" /><span class="wb-folder__name">{{ f2.name }}</span>
+                    <span class="wb-folder__n">({{ f2.lesson_count }})</span>
                   </button>
                   <!-- Rename button (Phase 25 BUG-3) -->
                   <button
@@ -262,6 +262,7 @@
 </template>
 
 <script setup lang="ts">
+import { folderHue } from '../utils/folderHue'
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { lessonSaveApi } from '../api/lessonSaveApi'
@@ -433,4 +434,37 @@ defineExpose({ loadFolders, folders })
   font-weight: 600;
   box-shadow: inset 3px 0 0 var(--accent);
 }
+
+/* Макет «Мої уроки» 29.10: кольоровий квадратик папки (той самий колір, що на обкладинках її уроків),
+   кількість праворуч, порожня папка бліда */
+/* рядок папки: квадратик · назва (обрізається) · кількість праворуч — кількість не перескакує вниз,
+   коли при наведенні з'являються ✏️ + ✕ */
+.wb-folder__btn {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.wb-folder__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.wb-folder__dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 3px;
+  background: hsl(var(--h, 165) 55% 55%);
+}
+.wb-folder__n {
+  flex: none;
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #9ca3af;
+}
+.wb-folder--empty { opacity: 0.5; }
 </style>

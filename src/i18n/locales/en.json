@@ -12011,6 +12011,8 @@
       "restrictedMaterial": "Available after booking a lesson"
     },
     "lesson": {
+      "partBadge": "pt. {n}",
+      "date": {"today": "today, {time}", "yesterday": "yesterday, {time}", "daysFew": "{n} days ago", "daysMany": "{n} days ago"},
       "tutor": "Teacher",
       "public": "Public",
       "startReplay": "Watch Lesson",

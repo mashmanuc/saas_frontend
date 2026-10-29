@@ -198,7 +198,7 @@ describe('NmtTaskRenderer — головна кнопка «Перевірити
     expect(primary().text()).toBe('Перевірити')
     await primary().trigger('click')
     const updates = w.emitted('update:asset') as Array<[{ data: Record<string, unknown> }]>
-    expect(updates.at(-1)![0].data.showAnswer).toBe(true)
+    expect(updates[updates.length - 1][0].data.showAnswer).toBe(true)
   })
 })
 

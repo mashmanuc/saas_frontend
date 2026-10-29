@@ -12099,6 +12099,8 @@
       "restrictedMaterial": "Доступно після запису на урок"
     },
     "lesson": {
+      "partBadge": "ч. {n}",
+      "date": {"today": "сьогодні, {time}", "yesterday": "вчора, {time}", "daysFew": "{n} дні тому", "daysMany": "{n} днів тому"},
       "tutor": "Вчитель",
       "public": "Публічний",
       "startReplay": "Переглянути урок",

@@ -11008,6 +11008,8 @@
       "restrictedMaterial": "Доступно после записи на урок"
     },
     "lesson": {
+      "partBadge": "ч. {n}",
+      "date": {"today": "сегодня, {time}", "yesterday": "вчера, {time}", "daysFew": "{n} дня назад", "daysMany": "{n} дней назад"},
       "tutor": "Репетитор",
       "public": "Публичный",
       "startReplay": "Просмотреть урок",
