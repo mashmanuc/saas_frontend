@@ -249,7 +249,7 @@
           @mousedown.stop
           @pointerdown.stop
         >
-          {{ data.showAnswer ? t('winterboard.widget.nmtTask.hideAnswer') : t('winterboard.widget.nmtTask.showAnswer') }}
+          {{ primaryLabel }}
         </button>
         <button
           v-if="data.solution && revealControlsAllowed"
@@ -587,6 +587,14 @@ const statusText = computed(() => {
   }
   return ''
 })
+/** Головна кнопка (власник 29.10: «перейменуй на „Перевірити“»): учень уже щось обрав чи вписав — «Перевірити»,
+ *  нічого — «Показати відповідь». Дія та сама — збережений `showAnswer` (LAW §9 v1.48), пульт натискає її так само. */
+const somethingPicked = computed(() => selectedIds.value.size > 0 || matchPickedCount.value > 0
+  || openAnswerValue.value.trim() !== '')
+const primaryLabel = computed(() => data.value.showAnswer
+  ? t('winterboard.widget.nmtTask.hideAnswer')
+  : t(somethingPicked.value ? 'winterboard.widget.nmtTask.check' : 'winterboard.widget.nmtTask.showAnswer'))
+
 const statusTone = computed(() => statusIsScore.value
   ? (matchCorrectCount.value === matching.value!.left.length ? 'is-ok' : 'is-bad')
   : '')

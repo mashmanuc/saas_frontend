@@ -188,6 +188,20 @@ describe('NmtTaskRenderer — картинки варіантів', () => {
   })
 })
 
+describe('NmtTaskRenderer — головна кнопка «Перевірити»', () => {
+  // Власник 2026-10-29: «перейменуй на „Перевірити“» — коли вже щось обрано; дія та сама (showAnswer).
+  it('нічого не обрано — «Показати відповідь»; обрано — «Перевірити» і та сама дія', async () => {
+    const w = mountTask({ taskType: 'single_choice', question: 'Оберіть', options: OPTIONS }, true, true)
+    const primary = () => w.get('.nmt-task__btn--primary')
+    expect(primary().text()).toBe('Показати відповідь')
+    await w.findAll('.nmt-task__option')[0].trigger('click')
+    expect(primary().text()).toBe('Перевірити')
+    await primary().trigger('click')
+    const updates = w.emitted('update:asset') as Array<[{ data: Record<string, unknown> }]>
+    expect(updates.at(-1)![0].data.showAnswer).toBe(true)
+  })
+})
+
 describe('NmtTaskRenderer — без «✎ тема»', () => {
   // Власник 2026-10-29: «цю мітку тема прибрати і для сорокового… вона тут вже не потрібна». Ні вчителю, ні учню.
   it('учитель (і власник) не бачить контролу теми на картці', () => {
