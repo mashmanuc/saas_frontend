@@ -9,6 +9,8 @@
  *    відкриту подію нічого не пише; «Перевір себе» не пише нічого (лише цей екран, LAW §9 v1.71).
  * 3. ВІСЬ У МАСШТАБІ ЧАСУ. Відстань між точками пропорційна рокам, а не порядку.
  * 4. ЧЕСНІСТЬ ПЕРЕВІРКИ. У «Перевір себе» дати сховані до відповіді; правильна дата — серед варіантів.
+ * 5. НИЗ КАРТКИ ЗА МАКЕТОМ (`DATA/ПОЛА/істор.zip`): лід і «Читати далі», проміжок від попередньої події, сусіди в
+ *    кнопках, етап з крапками, смужка прогресу — усе з полів подій; у перевірці ні проміжків, ні дат сусідів.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
@@ -83,9 +85,60 @@ describe('вигляд за даними', () => {
     expect(w.find('.tl-axis__full').text()).toBe('24 березня 1794 — 16 листопада 1794')
   })
 
-  it('вид і етап події — мітками', () => {
+  it('етап — кольоровою плашкою з крапками «яка подія в етапі», вид — окремо', () => {
     const w = mountCard(axisAsset({ active_event_id: 'event-3' }))
-    expect(w.findAll('.tl-axis__tag').map(t => t.text())).toEqual(['Поділи', 'поділ'])
+    const pill = w.find('[data-testid="timeline-axis-era-pill"]')
+    expect(pill.text()).toBe('Поділи · 1772–1795')
+    expect(pill.findAll('.tl-axis__estep i').map(i => i.classes().includes('on'))).toEqual([true, false, false])
+    expect(w.find('[data-testid="timeline-axis-kind"]').text()).toBe('поділ')
+  })
+
+  it('учасники — фішками з ініціалами', () => {
+    const w = mountCard(axisAsset())
+    expect(w.findAll('.tl-axis__ppl span').map(s => s.text())).toEqual(['ППольща', 'ВВКЛ'])
+  })
+})
+
+describe('низ картки за макетом дизайнера', () => {
+  it('проміжок від попередньої події — з дат джерела; у першої його немає', async () => {
+    const w = mountCard(axisAsset({ active_event_id: 'event-3' }))
+    expect(w.find('[data-testid="timeline-axis-gap"]').text()).toBe('через 203 роки після «Люблінська унія»')
+    const first = mountCard(axisAsset())
+    expect(first.find('[data-testid="timeline-axis-gap"]').exists()).toBe(false)
+    // після періоду рахуємо від його кінця: 1794 (березень—листопад) → 1795 = 1 рік
+    const after = mountCard(axisAsset({ active_event_id: 'event-5' }))
+    expect(after.find('[data-testid="timeline-axis-gap"]').text()).toBe('через 1 рік після «Повстання Костюшка»')
+  })
+
+  it('сусіди в кнопках: дата й назва, «N років тому / через N років»; на краю — «Початок шкали»', () => {
+    const w = mountCard(axisAsset({ active_event_id: 'event-2' }))
+    const part = (id: string, sel: string) => w.find(`[data-testid="${id}"] ${sel}`).text()
+    expect(part('timeline-axis-prev', 'small')).toBe('Попередня · 184 роки тому')
+    expect(part('timeline-axis-prev', 'em')).toBe('1385')
+    expect(part('timeline-axis-prev', 'b')).toBe('1385Кревська унія')
+    expect(part('timeline-axis-next', 'small')).toBe('Наступна · через 203 роки')
+    expect(part('timeline-axis-next', 'b')).toBe('1772Перший поділ')
+    const prev = mountCard(axisAsset()).find('[data-testid="timeline-axis-prev"]')
+    expect(prev.attributes('disabled')).toBeDefined()
+    expect(prev.find('small').text()).toBe('Це перша подія')
+    expect(prev.find('b').text()).toBe('Початок шкали')
+  })
+
+  it('смужка прогресу: минулі, поточна; підпис «Подія N з M» для читачів екрана', () => {
+    const w = mountCard(axisAsset({ active_event_id: 'event-3' }))
+    const prog = w.find('[data-testid="timeline-axis-prog"]')
+    expect(prog.attributes('aria-label')).toBe('Подія 3 з 5')
+    expect(prog.findAll('i').map(i => (i.classes().includes('on') ? 'on' : i.classes().includes('past') ? 'past' : '-')))
+      .toEqual(['past', 'past', 'on', '-', '-'])
+  })
+
+  it('у «Перевір себе» — ні проміжку, ні дат сусідів (вони підказали б відповідь)', async () => {
+    const w = mountCard(axisAsset({ active_event_id: 'event-2' }))
+    await w.find('[data-testid="timeline-axis-quiz"]').trigger('click')
+    expect(w.find('[data-testid="timeline-axis-gap"]').exists()).toBe(false)
+    expect(w.find('[data-testid="timeline-axis-prev"] small').text()).toBe('Попередня')
+    expect(w.find('[data-testid="timeline-axis-prev"] b').text()).toBe('Кревська унія')
+    expect(w.find('[data-testid="timeline-axis-next"]').text()).not.toMatch(/\d/)
   })
 })
 
@@ -191,7 +244,7 @@ describe('перевірка не підказує відповіді', () => {
 
   it('етап з однією подією — один рік, а не «1841–1841»', () => {
     const w = mountCard(axisAsset({ eras: [{ name: 'Причини', from: 1385, to: 1385 }, { name: 'Поділи', from: 1569, to: 1795 }] }))
-    expect(w.find('.tl-axis__row b').text()).toBe('1385')
+    expect(w.find('[data-testid="timeline-axis-era-pill"]').text()).toBe('Причини · 1385')
   })
 })
 
@@ -222,7 +275,7 @@ describe('«на всю дошку» (власник 2026-10-29: «щоб діт
   })
 })
 
-describe('текст події: «… далі» і мова статті (власник 2026-10-29: «на самому цікавому місці обрізалось»)', () => {
+describe('текст події: лід і «Читати далі», мова статті (власник 2026-10-29: «на самому цікавому місці обрізалось»)', () => {
   const withText = () => {
     const asset = axisAsset()
     const events = (asset.data as { events: Array<Record<string, unknown>> }).events
@@ -232,14 +285,29 @@ describe('текст події: «… далі» і мова статті (вл
     return asset
   }
 
-  it('спершу початок; натиск на «… далі» чи на сам текст — увесь вступ; записів немає', async () => {
+  it('лід крупно без «…», решта вступу — під «Читати далі» (і натиском на неї); записів немає', async () => {
     const w = mountCard(withText())
+    expect(w.find('[data-testid="timeline-axis-text"]').text()).toBe('Початок статті. Друге речення.')
+    const rest = w.find('[data-testid="timeline-axis-rest"]')
+    expect(rest.text()).toBe('Третє.\n\nДругий абзац.')
+    expect(rest.classes()).not.toContain('open')
+    await w.find('[data-testid="timeline-axis-more"]').trigger('click')
+    expect(w.find('[data-testid="timeline-axis-rest"]').classes()).toContain('open')
+    expect(w.find('[data-testid="timeline-axis-more"]').text()).toBe('Згорнути')
+    await w.find('[data-testid="timeline-axis-rest"]').trigger('click')
+    expect(w.find('[data-testid="timeline-axis-rest"]').classes()).not.toContain('open')
+    expect(w.find('[data-testid="timeline-axis-more"]').text()).toBe('Читати далі')
+    expect(w.emitted('update:asset')).toBeUndefined()
+  })
+
+  it('повний вступ не продовжує лід (інша редакція) — «Читати далі» показує його замість ліду', async () => {
+    const asset = withText()
+    ;(asset.data as { events: Array<Record<string, unknown>> }).events[0].description_full = 'Зовсім інший вступ.\n\nДалі.'
+    const w = mountCard(asset)
     expect(w.find('[data-testid="timeline-axis-text"]').text()).toBe('Початок статті. Друге речення. …')
     await w.find('[data-testid="timeline-axis-more"]').trigger('click')
-    expect(w.find('[data-testid="timeline-axis-text"]').text()).toContain('Другий абзац.')
-    await w.find('[data-testid="timeline-axis-text"]').trigger('click')
-    expect(w.find('[data-testid="timeline-axis-text"]').text()).toBe('Початок статті. Друге речення. …')
-    expect(w.emitted('update:asset')).toBeUndefined()
+    expect(w.find('[data-testid="timeline-axis-text"]').exists()).toBe(false)
+    expect(w.find('[data-testid="timeline-axis-rest"]').text()).toBe('Зовсім інший вступ.\n\nДалі.')
   })
 
   it('інша подія — знову початок; без повного вступу кнопки «далі» немає', async () => {
@@ -248,7 +316,7 @@ describe('текст події: «… далі» і мова статті (вл
     await w.setProps({ asset: { ...withText(), data: { ...(withText().data as object), active_event_id: 'event-2' } } })
     expect(w.find('[data-testid="timeline-axis-more"]').exists()).toBe(false)
     await w.setProps({ asset: withText() })
-    expect(w.find('[data-testid="timeline-axis-text"]').text()).toBe('Початок статті. Друге речення. …')
+    expect(w.find('[data-testid="timeline-axis-rest"]').classes()).not.toContain('open')
   })
 
   it('статті мовою матеріалу немає — чесна позначка «Стаття лише англійською»', () => {

@@ -19,23 +19,38 @@ export const TIMELINE_LABELS: Record<MaterialLanguage, {
   learn: string; quiz: string; play: string; pause: string; participants: string; stage: string
   progress: string; question: string; right: string; answer: string; score: string
   more: string; less: string; articleLang: Record<'uk' | 'en', string>
+  kind: string; earlier: string; later: string; after: string; same: string
+  first: string; last: string; start: string; end: string
 }> = {
   uk: {
     untitled: 'Шкала подій', empty: 'Подій ще немає', prev: 'Попередня', next: 'Наступна',
     learn: 'Стрічка', quiz: 'Перевір себе', play: 'Розповідати по черзі', pause: 'Зупинити',
     participants: 'Учасники', stage: 'Етап', progress: 'Подія {n} з {m}',
     question: 'У якому році (або роках)?', right: 'Правильно!', answer: 'Правильна відповідь: {d}',
-    score: '{ok} з {all}', more: 'далі', less: 'згорнути',
+    score: '{ok} з {all}', more: 'Читати далі', less: 'Згорнути',
     articleLang: { en: 'Стаття лише англійською', uk: 'Стаття лише українською' },
+    kind: 'Вид події', earlier: '{n} тому', later: 'через {n}', after: 'через {n} після «{e}»', same: 'одночасно',
+    first: 'Це перша подія', last: 'Це остання подія', start: 'Початок шкали', end: 'Кінець шкали',
   },
   en: {
     untitled: 'Timeline', empty: 'No events yet', prev: 'Previous', next: 'Next',
     learn: 'Timeline', quiz: 'Test yourself', play: 'Tell one by one', pause: 'Stop',
     participants: 'Participants', stage: 'Stage', progress: 'Event {n} of {m}',
     question: 'In what year (or years)?', right: 'Correct!', answer: 'Correct answer: {d}',
-    score: '{ok} of {all}', more: 'more', less: 'less',
+    score: '{ok} of {all}', more: 'Read more', less: 'Show less',
     articleLang: { en: 'Article in English only', uk: 'Article in Ukrainian only' },
+    kind: 'Kind of event', earlier: '{n} earlier', later: '{n} later', after: '{n} after «{e}»', same: 'at the same time',
+    first: 'This is the first event', last: 'This is the last event', start: 'Start of the timeline',
+    end: 'End of the timeline',
   },
+}
+
+/** «43 роки», «1 рік», «12 років» / «43 years» — проміжок між датами джерела, нічого не вигадано. */
+export function yearsText(n: number, language: MaterialLanguage): string {
+  if (language === 'en') return `${n} ${n === 1 ? 'year' : 'years'}`
+  const word = n % 10 === 1 && n % 100 !== 11 ? 'рік'
+    : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 'роки' : 'років'
+  return `${n} ${word}`
 }
 
 export const MAP_LABELS: Record<MaterialLanguage, {

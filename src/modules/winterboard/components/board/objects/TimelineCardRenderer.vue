@@ -222,15 +222,17 @@ const DESIGN_WIDTH = 1100
 const MAX_EXPAND_SCALE = 1.8
 const expandScale = ref(1)
 let resize: ResizeObserver | null = null
-watch(() => props.isExpanded, (on) => {
+// Стежимо й за елементом: картка, що з'явилась уже розгорнутою (розгорнутість переживає перехід сторінкою), до
+// монтування ще не має кореня — без нього шрифт лишався б звичайним.
+watch(() => [props.isExpanded, rootEl.value] as const, ([on, el]) => {
   resize?.disconnect()
   resize = null
   expandScale.value = 1
-  if (!on || !rootEl.value || typeof ResizeObserver === 'undefined') return
+  if (!on || !el || typeof ResizeObserver === 'undefined') return
   resize = new ResizeObserver(([entry]) => {
     expandScale.value = Math.min(MAX_EXPAND_SCALE, Math.max(1, entry.contentRect.width / DESIGN_WIDTH))
   })
-  resize.observe(rootEl.value)
+  resize.observe(el)
 }, { immediate: true, flush: 'post' })
 onBeforeUnmount(() => resize?.disconnect())
 const textScaleStyle = computed(() => ({
@@ -291,6 +293,9 @@ useExportCapture(() => props.asset?.id, (signal) => snapshotElement(rootEl.value
 .timeline-card__body { flex: 1; overflow-y: auto; padding: 12px; pointer-events: auto; }
 .timeline-card.is-readonly .timeline-card__body { pointer-events: none; }
 .timeline-card__flow { display: flow-root; }
+/* На всю дошку «вісь» заповнює висоту: низ картки (кнопки сусідів, джерела) — унизу екрана, без білої порожнечі */
+.timeline-card.is-expanded .timeline-card__flow { display: flex; flex-direction: column; min-height: 100%; }
+.timeline-card.is-expanded .tl-axis { flex: 1; }
 .timeline-card__empty { color: #64748b; font-size: calc(13px * var(--wb-card-text-scale, 1)); }
 
 .timeline-card__axis { list-style: none; margin: 0; padding: 0; }
