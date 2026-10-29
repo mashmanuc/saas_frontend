@@ -346,10 +346,15 @@
              плеєра натискаються, а картку виділяють і тягнуть за шапку — тому шар
              лише на шапці (28 px, як .wb-youtube-player__title). Нічого видимого
              поверх плеєра (правила YouTube); нижні ручки розміру — під карткою. -->
+        <!-- Відео з файлу (власник 2026-10-29: «відео не можу включити мишкою, тільки пультом» → «роби»): з олівцем
+             воно мишку не ловить (19.10), тож зі стрілкою шар не накриває нижню смужку з кнопками плеєра. -->
         <div
           v-if="currentTool === 'select' && (asset.type === 'video_player' || asset.type === 'youtube_player') && !isInMediaShow(asset)"
           class="wb-media-drag-surface"
-          :class="{ 'wb-media-drag-surface--header': asset.type === 'youtube_player' }"
+          :class="{
+            'wb-media-drag-surface--header': asset.type === 'youtube_player',
+            'wb-media-drag-surface--video': asset.type === 'video_player',
+          }"
         />
         <!-- Resize handles for video/youtube (visible when selected in select mode) -->
         <template v-if="isResizableMedia(asset) && wbStore.selectedIds.includes(asset.id) && currentTool === 'select' && !isInMediaShow(asset)">
@@ -4592,8 +4597,9 @@ function handleMediaPointerDown(asset: WBAsset, e: PointerEvent): void {
   if (currentTool.value !== 'select') return
 
   // Don't initiate drag when clicking native media controls or buttons
+  // (2026-10-29: і рідні кнопки відео з файлу — смужка під шаром перетягування; повзунок не тягне картку)
   const target = e.target as HTMLElement
-  if (target.closest('audio, button, input, select, [role="button"]')) {
+  if (target.closest('audio, video, button, input, select, [role="button"]')) {
     // Just select, don't drag
     wbStore.selectItems([asset.id])
     selectedNode.value = null
@@ -7167,6 +7173,12 @@ function theoryOverlayShadow(asset: { data?: unknown }): string {
    ідуть у DOM пізніше) лягають поверх шару. user-select: none — інакше натискання
    на шапці починає виділення тексту, наступне натискання тягне вже це виділення
    (перетягування картки не стартує), а iframe плеєра заливає синім. */
+/* Відео з файлу (2026-10-29): шар до смужки рідних кнопок плеєра (▶, перемотка, гучність, весь екран) — вона натискається
+   мишкою; тягнуть картку за решту картинки. Смужка рідних кнопок — у пікселях екрана, без масштабу дошки: ряд кнопок
+   ~40 px над повзунком, разом ≈ 68 px (виміряно на стенді й на знімку власника). */
+.wb-media-drag-surface--video {
+  bottom: 72px;
+}
 .wb-media-drag-surface--header {
   bottom: auto;
   height: 28px;
