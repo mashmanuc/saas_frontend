@@ -154,6 +154,7 @@ describe('commandPlaceholder — перше поле палітри за пре�
     const text = commandPlaceholder(tipSubjects(state()))
     expect(text).not.toMatch(/графік|формул/)
     expect(text).toMatch(/Полтавська битва/)
+    expect(text).toMatch(/події Кримської війни/)          // шкала подій теми (власник 2026-10-29)
   })
   it('лише математика — графік', () => {
     expect(commandPlaceholder(tipSubjects(state({ registry: registry('math') })))).toMatch(/графік/)
@@ -161,5 +162,18 @@ describe('commandPlaceholder — перше поле палітри за пре�
   it('реєстр ще не завантажено — нейтрально, без предмета', () => {
     const text = commandPlaceholder(new Set())
     expect(text).not.toMatch(/графік|битва/)
+  })
+})
+
+// Власник 2026-10-29: Інтегралик у паузі має казати й про нову шкалу подій; стара підказка
+// «шкала подій і карта» (одна-дві дати однієї сутності) — більше не обіцянка.
+describe('підказки історії — про шкалу подій теми', async () => {
+  const { tipPool } = await import('../assistantTips')
+  it('на дошці з історією є підказки про «події…», «Перевір себе» і ⛶; старої обіцянки немає', () => {
+    const texts = tipPool('board', tipSubjects(state()))
+    expect(texts).toContain('«Покажи події Кримської війни» — покладу шкалу з датами з енциклопедії.')
+    expect(texts.some((x) => x.includes('Перевір себе'))).toBe(true)
+    expect(texts.some((x) => x.includes('⛶'))).toBe(true)
+    expect(texts.some((x) => x.includes('шкала подій і карта'))).toBe(false)
   })
 })
