@@ -13045,7 +13045,12 @@
       "savedNext": "Done, the next lesson is up",
       "savedRepeat": "Held, the topic will be repeated",
       "savedNotHeld": "Did not happen",
-      "savedReview": "Review added to the plan"
+      "savedReview": "Review added to the plan",
+      "nextLong": "Held, moving on",
+      "nextHint": "Topic learned",
+      "repeatLong": "Held, needs repeating",
+      "repeatHint": "Topic stays in the plan",
+      "notHeldHint": "Nothing changes"
     },
     "workspace": {
       "showLearner": "Show to student",
@@ -13061,7 +13066,22 @@
       "delete": "Delete program",
       "deleteTitle": "Delete program?",
       "deleteText": "The program for {learner} will disappear from the programs list and from the board’s Program button. Prepared lessons stay in My lessons.",
-      "deleteConfirm": "Delete"
+      "deleteConfirm": "Delete",
+      "deleteShort": "Delete",
+      "count": "{done} of {total}",
+      "lessonsDone": "lessons done",
+      "was": "Last",
+      "lessonOf": "Lesson {n} of {total}",
+      "openLesson": "Open lesson",
+      "prepareLesson": "Prepare lesson",
+      "after": "After the lesson",
+      "expandAll": "Expand all",
+      "collapseAll": "Collapse",
+      "pill": {
+        "ok": "Done",
+        "rep": "Repeat",
+        "now": "Today"
+      }
     },
     "pace": {
       "0_50": "Half speed",

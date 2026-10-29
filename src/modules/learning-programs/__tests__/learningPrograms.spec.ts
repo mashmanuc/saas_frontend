@@ -342,7 +342,8 @@ describe('«Видалити програму» (власник 29.10)', () => {
   const mountView = () => mount(ProgramWorkspaceView, { global: { plugins: [i18n()], stubs: { teleport: true, RouterLink: true } } })
   const confirm = async (w: ReturnType<typeof mountView>) => {
     await w.find('[data-testid="lp-delete"]').trigger('click'); await flushPromises()
-    const yes = w.findAll('button').find((b) => b.text() === uk.learningPrograms.workspace.deleteConfirm)!
+    // У шапці теж «Видалити» (макет 29.10) — підтвердження в діалозі, він останній у розмітці
+    const yes = w.findAll('button').filter((b) => b.text() === uk.learningPrograms.workspace.deleteConfirm).at(-1)!
     await yes.trigger('click'); await flushPromises()
   }
 
@@ -368,5 +369,46 @@ describe('«Видалити програму» (власник 29.10)', () => {
     await confirm(w)
     expect(push).not.toHaveBeenCalled()
     expect(w.find('.lpw__notice').text()).toBe(uk.learningPrograms.errors.generic)
+  })
+})
+
+describe('сторінка програми за макетом (власник 29.10)', () => {
+  const L = (id: string, pos: number, item: string, extra: Partial<ProgramLesson> = {}) => ({
+    lesson_id: id, position: pos, item_id: item, title: `Заняття ${pos}`, role: 'TOPIC', unit_refs: ['t'],
+    credit_state: 'open', material: null, ...extra,
+  })
+  const make = (todayId: string, lessons: any[]) => ({
+    ...PROGRAM, level: { ordinal: 3 }, pace: '1.00',
+    items: [{ item_id: 'A', order: 1, title: 'Старт', state: 'done' }, { item_id: 'B', order: 2, title: '5–6 клас', state: 'now' },
+            { item_id: 'C', order: 3, title: '7 клас', state: 'next' }],
+    lessons,
+    summary: { today: { lesson_id: todayId, title: '' }, last: null, next: [{ lesson_id: 'l3', title: 'Заняття 3' }] },
+  }) as unknown as ProgramDetail
+  const mountView = () => mount(ProgramWorkspaceView, { global: { plugins: [i18n()], stubs: { teleport: true, RouterLink: true } } })
+
+  it('прогрес, «Сьогодні» в плані, згорнуті розділи й «Розгорнути все»', async () => {
+    get.mockResolvedValue(make('l2', [L('l1', 1, 'A', { credit_state: 'credited', role: 'DIAGNOSTIC', unit_refs: [] }),
+      L('l2', 2, 'B'), L('l3', 3, 'C')]))
+    const w = mountView(); await flushPromises()
+    expect(w.get('[data-testid=lp-progress]').text()).toContain('1 з 3')
+    expect(w.get('[data-testid=lp-today]').text()).toBe('Заняття 2')
+    expect(w.get('[data-testid=lp-today-prepare]').text()).toBe(uk.learningPrograms.workspace.prepareLesson)
+    // відкритий лише розділ із «Сьогодні»
+    expect(w.findAll('[data-testid=lp-lesson-row]').map((r) => r.text())).toEqual([`2Заняття 2${uk.learningPrograms.workspace.pill.now}`])
+    await w.get('[data-testid=lp-expand]').trigger('click')
+    expect(w.findAll('[data-testid=lp-lesson-row]')).toHaveLength(3)
+    // після заняття — три картки з поясненням
+    expect(w.findAll('.loa__oc').map((b) => b.text())).toEqual([
+      `✓${uk.learningPrograms.outcome.nextLong}${uk.learningPrograms.outcome.nextHint}`,
+      `↻${uk.learningPrograms.outcome.repeatLong}${uk.learningPrograms.outcome.repeatHint}`,
+      `✕${uk.learningPrograms.outcome.notHeld}${uk.learningPrograms.outcome.notHeldHint}`,
+    ])
+  })
+
+  it('особливе заняття сьогодні — пояснення замість кнопки підготовки', async () => {
+    get.mockResolvedValue(make('l1', [L('l1', 1, 'A', { role: 'DIAGNOSTIC', unit_refs: [] }), L('l2', 2, 'B')]))
+    const w = mountView(); await flushPromises()
+    expect(w.find('[data-testid=lp-today-prepare]').exists()).toBe(false)
+    expect(w.get('[data-testid=lp-today-special]').text()).toBe(uk.learningPrograms.reasons.manualScenario)
   })
 })

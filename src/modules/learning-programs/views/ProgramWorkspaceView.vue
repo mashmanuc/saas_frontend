@@ -8,93 +8,118 @@
 
     <template v-if="p">
       <header class="lpw__head">
-        <div class="lpw__who">
+        <div>
           <h1 class="lpw__learner" data-testid="lp-learner">{{ learnerName }}</h1>
           <p class="lpw__title">{{ p.title }}</p>
         </div>
         <div class="lpw__head-actions">
           <Button variant="secondary" data-testid="lp-show-learner" @click="showLearner">{{ t('learningPrograms.workspace.showLearner') }}</Button>
-          <Button variant="ghost" data-testid="lp-delete" @click="askDelete = true">{{ t('learningPrograms.workspace.delete') }}</Button>
+          <Button variant="ghost" data-testid="lp-delete" @click="askDelete = true">{{ t('learningPrograms.workspace.deleteShort') }}</Button>
         </div>
       </header>
       <p v-if="notice" class="lpw__notice" role="status">{{ notice }}</p>
 
-      <section class="lpw__settings">
-        <div class="lpw__setting">
-          <span class="lpw__k">{{ t('learningPrograms.workspace.level') }}</span>
-          <div class="lpw__levels">
-            <button v-for="n in 5" :key="n" type="button" class="lpw__level" :class="{ 'lpw__level--on': p.level?.ordinal === n }"
-                    :disabled="saving" :aria-pressed="p.level?.ordinal === n" @click="changeLevel(n)">{{ n }}</button>
-          </div>
+      <!-- Загальний прогрес: смужка з відрізками-розділами, поруч рівень і темп -->
+      <section class="lpw__prog">
+        <div class="lpw__prog-num" data-testid="lp-progress">
+          <b>{{ t('learningPrograms.workspace.count', { done: creditedCount, total: lessonCount }) }}</b>
+          <small>{{ t('learningPrograms.workspace.lessonsDone') }}</small>
         </div>
-        <div class="lpw__setting">
-          <span class="lpw__k">{{ t('learningPrograms.workspace.pace') }}</span>
-          <select class="lpw__select" :value="p.pace" :disabled="saving" data-testid="lp-pace" @change="changePace(($event.target as HTMLSelectElement).value)">
-            <option v-for="v in PACES" :key="v" :value="v">{{ t(`learningPrograms.pace.${v.replace('.', '_')}`) }}</option>
-          </select>
+        <div class="lpw__bar" aria-hidden="true">
+          <span v-for="g in groups" :key="g.item.item_id" :style="{ flex: Math.max(g.lessons.length, 1) }" :title="g.item.title">
+            <i :style="{ width: pct(g.done, g.lessons.length) }" />
+          </span>
+        </div>
+        <div class="lpw__set">
+          <span class="lpw__set-one">
+            <span class="lpw__k">{{ t('learningPrograms.workspace.level') }}</span>
+            <span class="lpw__levels">
+              <button v-for="n in 5" :key="n" type="button" class="lpw__level" :class="{ 'lpw__level--on': p.level?.ordinal === n }"
+                      :disabled="saving" :aria-pressed="p.level?.ordinal === n" @click="changeLevel(n)">{{ n }}</button>
+            </span>
+          </span>
+          <span class="lpw__set-one">
+            <span class="lpw__k">{{ t('learningPrograms.workspace.pace') }}</span>
+            <select class="lpw__select" :value="p.pace" :disabled="saving" data-testid="lp-pace" @change="changePace(($event.target as HTMLSelectElement).value)">
+              <option v-for="v in PACES" :key="v" :value="v">{{ t(`learningPrograms.pace.${v.replace('.', '_')}`) }}</option>
+            </select>
+          </span>
         </div>
       </section>
 
-      <section class="lpw__three">
-        <article class="lpw__card">
-          <h2 class="lpw__h">{{ t('learningPrograms.workspace.last') }}</h2>
-          <template v-if="p.summary.last">
-            <p class="lpw__lesson">{{ p.summary.last.title }}</p>
-            <p class="lpw__muted">{{ formatWhen(p.summary.last.occurred_at) }} · {{ lastResult }}</p>
-          </template>
-          <p v-else class="lpw__muted">{{ t('learningPrograms.workspace.noLast') }}</p>
-        </article>
-
-        <article class="lpw__card lpw__card--today">
-          <h2 class="lpw__h">{{ t('learningPrograms.workspace.today') }}</h2>
-          <template v-if="today">
-            <p class="lpw__lesson" data-testid="lp-today">{{ today.title }}</p>
-            <p v-if="today.credit_state === 'repeat_needed'" class="lpw__tag">{{ t('learningPrograms.lesson.repeatNeeded') }}</p>
-            <div class="lpw__actions">
-              <Button v-if="materialRoute(today.material?.open)" size="sm" data-testid="lp-today-open" @click="openMaterial(today)">
-                {{ t('learningPrograms.lesson.open') }}
+      <!-- Було → Сьогодні → Далі однією смужкою; одна головна дія; підсумок — окремим блоком -->
+      <section class="lpw__today">
+        <div class="lpw__flow">
+          <div>
+            <span class="lpw__lab">{{ t('learningPrograms.workspace.was') }}<template v-if="p.summary.last"> · {{ formatDay(p.summary.last.occurred_at) }}</template></span>
+            <span class="lpw__t" :title="p.summary.last?.title">{{ p.summary.last ? `${lastMark} ${p.summary.last.title}` : t('learningPrograms.workspace.noLast') }}</span>
+          </div>
+          <span class="lpw__now">→ {{ t('learningPrograms.workspace.today') }} →</span>
+          <div class="lpw__flow-next">
+            <span class="lpw__lab">{{ t('learningPrograms.workspace.next') }}</span>
+            <span class="lpw__t" :title="p.summary.next[0]?.title">{{ p.summary.next[0]?.title || t('learningPrograms.workspace.noNext') }}</span>
+          </div>
+        </div>
+        <div v-if="today" class="lpw__t-body">
+          <div class="lpw__t-main">
+            <span class="lpw__grp">{{ t('learningPrograms.workspace.lessonOf', { n: today.position, total: lessonCount }) }}<template v-if="todayItem"> · {{ todayItem.title }}</template></span>
+            <h2 class="lpw__t-title" data-testid="lp-today">{{ today.title }}</h2>
+            <span v-if="today.credit_state === 'repeat_needed'" class="lpw__st lpw__st--rep lpw__st--inline">{{ t('learningPrograms.lesson.repeatNeeded') }}</span>
+            <div class="lpw__acts">
+              <template v-if="materialRoute(today.material?.open)">
+                <Button data-testid="lp-today-open" @click="openMaterial(today)">{{ t('learningPrograms.workspace.openLesson') }}</Button>
+                <Button v-if="today.unit_refs?.length" variant="ghost" data-testid="lp-today-prepare" @click="prepare(today)">
+                  {{ t('learningPrograms.lesson.prepareAgain') }}
+                </Button>
+              </template>
+              <Button v-else-if="today.unit_refs?.length" data-testid="lp-today-prepare" @click="prepare(today)">
+                {{ t('learningPrograms.workspace.prepareLesson') }}
               </Button>
-              <Button v-if="today.unit_refs?.length" size="sm" :variant="today.material ? 'ghost' : 'primary'" data-testid="lp-today-prepare" @click="prepare(today)">
-                {{ today.material ? t('learningPrograms.lesson.prepareAgain') : t('learningPrograms.lesson.prepare') }}
-              </Button>
+              <p v-else class="lpw__muted lpw__small" data-testid="lp-today-special">{{ specialReason(today) }}</p>
             </div>
-            <LessonOutcomeActions :key="today.lesson_id" :program="p" :lesson="today" @changed="reload" />
-          </template>
-          <p v-else class="lpw__muted">{{ t('learningPrograms.workspace.allDone') }}</p>
-        </article>
-
-        <article class="lpw__card">
-          <h2 class="lpw__h">{{ t('learningPrograms.workspace.next') }}</h2>
-          <ol v-if="p.summary.next.length" class="lpw__nextlist">
-            <li v-for="n in p.summary.next" :key="n.lesson_id">{{ n.title }}</li>
-          </ol>
-          <p v-else class="lpw__muted">{{ t('learningPrograms.workspace.noNext') }}</p>
-        </article>
+          </div>
+          <div class="lpw__t-out">
+            <h3 class="lpw__h3">{{ t('learningPrograms.workspace.after') }}</h3>
+            <LessonOutcomeActions :key="today.lesson_id" :program="p" :lesson="today" variant="cards" @changed="reload" />
+          </div>
+        </div>
+        <p v-else class="lpw__all-done">{{ t('learningPrograms.workspace.allDone') }}</p>
       </section>
 
+      <!-- Увесь план: розділи згорнуті, крім того, де «Сьогодні»; дії рядка — при наведенні -->
       <section class="lpw__plan">
-        <h2 class="lpw__h">{{ t('learningPrograms.workspace.plan') }}</h2>
-        <div v-for="item in p.items" :key="item.item_id" class="lpw__item" :class="`lpw__item--${item.state}`">
-          <div class="lpw__item-head">
-            <span class="lpw__item-title">{{ item.title }}</span>
-            <Badge :variant="itemBadge(item.state)">{{ t(`learningPrograms.itemState.${item.state}`) }}</Badge>
-          </div>
-          <ul v-if="lessonsOf(item.item_id).length" class="lpw__lessons">
-            <li v-for="l in lessonsOf(item.item_id)" :key="l.lesson_id" class="lpw__row" data-testid="lp-lesson-row">
-              <span class="lpw__pos">{{ l.position }}</span>
-              <span class="lpw__ltitle">{{ l.title }}</span>
-              <span class="lpw__state" :class="`lpw__state--${l.credit_state}`">{{ t(`learningPrograms.credit.${l.credit_state}`) }}</span>
-              <span class="lpw__row-actions">
-                <button v-if="materialRoute(l.material?.open)" type="button" class="lpw__link" @click="openMaterial(l)">{{ t('learningPrograms.lesson.open') }}</button>
-                <button v-if="l.credit_state !== 'credited' && l.unit_refs?.length" type="button" class="lpw__link" @click="prepare(l)">
-                  {{ l.material ? t('learningPrograms.lesson.prepareAgain') : t('learningPrograms.lesson.prepare') }}
-                </button>
+        <h2 class="lpw__plan-h">
+          <span>{{ t('learningPrograms.workspace.plan') }}</span>
+          <button type="button" class="lpw__expand" data-testid="lp-expand" @click="toggleAll">
+            {{ allOpen ? t('learningPrograms.workspace.collapseAll') : t('learningPrograms.workspace.expandAll') }}
+          </button>
+        </h2>
+        <div v-for="g in groups" :key="g.item.item_id" class="lpw__g" :class="{ 'lpw__g--open': isOpen(g), 'lpw__g--skipped': g.item.state === 'skipped' }">
+          <button type="button" class="lpw__g-h" :aria-expanded="isOpen(g)" data-testid="lp-group" @click="toggle(g)">
+            <span class="lpw__chev" aria-hidden="true">▶</span>
+            <span class="lpw__g-name">{{ g.item.title }}<span v-if="g.complete" class="lpw__g-check"> ✓</span></span>
+            <span class="lpw__g-cnt">{{ t('learningPrograms.workspace.count', { done: g.done, total: g.lessons.length }) }}</span>
+            <span class="lpw__mini" aria-hidden="true"><i :style="{ width: pct(g.done, g.lessons.length) }" /></span>
+          </button>
+          <div v-if="isOpen(g)" class="lpw__g-b">
+            <div v-for="l in g.lessons" :key="l.lesson_id" class="lpw__r" data-testid="lp-lesson-row"
+                 :class="{ 'lpw__r--passed': l.credit_state === 'credited', 'lpw__r--cur': l.lesson_id === today?.lesson_id }">
+              <span class="lpw__n">{{ l.position }}</span>
+              <span class="lpw__tt">{{ l.title }}</span>
+              <span class="lpw__ra">
+                <span v-if="pill(l)" class="lpw__st" :class="`lpw__st--${pill(l)}`">{{ t(`learningPrograms.workspace.pill.${pill(l)}`) }}</span>
+                <template v-if="l.lesson_id !== today?.lesson_id">
+                  <button v-if="materialRoute(l.material?.open)" type="button" class="lpw__hv" @click="openMaterial(l)">{{ t('learningPrograms.lesson.open') }}</button>
+                  <button v-if="l.credit_state !== 'credited' && l.unit_refs?.length" type="button" class="lpw__hv" @click="prepare(l)">
+                    {{ l.material ? t('learningPrograms.lesson.prepareAgain') : t('learningPrograms.lesson.prepare') }}
+                  </button>
+                </template>
               </span>
-            </li>
-          </ul>
-          <p v-else-if="item.state === 'skipped' || item.deferred_reason_key" class="lpw__muted lpw__small">
-            {{ item.state === 'skipped' ? t('learningPrograms.itemState.skippedHint') : t('learningPrograms.itemState.deferredHint') }}
-          </p>
+            </div>
+            <p v-if="!g.lessons.length && (g.item.state === 'skipped' || g.item.deferred_reason_key)" class="lpw__muted lpw__small lpw__g-note">
+              {{ g.item.state === 'skipped' ? t('learningPrograms.itemState.skippedHint') : t('learningPrograms.itemState.deferredHint') }}
+            </p>
+          </div>
         </div>
       </section>
     </template>
@@ -109,7 +134,9 @@
 
 <script setup lang="ts">
 /**
- * Робочий екран програми учня (ТЗ §5.2): «що було → що сьогодні → що далі», повна структура тем (пропущені й
+ * Робочий екран програми учня (ТЗ §5.2), вигляд — за макетом власника 29.10 (`DATA/ПОЛА/програма.zip`): прогрес,
+ * смужка «Було → Сьогодні → Далі», одна головна дія, «Після заняття» окремо, план згорнутий до розділу «Сьогодні».
+ * Зміст: «що було → що сьогодні → що далі», повна структура тем (пропущені й
  * відкладені не зникають), підготовка заняття генератором, відкриття готового уроку, підсумок за дві дії,
  * «Ще раз» як явна пропозиція повторення, рівень і темп через пропозиції з `expected_revision`.
  * Стара вкладка (409) — тихе оновлення з повідомленням, без перезапису чужих змін.
@@ -118,12 +145,12 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Button from '@/ui/Button.vue'
-import Badge from '@/ui/Badge.vue'
 import ConfirmModal from '@/ui/ConfirmModal.vue'
 import LessonOutcomeActions from '../components/LessonOutcomeActions.vue'
 import PrepareLessonDialog from '../components/PrepareLessonDialog.vue'
 import {
-  bodies, learningProgramsApi, errorCode, errorStatus, materialRoute, type ProgramDetail, type ProgramLesson,
+  bodies, learningProgramsApi, errorCode, errorStatus, materialRoute, type ProgramDetail, type ProgramItem,
+  type ProgramLesson,
 } from '../api/learningProgramsApi'
 import { answered, createIntent, latestOnly } from '../intent'
 
@@ -149,20 +176,52 @@ const today = computed(() => {
   const tid = p.value?.summary.today?.lesson_id
   return tid ? p.value?.lessons.find((l) => l.lesson_id === tid) ?? null : null
 })
-const lastResult = computed(() => {
-  const last = p.value?.summary.last
-  if (!last) return ''
-  if (last.attendance !== 'held') return t('learningPrograms.outcome.savedNotHeld')
-  return last.pedagogical_action === 'repeat' ? t('learningPrograms.outcome.savedRepeat') : t('learningPrograms.outcome.savedNext')
-})
-
 function lessonsOf(itemId: string) {
   return p.value?.lessons.filter((l) => l.item_id === itemId) ?? []
 }
 
-function itemBadge(state: string) {
-  return ({ done: 'success', in_progress: 'warning', skipped: 'muted', deferred: 'muted' } as Record<string, string>)[state] ?? 'default'
+// Прогрес і план (макет 29.10): пройдено = зараховані заняття; розділ відкритий, якщо в ньому «Сьогодні».
+const lessonCount = computed(() => p.value?.lessons.length ?? 0)
+const creditedCount = computed(() => p.value?.lessons.filter((l) => l.credit_state === 'credited').length ?? 0)
+const todayItem = computed(() => p.value?.items.find((i) => i.item_id === today.value?.item_id) ?? null)
+type Group = { item: ProgramItem; lessons: ProgramLesson[]; done: number; current: boolean; complete: boolean }
+const groups = computed<Group[]>(() => (p.value?.items ?? []).map((item) => {
+  const lessons = lessonsOf(item.item_id)
+  const done = lessons.filter((l) => l.credit_state === 'credited').length
+  return { item, lessons, done, current: lessons.some((l) => l.lesson_id === today.value?.lesson_id),
+           complete: lessons.length > 0 && done === lessons.length }
+}))
+const pct = (done: number, total: number) => `${total ? Math.round((done / total) * 100) : 0}%`
+
+const opened = ref<Record<string, boolean>>({})
+const allOpen = ref(false)
+const isOpen = (g: Group) => opened.value[g.item.item_id] ?? g.current
+function toggle(g: Group) {
+  opened.value = { ...opened.value, [g.item.item_id]: !isOpen(g) }
 }
+function toggleAll() {
+  allOpen.value = !allOpen.value
+  opened.value = Object.fromEntries(groups.value.map((g) => [g.item.item_id, allOpen.value || g.current]))
+}
+
+function pill(l: ProgramLesson): 'ok' | 'rep' | 'now' | '' {
+  if (l.lesson_id === today.value?.lesson_id) return 'now'
+  if (l.credit_state === 'credited') return 'ok'
+  return l.credit_state === 'repeat_needed' ? 'rep' : ''
+}
+
+// Заняття без теми добірки — не кнопка, а пояснення (діагностика, пробний НМТ, повторення за помилками учня).
+function specialReason(l: ProgramLesson) {
+  if (l.role === 'DIAGNOSTIC' || l.role === 'MOCK_EXAM') return t('learningPrograms.reasons.manualScenario')
+  if (l.role === 'REVIEW') return t('learningPrograms.reasons.needsLearnerContext')
+  return t('learningPrograms.reasons.topicNotMapped')
+}
+
+const lastMark = computed(() => {
+  const last = p.value?.summary.last
+  if (!last || last.attendance !== 'held') return '✕'
+  return last.pedagogical_action === 'repeat' ? '↻' : '✓'
+})
 
 // Лише відповідь для поточної адреси оновлює екран: запізніла відповідь іншої програми відкидається (review F4).
 const loads = latestOnly()
@@ -255,10 +314,8 @@ function showLearner() {
   window.open(href, '_blank', 'noopener')
 }
 
-function formatWhen(iso: string) {
-  return new Date(iso).toLocaleString(locale.value === 'uk' ? 'uk-UA' : 'en-GB', {
-    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-  })
+function formatDay(iso: string) {
+  return new Date(iso).toLocaleDateString(locale.value === 'uk' ? 'uk-UA' : 'en-GB', { day: 'numeric', month: 'short' })
 }
 
 watch(id, reload)
@@ -266,50 +323,126 @@ onMounted(reload)
 </script>
 
 <style scoped>
-.lpw { display: flex; flex-direction: column; gap: 18px; }
-.lpw__back { color: var(--text-secondary); text-decoration: none; font-size: var(--text-sm); }
+/* Макет власника 29.10 («Програма учня — пропозиція»): кольори з теми сайту, світліші відтінки — від акценту. */
+.lpw {
+  --lp-line: color-mix(in srgb, var(--accent) 18%, transparent);
+  --lp-act: color-mix(in srgb, var(--accent) 11%, var(--surface-card, #fff));
+  --lp-shd: color-mix(in srgb, var(--text-primary) 40%, transparent);
+  display: flex; flex-direction: column; gap: 18px; max-width: 1100px; width: 100%; margin: 0 auto;
+}
+.lpw__back { color: var(--text-muted); text-decoration: none; font-size: 13px; }
 .lpw__head { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
-.lpw__learner { margin: 0; font-size: var(--text-2xl); color: var(--text-primary); }
-.lpw__title { margin: 4px 0 0; color: var(--text-secondary); }
-.lpw__notice { margin: 0; padding: 10px 12px; border-radius: var(--radius-md); background: var(--info-bg); color: var(--text-primary); }
-.lpw__settings { display: flex; gap: 28px; flex-wrap: wrap; align-items: center; }
-.lpw__setting { display: flex; gap: 10px; align-items: center; }
-.lpw__k { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
-.lpw__levels { display: flex; gap: 6px; }
-.lpw__level {
-  width: 32px; height: 32px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);
-  background: var(--card-bg); font-weight: 600; cursor: pointer; color: var(--text-primary);
-}
-.lpw__level--on { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
-.lpw__select { padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); }
-.lpw__three { display: grid; gap: 14px; grid-template-columns: 1fr 1.4fr 1fr; }
-@media (max-width: 900px) { .lpw__three { grid-template-columns: 1fr; } }
-.lpw__card {
-  padding: 16px; border-radius: var(--radius-lg); border: 1px solid var(--border-color);
-  background: var(--surface-card, var(--card-bg)); display: flex; flex-direction: column; gap: 10px;
-}
-.lpw__card--today { border-color: var(--accent); }
-.lpw__h { margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-.lpw__lesson { margin: 0; font-weight: 700; color: var(--text-primary); font-size: var(--text-lg); }
-.lpw__tag { margin: 0; color: var(--ui-color-danger); font-size: var(--text-sm); }
-.lpw__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.lpw__learner { margin: 0; font-size: 26px; font-weight: 700; line-height: 1.2; color: var(--text-primary); }
+.lpw__title { margin: 2px 0 0; color: var(--text-secondary); }
+.lpw__head-actions { display: flex; gap: 8px; }
+.lpw__notice { margin: 0; padding: 10px 12px; border-radius: var(--radius-md); background: var(--lp-act); color: var(--text-primary); }
 .lpw__muted { margin: 0; color: var(--text-secondary); }
-.lpw__small { font-size: var(--text-sm); }
+.lpw__small { font-size: 13px; }
 .lpw__error { color: var(--ui-color-danger); }
-.lpw__nextlist { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; color: var(--text-primary); }
-.lpw__plan { display: flex; flex-direction: column; gap: 10px; }
-.lpw__item { border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 10px 12px; background: var(--card-bg); }
-.lpw__item--skipped { opacity: 0.6; }
-.lpw__item-head { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
-.lpw__item-title { font-weight: 600; color: var(--text-primary); }
-.lpw__lessons { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.lpw__row { display: grid; grid-template-columns: 28px 1fr auto auto; gap: 10px; align-items: center; font-size: var(--text-sm); padding: 4px 0; }
-@media (max-width: 640px) { .lpw__row { grid-template-columns: 24px 1fr; } .lpw__state, .lpw__row-actions { grid-column: 2; } }
-.lpw__pos { color: var(--text-muted); text-align: right; }
-.lpw__ltitle { color: var(--text-primary); }
-.lpw__state { color: var(--text-secondary); }
-.lpw__state--credited { color: var(--ui-color-success); }
-.lpw__state--repeat_needed { color: var(--ui-color-danger); }
-.lpw__row-actions { display: flex; gap: 10px; }
-.lpw__link { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; }
+
+/* прогрес */
+.lpw__prog {
+  background: var(--surface-card, #fff); border-radius: 16px; padding: 14px 18px; display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto; gap: 18px; align-items: center; box-shadow: 0 6px 20px -18px var(--lp-shd);
+}
+.lpw__prog-num b { font-size: 20px; color: var(--text-primary); }
+.lpw__prog-num small { display: block; font-size: 12px; color: var(--text-muted); }
+.lpw__bar { display: flex; gap: 4px; height: 10px; }
+.lpw__bar span { border-radius: 5px; background: var(--lp-line); position: relative; overflow: hidden; }
+.lpw__bar i { position: absolute; inset: 0 auto 0 0; background: var(--accent); }
+.lpw__set { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.lpw__set-one { display: inline-flex; align-items: center; }
+.lpw__k { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin-right: 6px; }
+.lpw__levels { display: inline-flex; gap: 4px; }
+.lpw__level {
+  width: 30px; height: 30px; border-radius: 8px; border: 1.5px solid var(--lp-line); background: var(--surface-card, #fff);
+  font-weight: 700; cursor: pointer; color: var(--text-primary);
+}
+.lpw__level--on { background: var(--text-primary); border-color: var(--text-primary); color: var(--surface-card, #fff); }
+.lpw__select {
+  padding: 6px 10px; border-radius: 8px; border: 1.5px solid var(--lp-line); background: var(--surface-card, #fff);
+  font: inherit; color: var(--text-primary);
+}
+
+/* сьогодні */
+.lpw__today {
+  background: var(--surface-card, #fff); border-radius: 20px; box-shadow: 0 14px 34px -24px var(--lp-shd);
+  overflow: hidden; border: 2px solid var(--accent);
+}
+.lpw__flow {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 12px; align-items: center;
+  padding: 12px 20px; background: var(--lp-act); font-size: 13px; color: var(--text-secondary);
+}
+.lpw__flow-next { text-align: right; }
+.lpw__lab { display: block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
+.lpw__t { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lpw__now { font-weight: 700; color: var(--accent); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.lpw__t-body { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+.lpw__t-main { padding: 20px 22px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.lpw__grp { font-size: 12px; color: var(--text-muted); }
+.lpw__t-title { margin: 0; font-size: 22px; line-height: 1.25; font-weight: 700; color: var(--text-primary); text-wrap: pretty; }
+.lpw__acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; align-items: center; }
+.lpw__t-out {
+  padding: 20px 22px; border-left: 1px solid var(--lp-line); display: flex; flex-direction: column; gap: 10px;
+  background: color-mix(in srgb, var(--accent) 2%, var(--surface-card, #fff));
+}
+.lpw__h3 { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
+.lpw__all-done { margin: 0; padding: 20px 22px; color: var(--text-secondary); }
+
+/* план */
+.lpw__plan-h {
+  margin: 6px 0 2px; display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted);
+}
+.lpw__expand { border: 0; background: none; color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; text-transform: none; letter-spacing: 0; }
+.lpw__plan { display: flex; flex-direction: column; gap: 8px; }
+.lpw__g { background: var(--surface-card, #fff); border-radius: 14px; box-shadow: 0 6px 20px -18px var(--lp-shd); }
+.lpw__g--skipped { opacity: .6; }
+.lpw__g-h {
+  display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: none; padding: 12px 16px;
+  text-align: left; font: inherit; color: var(--text-primary); cursor: pointer;
+}
+.lpw__chev { width: 12px; font-size: 12px; color: var(--text-muted); transition: transform .2s; }
+.lpw__g--open .lpw__chev { transform: rotate(90deg); }
+.lpw__g-name { flex: 1; font-weight: 700; }
+.lpw__g-check { color: var(--accent); }
+.lpw__g-cnt { font-size: 12px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+.lpw__mini { width: 70px; height: 6px; border-radius: 3px; background: var(--lp-line); overflow: hidden; flex: 0 0 70px; }
+.lpw__mini i { display: block; height: 100%; background: var(--accent); }
+.lpw__g-b { padding: 0 8px 8px; }
+.lpw__g-note { padding: 4px 8px 8px; }
+.lpw__r {
+  display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  padding: 8px; border-radius: 10px; min-height: 44px;
+}
+.lpw__r:hover { background: color-mix(in srgb, var(--accent) 4%, var(--surface-card, #fff)); }
+.lpw__n { color: var(--text-muted); text-align: right; font-size: 13px; font-variant-numeric: tabular-nums; }
+.lpw__tt { font-size: 14px; color: var(--text-primary); }
+.lpw__r--passed .lpw__tt { color: var(--text-muted); }
+.lpw__r--cur { background: var(--lp-act); box-shadow: inset 3px 0 0 var(--accent); }
+.lpw__r--cur:hover { background: var(--lp-act); }
+.lpw__ra { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
+.lpw__st { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+.lpw__st--ok { background: var(--lp-act); color: var(--accent); }
+.lpw__st--rep { background: #fef3c7; color: #b45309; }
+.lpw__st--now { background: var(--accent); color: var(--surface-card, #fff); }
+.lpw__st--inline { align-self: flex-start; }
+.lpw__hv {
+  opacity: 0; transition: opacity .15s; border: 0; background: none; color: var(--accent); font: inherit;
+  font-weight: 600; font-size: 13px; padding: 4px 6px; border-radius: 6px; cursor: pointer;
+}
+.lpw__r:hover .lpw__hv, .lpw__hv:focus-visible { opacity: 1; }
+.lpw__hv:hover { background: var(--lp-act); }
+@media (hover: none) { .lpw__hv { opacity: 1; } }
+
+@media (max-width: 820px) {
+  .lpw__t-body { grid-template-columns: 1fr; }
+  .lpw__t-out { border-left: 0; border-top: 1px solid var(--lp-line); }
+  .lpw__prog { grid-template-columns: 1fr; }
+  .lpw__flow { grid-template-columns: 1fr; }
+  .lpw__flow-next { text-align: left; }
+  .lpw__now { display: none; }
+  .lpw__r { grid-template-columns: 26px minmax(0, 1fr); }
+  .lpw__ra { grid-column: 2; justify-content: flex-start; }
+}
 </style>
