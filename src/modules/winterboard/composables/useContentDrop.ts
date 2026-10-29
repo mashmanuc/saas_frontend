@@ -41,6 +41,8 @@ import { notifyError } from '@/utils/notify'
 import { i18n } from '@/i18n'
 // «Збірник» (2026-10-28): задача банку → картка задачі від сервера (як у генератора уроку) → один asset_add.
 import { ZBIRNYK_TASK_MIME, getZbirnykCard, zbirnykAdding } from '../zbirnyk/zbirnykApi'
+/** Відступ картки «Збірника» від верху аркуша («+») і від точки, де її відпустили (перетягування). */
+const ZBIRNYK_TOP_MARGIN = 24
 // Phase Calculus (2026-05-15) — derivative + integral cards drop wiring.
 import {
   CALCULUS_DRAG_MIME,
@@ -982,7 +984,7 @@ export function useContentDrop(options: UseContentDropOptions) {
    * Запис — один штатний `asset_add`. Поки йде запит — плитка показує «Додаю…» і не приймає повторний натиск.
    * Невдача — тост, не тиша.
    */
-  async function placeZbirnykTask(refId: string, pos: { x: number; y: number }): Promise<void> {
+  async function placeZbirnykTask(refId: string, pos: { x: number; y: number }, atTop: boolean): Promise<void> {
     if (zbirnykAdding.has(refId)) return
     zbirnykAdding.add(refId)
     try {
@@ -993,7 +995,9 @@ export function useContentDrop(options: UseContentDropOptions) {
       onAssetAdd(placeInsidePage({
         id: `tsk-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
         type: card.type, src: '',
-        x: pos.x - card.w / 2, y: pos.y - card.h / 2, w: card.w, h: card.h,
+        // Власник 29.10: «клади від верху аркуша» — «+» кладе картку від верху аркуша, перетягнута лягає верхом
+        // туди, де відпустили; далі картка росте вниз (автопідгонка) і вміщається, а не ховає кнопки за краєм.
+        x: pos.x - card.w / 2, y: atTop ? ZBIRNYK_TOP_MARGIN : pos.y - ZBIRNYK_TOP_MARGIN, w: card.w, h: card.h,
         rotation: 0, locked: false, data: card.data,
       } as unknown as WBAsset, page?.width ?? PAGE_WIDTH, page?.height ?? PAGE_HEIGHT))
     } catch (err) {
@@ -1197,14 +1201,14 @@ export function useContentDrop(options: UseContentDropOptions) {
 
     // «Збірник» (2026-10-28): payload {"id"}; картку задачі дає сервер, asset — після відповіді.
     if (mime === ZBIRNYK_TASK_MIME) {
-      let refId: unknown = null
+      let parsed: { id?: unknown; at?: unknown } = {}
       try {
-        refId = (JSON.parse(payloadStr) as { id?: unknown }).id
+        parsed = JSON.parse(payloadStr) as { id?: unknown; at?: unknown }
       } catch (err) {
         console.warn('[WB:zbirnyk] bad payload', err)
       }
-      if (typeof refId !== 'string' || !refId) return
-      void placeZbirnykTask(refId, pos)
+      if (typeof parsed.id !== 'string' || !parsed.id) return
+      void placeZbirnykTask(parsed.id, pos, parsed.at === 'top')
       return
     }
 

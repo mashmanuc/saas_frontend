@@ -195,7 +195,8 @@ function payload(task: ZbirnykTask): string {
 
 function add(task: ZbirnykTask): void {
   if (zbirnykAdding.has(task.ref.id)) return
-  addTool(ZBIRNYK_TASK_MIME, payload(task))
+  // «+» — від верху аркуша (власник 29.10): висока картка інакше не вміщалась по висоті
+  addTool(ZBIRNYK_TASK_MIME, JSON.stringify({ id: task.ref.id, at: 'top' }))
 }
 
 function onDragStart(e: DragEvent, task: ZbirnykTask): void {

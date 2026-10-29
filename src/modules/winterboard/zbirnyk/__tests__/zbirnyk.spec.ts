@@ -111,7 +111,7 @@ describe('ZB-3/4 задача на дошку', () => {
     return { drop, onAssetAdd }
   }
 
-  it('картка від сервера → один asset `nmt_task` з даними сервера, центр на точці', async () => {
+  it('картка від сервера → один asset `nmt_task` з даними сервера; верх — біля точки, де відпустили', async () => {
     routeGet()
     const { drop, onAssetAdd } = setup()
     drop.addAtPosition(ZBIRNYK_TASK_MIME, JSON.stringify({ id: 'nmt-sc-1' }), { x: 960, y: 540 })
@@ -120,11 +120,19 @@ describe('ZB-3/4 задача на дошку', () => {
     expect(get).toHaveBeenCalledWith('/v1/learning-content/zbirnyk/tasks/nmt-sc-1/card/')
     expect(onAssetAdd).toHaveBeenCalledOnce()
     const a = onAssetAdd.mock.calls[0][0]
-    expect(a).toMatchObject({ type: 'nmt_task', src: '', x: 960 - 430, y: 540 - 220, w: 860, h: 440, rotation: 0, locked: false })
+    expect(a).toMatchObject({ type: 'nmt_task', src: '', x: 960 - 430, y: 540 - 24, w: 860, h: 440, rotation: 0, locked: false })
     expect(a.data).toEqual(CARD.data)
     expect(a.id).toMatch(/^tsk-/)
     expect(zbirnykAdding.size).toBe(0)
     expect(notifyError).not.toHaveBeenCalled()
+  })
+
+  it('«+» кладе від верху аркуша (власник 29.10), де б не був центр огляду', async () => {
+    routeGet()
+    const { drop, onAssetAdd } = setup()
+    drop.addAtPosition(ZBIRNYK_TASK_MIME, '{"id":"nmt-sc-1","at":"top"}', { x: 960, y: 732 })
+    await flushPromises()
+    expect(onAssetAdd.mock.calls[0][0]).toMatchObject({ x: 960 - 430, y: 24 })
   })
 
   it('біля краю — картка не вилазить за аркуш', async () => {
@@ -191,7 +199,7 @@ describe('ZB-3/4 задача на дошку', () => {
     } as unknown as DragEvent)
     await flushPromises()
     expect(get).toHaveBeenCalledWith('/v1/learning-content/zbirnyk/tasks/nmt-oa-2/card/')
-    expect(onAssetAdd.mock.calls[0][0]).toMatchObject({ x: 900 - 430, y: 600 - 220 })
+    expect(onAssetAdd.mock.calls[0][0]).toMatchObject({ x: 900 - 430, y: 600 - 24 })
   })
 })
 
@@ -222,7 +230,7 @@ describe('ZB-5 вкладка', () => {
     expect(w.get('[data-testid="zbirnyk-answer-1"]').text()).toBe('Відповідь: А')
 
     await w.get('[data-testid="zbirnyk-add-1"]').trigger('click')
-    expect(add).toHaveBeenCalledWith(ZBIRNYK_TASK_MIME, '{"id":"nmt-sc-1"}')
+    expect(add).toHaveBeenCalledWith(ZBIRNYK_TASK_MIME, '{"id":"nmt-sc-1","at":"top"}')
 
     await w.get('[data-testid="zbirnyk-level-2"]').trigger('click')
     expect(w.findAll('[data-testid^="zbirnyk-task-"]').map(x => x.attributes('data-testid'))).toEqual(['zbirnyk-task-7'])
