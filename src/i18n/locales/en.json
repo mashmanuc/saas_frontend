@@ -9774,6 +9774,7 @@
       "noActiveBoard": "No board is open on the laptop.",
       "noActiveBoardHint": "Open a board on the laptop and tap “Refresh”.",
       "launch": {
+        "withStudent": "Conduct with a student",
         "title": "Recent lessons",
         "where": "The lesson will open on the computer showing “{page}”.",
         "whereUnknown": "The lesson will open on the computer you last used on the site.",
@@ -12053,6 +12054,7 @@
         "useLessonHint": "Open lesson in a new session for teaching"
       },
       "prepare": {
+        "withStudent": "Conduct with a student…",
         "button": "Conduct",
         "starting": "Starting…",
         "error": "Failed to open preparation board"

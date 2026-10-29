@@ -252,14 +252,12 @@ describe('WBMyLessonsPage', () => {
     await openBtns[0].trigger('click')
     await flushPromises()
 
-    // LAW §9 v1.68: спершу «З ким урок?» — без вибору копії немає
-    expect(lessonViewApi.loadToSession).not.toHaveBeenCalled()
-    await wrapper.get('[data-testid="conduct-student-none"]').trigger('click')
-    await flushPromises()
+    // LAW §9 v1.72: «Провести» — одразу, без учня; вікна «З ким урок?» немає
     expect(lessonViewApi.loadToSession).toHaveBeenCalledWith('lesson-1', null)
+    expect(wrapper.find('[data-testid="conduct-student-modal"]').exists()).toBe(false)
   })
 
-  it('v1.68: «Провести» з учнем — копія з учнем; «Без учня» — без', async () => {
+  it('v1.72: «⋯» → «👤 Провести з учнем…» — вибір учня, копія з учнем', async () => {
     vi.mocked(lessonSaveApi.getMyLessonsFiltered).mockResolvedValue(MOCK_FILTERED_RESPONSE)
     vi.mocked(lessonViewApi.listConductStudents).mockResolvedValue({ students: [{ id: 7, name: 'Толік' }] })
     vi.mocked(lessonViewApi.loadToSession).mockResolvedValue({
@@ -268,9 +266,10 @@ describe('WBMyLessonsPage', () => {
 
     const wrapper = createWrapper()
     await flushPromises()
-    const openBtns = wrapper.findAll('button').filter(b => b.text().includes('knowledge.lesson.prepare.button'))
-    await openBtns[0].trigger('click')
+    await wrapper.findAll('[data-test="lesson-menu"]')[0].trigger('click')
+    await wrapper.get('[data-testid="lesson-conduct-with-student"]').trigger('click')
     await flushPromises()
+    expect(lessonViewApi.loadToSession).not.toHaveBeenCalled()   // спершу вибір
 
     const items = wrapper.findAll('[data-testid="conduct-student-item"]')
     expect(items.map(i => i.text())).toEqual(['ТТолік'])
@@ -297,8 +296,6 @@ describe('WBMyLessonsPage', () => {
       b.text().includes('knowledge.lesson.prepare.button'),
     )
     await openBtns[0].trigger('click')
-    await flushPromises()
-    await wrapper.get('[data-testid="conduct-student-none"]').trigger('click')
     await flushPromises()
 
     expect(mockPush).toHaveBeenCalledWith({

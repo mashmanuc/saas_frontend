@@ -50,6 +50,16 @@
             ? $t('knowledge.lesson.reuse.loading')
             : $t('knowledge.lesson.reuse.useLesson') }}
         </button>
+        <!-- v1.72: учень — за бажанням -->
+        <button
+          type="button"
+          :disabled="loadingSession"
+          class="lesson-view-page__with-student"
+          data-testid="lesson-conduct-with-student"
+          @click="askStudent = true"
+        >
+          👤 {{ $t('knowledge.lesson.prepare.withStudent') }}
+        </button>
       </div>
 
       <!-- Non-owner CTA -->
@@ -59,7 +69,7 @@
       />
     </template>
 
-    <!-- «З ким урок?» (LAW §9 v1.68) — перед «Провести» -->
+    <!-- «З ким урок?» (LAW §9 v1.68) — лише з «👤 Провести з учнем…» (v1.72) -->
     <ConductStudentModal
       :open="askStudent"
       mode="conduct"
@@ -158,11 +168,10 @@ function goBack() {
   router.push({ name: 'MyLessons' })
 }
 
-// «З ким урок?» (LAW §9 v1.68): спершу учень — проведений урок ляже в його папку
+// «З ким урок?» (LAW §9 v1.68 → v1.72): «Провести» — одразу, без учня; учня обирають кнопкою «👤 Провести з учнем…»
 const askStudent = ref(false)
 function useLessonInSession() {
-  if (!lesson.value || loadingSession.value) return
-  askStudent.value = true
+  void conductWith(null)
 }
 
 async function conductWith(studentId) {
@@ -261,6 +270,26 @@ async function conductWith(studentId) {
 .lesson-view-page__use-btn--primary:hover {
   opacity: 0.9;
   transform: translateY(-1px);
+}
+
+.lesson-view-page__with-student {
+  display: block;
+  margin: 0.75rem auto 0;
+  padding: 0.25rem 0.5rem;
+  border: none;
+  background: none;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+}
+
+.lesson-view-page__with-student:hover:not(:disabled) {
+  color: var(--color-primary, #16a34a);
+}
+
+.lesson-view-page__with-student:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .lesson-view-page__use-btn:disabled {

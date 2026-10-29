@@ -2,10 +2,10 @@
   <section class="rl" data-testid="remote-launch" :aria-label="t('winterboard.remote.launch.title')">
     <h2 class="rl__title">{{ t('winterboard.remote.launch.title') }}</h2>
     <!-- П8: перед дотиком видно, ДЕ відкриється урок -->
-    <p v-if="info" class="rl__where" :class="{ 'rl__where--none': !info.screen }" data-testid="remote-launch-where">
-      {{ where }}
+    <p v-if="info" class="rl__where" :class="{ 'rl__where--none': !info.screen && !busyId }" data-testid="remote-launch-where">
+      {{ busyId && !picking ? t('winterboard.remote.launch.opening') : where }}
     </p>
-    <!-- v1.68 «З ким урок?»: після дотику на уроці — учень; вибір іде разом із проханням провести -->
+    <!-- v1.68 «З ким урок?» (v1.72 — лише з 👤 у рядку уроку): учень; вибір іде разом із проханням провести -->
     <div v-if="picking" class="rl__who" data-testid="remote-launch-who">
       <div class="rl__who-head">
         <button
@@ -26,17 +26,27 @@
     </div>
     <template v-else>
       <ul v-if="lessons.length" class="rl__list">
-        <li v-for="lesson in lessons" :key="lesson.id">
+        <!-- v1.72: дотик на уроці — одразу, без учня; 👤 праворуч — з учнем -->
+        <li v-for="lesson in lessons" :key="lesson.id" class="rl__row">
           <button
             type="button"
             class="rl__item"
             :disabled="busyId !== null"
             :data-testid="`remote-launch-${lesson.id}`"
-            @click="pick(lesson)"
+            @click="start(lesson)"
           >
             <span class="rl__name">{{ lesson.name || t('winterboard.remote.launch.untitled') }}</span>
             <span v-if="lesson.updated_at" class="rl__date">{{ shortDate(lesson.updated_at) }}</span>
           </button>
+          <button
+            type="button"
+            class="rl__with"
+            :disabled="busyId !== null"
+            :title="t('winterboard.remote.launch.withStudent')"
+            :aria-label="t('winterboard.remote.launch.withStudent')"
+            :data-testid="`remote-launch-with-${lesson.id}`"
+            @click="pick(lesson)"
+          >👤</button>
         </li>
       </ul>
       <p v-else-if="info" class="rl__empty">{{ t('winterboard.remote.launch.empty') }}</p>
@@ -58,8 +68,9 @@
  * до 20 с чекає, поки там відкриється дошка (`remote/active/`), — тоді батько
  * підключається як звичайно. Пульт нічого не пише.
  *
- * v1.68 «З ким урок?»: дотик на уроці відкриває вибір учня (той самий, що на сайті); учень іде разом із
- * проханням провести, копію з учнем створює комп'ютер.
+ * v1.68 «З ким урок?»: вибір учня (той самий, що на сайті); учень іде разом із проханням провести, копію з учнем
+ * створює комп'ютер. v1.72 (власник 2026-10-29, показ у школах): дотик на уроці — одразу, без учня; вибір — лише
+ * з 👤 праворуч у рядку.
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -202,6 +213,13 @@ onBeforeUnmount(() => {
   font-size: 15px; text-align: left; cursor: pointer;
 }
 .rl__item:disabled { opacity: 0.55; cursor: default; }
+.rl__row { display: flex; gap: 6px; }
+.rl__row .rl__item { flex: 1; min-width: 0; }
+.rl__with {
+  flex: none; width: 52px; min-height: 52px; border: 0; border-radius: 12px;
+  background: var(--surface, #1e293b); color: var(--text, #f8fafc); font-size: 18px; cursor: pointer;
+}
+.rl__with:disabled { opacity: 0.55; cursor: default; }
 .rl__who {
   display: flex; flex-direction: column; gap: 8px;
   --csc-bg: var(--surface, #1e293b); --csc-fg: var(--text, #f8fafc); --csc-muted: var(--muted, #94a3b8);

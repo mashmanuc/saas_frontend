@@ -389,6 +389,16 @@
                       role="menu"
                       @click.stop
                     >
+                      <!-- v1.72: учень — за бажанням, окремим рядком; «Провести» відкриває урок одразу -->
+                      <button
+                        type="button"
+                        role="menuitem"
+                        class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                        data-testid="lesson-conduct-with-student"
+                        @click="closeLessonMenu(); openLessonWithStudent(lesson)"
+                      >
+                        👤 {{ $t('knowledge.lesson.prepare.withStudent') }}
+                      </button>
                       <button
                         type="button"
                         role="menuitem"
@@ -677,7 +687,7 @@
                 type="button"
                 class="ml-go ml-go--small"
                 :disabled="openingLessonId === session.origin_lesson_id"
-                @click="openLesson({ id: session.origin_lesson_id } as MyLesson, cardStudentId(session) ?? undefined)"
+                @click="openLesson({ id: session.origin_lesson_id } as MyLesson, cardStudentId(session) ?? null)"
               >
                 <span class="ml-go__tri" aria-hidden="true" />
                 {{ openingLessonId === session.origin_lesson_id
@@ -722,7 +732,7 @@
       </div><!-- /v-else: є сесії -->
     </div>
 
-    <!-- «З ким урок?» (LAW §9 v1.68): перед «Провести» і «Змінити учня» на картці проведеного -->
+    <!-- «З ким урок?» (LAW §9 v1.68): «👤 Провести з учнем…» у меню «⋯» (v1.72) і «Змінити учня» на картці проведеного -->
     <ConductStudentModal
       :open="!!conductTarget"
       mode="conduct"
@@ -2252,17 +2262,25 @@ function onThumbnailError(event: Event, lesson: MyLesson): void {
 // ── "Провести" — завжди fresh WBSession з KnowledgeLesson.snapshot ────
 // loadToSession: кожного разу нова сесія → template незмінний → урок повторюваний.
 // Сесія зберігається в "проведені уроки" після закриття.
-// «З ким урок?» (LAW §9 v1.68): спершу питаємо учня — проведений урок ляже в його папку. `studentId` —
-// кого позначити (у «Ще раз» — учень того уроку).
+// «З ким урок?» (LAW §9 v1.68 → v1.72). Власник 2026-10-29 перед показом у школах: «зробити просто за замовчуванням
+// без учня… і потім окрема кнопка, яка відкриває учнів». «Провести» відкриває урок одразу; `studentId` — кого
+// позначити («Ще раз» — учень того уроку, інакше «Без учня»). Учня обирають у «⋯» → «👤 Провести з учнем…».
 const conductTarget = ref<{ lesson: MyLesson; studentId?: number | null } | null>(null)
-function openLesson(lesson: MyLesson, studentId?: number | null): void {
+function openLesson(lesson: MyLesson, studentId: number | null = null): void {
+  void conduct(lesson, studentId)
+}
+function openLessonWithStudent(lesson: MyLesson): void {
   if (openingLessonId.value) return
-  conductTarget.value = { lesson, studentId }
+  conductTarget.value = { lesson }
 }
 
-async function conductWith(studentId: number | null): Promise<void> {
+function conductWith(studentId: number | null): void {
   const lesson = conductTarget.value?.lesson
-  if (!lesson || openingLessonId.value) return
+  if (lesson) void conduct(lesson, studentId)
+}
+
+async function conduct(lesson: MyLesson, studentId: number | null): Promise<void> {
+  if (openingLessonId.value) return
   openingLessonId.value = lesson.id
   loadError.value = null
   try {

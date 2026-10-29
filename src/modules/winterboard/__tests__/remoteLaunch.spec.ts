@@ -210,9 +210,13 @@ describe('П8 · пульт: список уроків і запуск', () => {
     { id: OTHER, name: '', updated_at: null },
   ]
   const mountList = () => mount(RemoteLaunchList, { global: { plugins: [i18n()] } })
-  // v1.68: дотик на уроці → «З ким урок?» → вибір
-  async function tap(w: ReturnType<typeof mountList>, lessonId: string, who = 'conduct-student-none') {
-    await w.get(`[data-testid=remote-launch-${lessonId}]`).trigger('click')
+  // v1.72: дотик на уроці — одразу, без учня; `who` — через 👤 → «З ким урок?» → вибір
+  async function tap(w: ReturnType<typeof mountList>, lessonId: string, who?: string) {
+    if (!who) {
+      await w.get(`[data-testid=remote-launch-${lessonId}]`).trigger('click')
+      return
+    }
+    await w.get(`[data-testid=remote-launch-with-${lessonId}]`).trigger('click')
     await flushPromises()
     await w.get(`[data-testid=${who}]`).trigger('click')
   }
@@ -245,7 +249,7 @@ describe('П8 · пульт: список уроків і запуск', () => {
     expect(w.get('[data-testid=remote-launch-where]').text()).toContain('Відкрийте M4SH на комп\'ютері в класі')
   })
 
-  it('дотик → «Відкриваю…» → дошка відкрилась → підключаємось', async () => {
+  it('v1.72: дотик → одразу без учня, вибору немає → «Відкриваю…» → дошка відкрилась → підключаємось', async () => {
     getRemoteLaunch.mockResolvedValue({ screen: { page: 'sidebar.item.myLessons' }, lessons })
     remoteLaunch.mockResolvedValue({ page: 'sidebar.item.myLessons' })
     // id свіжої копії пульт не знає — чекає будь-яку відкриту дошку
@@ -255,7 +259,9 @@ describe('П8 · пульт: список уроків і запуск', () => {
     await tap(w, BOARD)
     await flushPromises()
     expect(remoteLaunch).toHaveBeenCalledWith(BOARD, null)
-    expect(w.get('[data-testid=remote-launch-who]').text()).toContain('Відкриваю на комп\'ютері…')
+    expect(listConductStudents).not.toHaveBeenCalled()
+    expect(w.find('[data-testid=remote-launch-who]').exists()).toBe(false)
+    expect(w.get('[data-testid=remote-launch-where]').text()).toContain('Відкриваю на комп\'ютері…')
     await vi.advanceTimersByTimeAsync(1_000)
     expect(w.emitted('opened')).toBeUndefined()
     await vi.advanceTimersByTimeAsync(1_000)
@@ -290,20 +296,20 @@ describe('П8 · пульт: список уроків і запуск', () => {
     expect(w.get('[data-testid=remote-launch-where]').text()).toContain('Відкрийте M4SH')
 
     remoteLaunch.mockRejectedValueOnce({ response: { status: 409, data: { error: 'board_open' } } })
-    // вибір лишився відкритим — учитель тапає ще раз
-    await w.get('[data-testid=conduct-student-none]').trigger('click')
+    // учитель тапає ще раз
+    await tap(w, BOARD)
     await flushPromises()
     expect(w.emitted('opened')).toHaveLength(1)
   })
 
-  it('v1.68: «З ким урок?» на пульті — учень іде з проханням; не свій — словами й свіжий список; «Інший урок»', async () => {
+  it('v1.68/v1.72: 👤 — «З ким урок?»: учень іде з проханням; не свій — словами й свіжий список; «Інший урок»', async () => {
     getRemoteLaunch.mockResolvedValue({ screen: { page: 'sidebar.item.myLessons' }, lessons })
     remoteLaunch.mockRejectedValueOnce({ response: { status: 400, data: { error: 'student_not_yours' } } })
     const w = mountList()
     await flushPromises()
-    await w.get(`[data-testid=remote-launch-${BOARD}]`).trigger('click')
+    await w.get(`[data-testid=remote-launch-with-${BOARD}]`).trigger('click')
     await flushPromises()
-    expect(remoteLaunch).not.toHaveBeenCalled()                  // сам дотик на уроці ще нічого не просить
+    expect(remoteLaunch).not.toHaveBeenCalled()                  // сам дотик на 👤 ще нічого не просить
     expect(w.get('[data-testid=remote-launch-who]').text()).toContain('Свято Шевченка')
     await w.get('[data-testid=conduct-student-item]').trigger('click')
     await flushPromises()
