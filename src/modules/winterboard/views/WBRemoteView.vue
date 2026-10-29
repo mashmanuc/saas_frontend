@@ -678,6 +678,8 @@
           <span aria-hidden="true">🎙</span>
           {{ dictVoice.listening.value ? t('winterboard.remote.dictation.stopSpeaking') : t('winterboard.remote.dictation.tapToSpeak') }}
         </button>
+        <!-- v1.70: телефон перестав слухати — причина словами, сказане до того лишилось у полі -->
+        <p v-if="dictVoiceNote" class="wb-remote__why" role="status" data-testid="dictation-voice-note">{{ dictVoiceNote }}</p>
         <p v-if="dictAutoPunctuating" class="wb-remote__why" role="status" data-testid="dictation-auto-punct">
           {{ t('winterboard.remote.dictation.punctuating') }}
         </p>
@@ -858,7 +860,7 @@ import { winterboardApi, type VideoCandidate } from '../api/winterboardApi'
 import { matchVideoSearchPhrase } from '../remote/videoSearchPhrase'
 import { useRemoteChannel } from '../composables/useRemoteChannel'
 import { usePushToTalk } from '../composables/usePushToTalk'
-import { useVoiceDictation } from '@/composables/useVoiceDictation'
+import { usePhraseDictation } from '../composables/usePhraseDictation'
 import { matchRemotePhrase, wantsHide } from '../remote/remoteGrammar'
 import { derivePair } from '../remote/remotePair'
 import { firstTipSeen, markFirstTipSeen, remoteEntryUrl } from '../remote/remoteEntry'
@@ -1731,34 +1733,45 @@ function startRemoteVoice(): void {
   ptt.press()
 }
 /**
- * v1.69 «Вільний диктант»: мікрофон натиснув — слухає (паузи не зупиняють, `useVoiceDictation`), натиснув ще раз —
- * стоп. Сказане → розмітка голосом → знаки (там, де розбір) → у поле. Звук не залишає телефона.
+ * v1.69 «Вільний диктант»: мікрофон натиснув — слухає (паузи не зупиняють), натиснув ще раз — стоп. Сказане →
+ * розмітка голосом → знаки (там, де розбір) → у поле. Звук не залишає телефона.
+ * v1.70 (власник 29.10: на його Android у диктанті мікрофон мовчить, у відео — працює): слухає фраза за фразою тими
+ * самими налаштуваннями, що й відео (`usePhraseDictation`); телефон перестав слухати — причина словами й у журнал.
  */
-const dictRaw = ref('')
-const dictVoice = useVoiceDictation()
+const dictVoiceNote = ref('')
+const dictVoice = usePhraseDictation({
+  onFinish(text, reason) {
+    tel('dictation_voice', { event: 'end', reason: reason ?? 'teacher', len: text.length })
+    if (reason) dictVoiceNote.value = dictVoiceReasonNote(reason)
+    void finishDictationVoice(text)
+  },
+})
+const dictRaw = dictVoice.text
 const dictAutoPunctuating = ref(false)
 function toggleDictationVoice(): void {
   if (dictVoice.listening.value) {
-    dictVoice.stop()
-    void finishDictationVoice()
+    dictVoice.stop()   // остання фраза прийде від телефона — тоді onFinish
     return
   }
   if (!isReady.value || sheet.value !== 'dictation' || dictSending.value || dictAutoPunctuating.value) return
   if (document.activeElement instanceof HTMLTextAreaElement) document.activeElement.blur()
-  dictRaw.value = ''
   dictPunctuateNote.value = ''
-  dictVoice.start(dictRaw, DICTATION_SPEECH_LANG[dictLang.value])
+  dictVoiceNote.value = ''
+  tel('dictation_voice', { event: 'start', lang: dictLang.value })
+  dictVoice.start(DICTATION_SPEECH_LANG[dictLang.value])
 }
-// Пішли з вікна диктанту, поки мікрофон слухав — зупинити й не загубити сказане
+// Пішли з вікна диктанту, поки мікрофон слухав — зупинити й не загубити сказане (onFinish покладе його в поле)
 watch(sheet, (s) => {
-  if (s !== 'dictation' && dictVoice.listening.value) {
-    dictVoice.stop()
-    void finishDictationVoice()
-  }
+  if (s !== 'dictation' && dictVoice.listening.value) dictVoice.stop()
 })
-async function finishDictationVoice(): Promise<void> {
-  const raw = dictRaw.value
-  dictRaw.value = ''
+function dictVoiceReasonNote(reason: string): string {
+  if (reason === 'not-allowed' || reason === 'service-not-allowed') return t('winterboard.remote.dictation.voice.denied')
+  if (reason === 'audio-capture') return t('winterboard.remote.dictation.voice.busy')
+  if (reason === 'network') return t('winterboard.remote.dictation.voice.network')
+  if (reason === 'language-not-supported') return t('winterboard.remote.dictation.voice.language')
+  return t('winterboard.remote.dictation.voice.stopped')
+}
+async function finishDictationVoice(raw: string): Promise<void> {
   const lang = dictLang.value
   let parsed = parseSpoken(raw, lang)
   if (parsed.continues && !parsed.lines.some((l) => l.text || l.center)) return

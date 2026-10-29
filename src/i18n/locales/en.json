@@ -9486,6 +9486,7 @@
         }
       },
       "dictation": {
+        "voice": {"denied": "The browser blocked the microphone — allow it for this site in the browser settings and tap “Speak” again", "busy": "The microphone is busy or unavailable — close other apps using it and tap “Speak” again", "network": "The phone can’t recognise speech without the internet — check the connection and tap “Speak” again", "language": "The phone can’t recognise this language — choose another dictation language", "stopped": "The phone stopped listening — tap “Speak” again"},
         "langLabel": "Dictation language",
         "center": "Centre",
         "lang": {

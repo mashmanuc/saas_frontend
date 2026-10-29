@@ -33,20 +33,21 @@ vi.mock('../composables/useRemoteChannel', async (importOriginal) => {
 vi.mock('../composables/usePushToTalk', () => ({
   usePushToTalk: () => ({ supported: true, listening: ref(false), press: vi.fn(), release: vi.fn() }),
 }))
-// v1.69: безперервне слухання — підмінене; `heard` — що «сказав» учитель до натиску «Зупинити»
-const voice = vi.hoisted(() => ({ heard: '', lang: '' }))
-vi.mock('@/composables/useVoiceDictation', async () => {
+// v1.70: слухання фраза за фразою — підмінене; `heard` — що «сказав» учитель до натиску «Зупинити»,
+// `reason` — чому телефон закінчив (null — зупинив учитель)
+const voice = vi.hoisted(() => ({ heard: '', lang: '', reason: null as string | null }))
+vi.mock('../composables/usePhraseDictation', async () => {
   const { ref: vref } = await import('vue')
   return {
-    useVoiceDictation: () => {
+    usePhraseDictation: (opts: { onFinish: (text: string, reason: string | null) => void }) => {
       const listening = vref(false)
+      const text = vref('')
       return {
         supported: true,
         listening,
-        start: (target: { value: string }, lang?: string) => { listening.value = true; voice.lang = lang ?? ''; target.value = voice.heard },
-        stop: () => { listening.value = false },
-        toggle: vi.fn(),
-        reset: vi.fn(),
+        text,
+        start: (lang: string) => { listening.value = true; voice.lang = lang; text.value = voice.heard },
+        stop: () => { listening.value = false; opts.onFinish(text.value, voice.reason) },
       }
     },
   }
@@ -73,7 +74,8 @@ const MSG = {
   dictation: { button: 'Диктант', write: 'Написати на дошці', writing: 'Пишу на дошці…', done: 'Готово', noAnswer: 'Дошка не прийняла речення',
     punctuate: 'Розставити знаки', punctuating: 'Розставляю знаки…', punctuateFailed: 'Не вдалося розставити знаки',
     punctuateChanged: 'Ви змінили текст', writingOf: 'Пишу {n} з {total}', tapToSpeak: 'Говорити', stopSpeaking: 'Зупинити',
-    limitReached: 'Ліміт вичерпано', heard: 'Чую: {text}' },
+    limitReached: 'Ліміт вичерпано', heard: 'Чую: {text}',
+    voice: { denied: 'Браузер не дав мікрофон', stopped: 'Телефон перестав слухати' } },
 }
 const CAPS = ['dictation', 'dictation_center', 'dictation_line_v1']
 
@@ -217,7 +219,7 @@ describe('LAW §9 v1.69 · вільний диктант', () => {
     getActiveRemoteSession.mockReset()
     getActiveRemoteSession.mockResolvedValue({ session_id: SID, name: 'Українська 5-А', ts: 1 })
     onStateCb = null; onErrorCb = null
-    voice.heard = ''; voice.lang = ''
+    voice.heard = ''; voice.lang = ''; voice.reason = null
     try { localStorage.setItem('wb.remote.firstTipSeen', '1') } catch { /* noop */ }
   })
   afterEach(() => { while (mounted.length) mounted.pop()!.unmount() })
@@ -298,6 +300,31 @@ describe('LAW §9 v1.69 · вільний диктант', () => {
     await w.find('[data-testid="dictation-text"]').setValue('Перше.')
     await w.find('[data-testid="dictation-newline"]').trigger('click')
     expect(field(w)).toBe('Перше.\n')
+  })
+
+  it('телефон не дав мікрофон — причина словами, сказане до того лишилось у полі', async () => {
+    voice.heard = 'сонце сходило'
+    voice.reason = 'not-allowed'
+    const w = await connected()
+    await w.find('[data-testid="dictation-mic"]').trigger('click')
+    await w.find('[data-testid="dictation-mic"]').trigger('click')
+    await flushPromises()
+    expect(field(w)).toBe('Сонце сходило')
+    expect(w.find('[data-testid="dictation-voice-note"]').text()).toContain('Браузер не дав мікрофон')
+    // новий натиск «Говорити» — пояснення зникає
+    voice.reason = null
+    await w.find('[data-testid="dictation-mic"]').trigger('click')
+    expect(w.find('[data-testid="dictation-voice-note"]').exists()).toBe(false)
+  })
+
+  it('телефон перестав слухати без явної причини — «натисніть ще раз»', async () => {
+    voice.heard = ''
+    voice.reason = 'stopped_listening'
+    const w = await connected()
+    await w.find('[data-testid="dictation-mic"]').trigger('click')
+    await w.find('[data-testid="dictation-mic"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="dictation-voice-note"]').text()).toContain('Телефон перестав слухати')
   })
 
   it('ліміт Інтегралика вичерпано — словами, текст лишився, як розпізнано', async () => {
