@@ -55,8 +55,9 @@
           :class="{ 'zb__level--active': lv.level === currentLevel }"
           :aria-selected="lv.level === currentLevel"
           :data-testid="`zbirnyk-level-${lv.level}`"
+          :disabled="lv.count === 0"
           @click="zbirnykView.level = lv.level"
-        >{{ t('winterboard.zbirnyk.level', { n: lv.level }) }}</button>
+        >{{ lv.title || t('winterboard.zbirnyk.level', { n: lv.level }) }}</button>
       </div>
 
       <p v-if="themeState === 'loading'" class="zb__status">{{ t('winterboard.zbirnyk.loading') }}</p>
@@ -141,7 +142,9 @@ const answersShown = reactive(new Set<string>())
 const openTheme = computed(() => themes.value.find(th => th.id === zbirnykView.themeId) ?? null)
 const currentLevel = computed(() => {
   const levels = openTheme.value?.levels ?? []
-  return levels.some(lv => lv.level === zbirnykView.level) ? zbirnykView.level : (levels[0]?.level ?? 1)
+  // Порожня категорія (у розділі немає відповідностей) — не відкриваємо: перша, де задачі є
+  if (levels.some(lv => lv.level === zbirnykView.level && lv.count > 0)) return zbirnykView.level
+  return (levels.find(lv => lv.count > 0) ?? levels[0])?.level ?? 1
 })
 const tasks = computed<ZbirnykTask[]>(() => {
   if (!loadedTheme.value || loadedTheme.value.id !== zbirnykView.themeId) return []
@@ -185,7 +188,7 @@ async function loadTheme(id: string): Promise<void> {
 
 function showTheme(id: string): void {
   zbirnykView.themeId = id
-  zbirnykView.level = openTheme.value?.levels[0]?.level ?? 1
+  zbirnykView.level = (openTheme.value?.levels.find(lv => lv.count > 0) ?? openTheme.value?.levels[0])?.level ?? 1
   void loadTheme(id)
 }
 
@@ -251,6 +254,8 @@ onMounted(loadOverview)
   font-size: 12px; font-weight: 600; color: #64748b; cursor: pointer;
 }
 .zb__level--active { background: #2563eb; border-color: #2563eb; color: #fff; }
+/* Порожня категорія — бліда й не натискається */
+.zb__level:disabled { opacity: 0.45; cursor: default; }
 .zb__tasks { display: flex; flex-direction: column; gap: 8px; padding: 0 12px 12px; }
 .zb__task {
   display: flex; flex-direction: column; gap: 6px; padding: 8px;

@@ -28,13 +28,14 @@ export interface ZbirnykTask {
   /** Для показу вчителю у вкладці; на дошку не йде. */
   answer: string | null
 }
-export interface ZbirnykLevel { level: number; tasks: ZbirnykTask[] }
+/** `title` — назва категорії від сервера («Тести», «Відповідність», «Коротка відповідь»); немає — «Рівень N». */
+export interface ZbirnykLevel { level: number; title?: string; tasks: ZbirnykTask[] }
 export interface ZbirnykTheme { id: string; number: string; title: string; levels: ZbirnykLevel[] }
 export interface ZbirnykThemeSummary {
   id: string
   number: string
   title: string
-  levels: { level: number; count: number }[]
+  levels: { level: number; count: number; title?: string }[]
 }
 
 type Unavailable = { status: 'unavailable' }

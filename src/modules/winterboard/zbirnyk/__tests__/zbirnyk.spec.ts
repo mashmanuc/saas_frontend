@@ -35,6 +35,10 @@ const SIDEBAR = readFileSync('src/modules/winterboard/components/sidebar/GroupCo
 const OVERVIEW = {
   status: 'ready', collection: { id: 'c', version: 2, title: 'Збірник НМТ' }, themes: [
     { id: 'real-numbers', number: '1', title: 'Дійсні числа', levels: [{ level: 1, count: 2 }, { level: 2, count: 1 }] },
+    // v5: категорії за типом із назвами від сервера; порожня — бліда й не натискається
+    { id: 'integral', number: '15', title: 'Інтеграл', levels: [
+      { level: 1, count: 0, title: 'Тести' }, { level: 2, count: 0, title: 'Відповідність' },
+      { level: 3, count: 4, title: 'Коротка відповідь' }] },
     { id: 'sequences', number: '2', title: 'Прогресії', levels: [{ level: 1, count: 0 }] },
   ],
 }
@@ -239,6 +243,18 @@ describe('ZB-5 вкладка', () => {
     const setData = vi.fn()
     await w.get('[data-testid="zbirnyk-task-7"]').trigger('dragstart', { dataTransfer: { setData, effectAllowed: '' } })
     expect(setData).toHaveBeenCalledWith(ZBIRNYK_TASK_MIME, '{"id":"nmt-mt-3"}')
+  })
+
+  it('категорії з назвами від сервера; порожня — неактивна, відкривається перша з задачами', async () => {
+    routeGet()
+    const { w } = mountTab()
+    await flushPromises()
+    await w.get('[data-testid="zbirnyk-theme-integral"]').trigger('click')
+    await flushPromises()
+    expect(w.findAll('.zb__level').map(b => b.text())).toEqual(['Тести', 'Відповідність', 'Коротка відповідь'])
+    expect(w.get('[data-testid="zbirnyk-level-1"]').attributes('disabled')).toBeDefined()
+    expect(w.get('[data-testid="zbirnyk-level-2"]').attributes('disabled')).toBeDefined()
+    expect(w.get('[data-testid="zbirnyk-level-3"]').classes()).toContain('zb__level--active')
   })
 
   it('поки задача йде на дошку — «Додаю…» замість «+»', async () => {
