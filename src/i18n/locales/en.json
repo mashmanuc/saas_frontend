@@ -11401,6 +11401,13 @@
         "drawHint": "Draw: sketch on the shape like on a board"
       },
       "nmtTask": {
+        "points": {"one": "{n} point", "few": "{n} points", "many": "{n} points"},
+        "answerLabel": "Answer:",
+        "sheetCaption": "Answer sheet — one mark in each row",
+        "picked": "Selected {n} of {m}",
+        "pickedOne": "Selected: {letter}",
+        "pickOne": "Choose an option",
+        "solutionTitle": "Solution",
         "answerPlaceholder": "Type your answer…",
         "selectN": "Select {n} correct answers",
         "solutionZoomIn": "Enlarge the solution text",

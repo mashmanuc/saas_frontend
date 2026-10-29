@@ -11489,6 +11489,13 @@
         "drawHint": "Малювання: малюй по фігурі як на дошці"
       },
       "nmtTask": {
+        "points": {"one": "{n} бал", "few": "{n} бали", "many": "{n} балів"},
+        "answerLabel": "Відповідь:",
+        "sheetCaption": "Бланк відповідей — одна позначка в кожному рядку",
+        "picked": "Обрано {n} з {m}",
+        "pickedOne": "Обрано: {letter}",
+        "pickOne": "Оберіть варіант",
+        "solutionTitle": "Розбір",
         "answerPlaceholder": "Введіть відповідь…",
         "selectN": "Виберіть {n} правильні відповіді",
         "solutionZoomIn": "Збільшити текст розбору",

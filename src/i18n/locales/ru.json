@@ -10137,6 +10137,13 @@
         "drawHint": "Рисование: рисуй по фигуре как на доске"
       },
       "nmtTask": {
+        "points": {"one": "{n} балл", "few": "{n} балла", "many": "{n} баллов"},
+        "answerLabel": "Ответ:",
+        "sheetCaption": "Бланк ответов — одна отметка в каждой строке",
+        "picked": "Выбрано {n} из {m}",
+        "pickedOne": "Выбрано: {letter}",
+        "pickOne": "Выберите вариант",
+        "solutionTitle": "Разбор",
         "answerPlaceholder": "Введите ответ…",
         "selectN": "Выберите {n} правильных ответа",
         "solutionZoomIn": "Увеличить текст разбора",

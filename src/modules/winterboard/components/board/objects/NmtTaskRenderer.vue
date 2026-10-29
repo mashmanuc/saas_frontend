@@ -35,16 +35,28 @@
     :style="{ '--nmt-presentation-scale': String(presentationScale) }"
     :data-testid="`nmt-task-${asset.id}`"
   >
-    <!-- Кольорова смуга зліва за типом задачі -->
-    <div class="nmt-task__accent-bar" />
-
     <!-- Основний контент: header + body -->
     <div class="nmt-task__inner">
 
     <!-- Header — pointer-events:none so Konva proxy catches drag -->
     <header class="nmt-task__header">
-      <span class="nmt-task__type-icon">{{ typeIcon }}</span>
+      <!-- Вигляд за макетом 29.10 (Пола, «Картки завдань»): тип читається з форми — значок і назва,
+           бали НМТ праворуч; один колір для всіх типів, без кольорової смуги. -->
+      <svg v-if="data.taskType === 'matching'" class="nmt-task__type-icon" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <circle cx="5" cy="6" r="2" /><circle cx="5" cy="18" r="2" /><circle cx="19" cy="6" r="2" />
+        <circle cx="19" cy="18" r="2" /><path d="M7 6.5 17 17.5M7 17.5 17 6.5" />
+      </svg>
+      <svg v-else-if="data.taskType === 'open_answer'" class="nmt-task__type-icon" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+        <rect x="3" y="7" width="18" height="10" rx="2.5" /><path d="M8 10v4" />
+      </svg>
+      <svg v-else class="nmt-task__type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.8" aria-hidden="true">
+        <circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none" />
+      </svg>
       <span class="nmt-task__type-badge">{{ typeBadge }}</span>
+      <span v-if="points" class="nmt-task__points" data-testid="nmt-points">{{ pointsLabel }}</span>
       <!-- externalId (артикул задачі) НЕ показуємо користувачу — лишається в data
            для traceability/provenance, але це технічний ідентифікатор, не для очей.
            Delete-кнопка має власний margin-left:auto, тож притискається праворуч. -->
@@ -92,7 +104,13 @@
         {{ t('winterboard.widget.nmtTask.selectN', { n: selectCount }) }}
       </div>
 
-      <div v-if="isChoiceType" class="nmt-task__options">
+      <!-- Короткі варіанти (до п'яти) — плитками в один ряд, як у макеті; довгі — рядками. -->
+      <div
+        v-if="isChoiceType"
+        class="nmt-task__options"
+        :class="{ 'nmt-task__options--tiles': optionsAsTiles }"
+        :style="optionsAsTiles ? { '--nmt-tiles': String(data.options.length) } : undefined"
+      >
         <button
           v-for="(opt, oi) in data.options"
           :key="opt.id"
@@ -127,15 +145,18 @@
              «number», а серед них дроби «5/3», кома «4,5», корені — числове поле зі стрілками
              їх не пускало. Картка вписане не перевіряє (лише «Показати відповідь»), тож тип
              поля нічого, крім набору, не змінює; `data.inputType` лишається в даних. -->
-        <input
-          class="nmt-task__input"
-          type="text"
-          autocomplete="off"
-          v-model="openAnswerValue"
-          :placeholder="t('winterboard.widget.nmtTask.answerPlaceholder')"
-          @mousedown.stop
-          @pointerdown.stop
-        />
+        <label class="nmt-task__input-row">
+          <span class="nmt-task__input-label">{{ t('winterboard.widget.nmtTask.answerLabel') }}</span>
+          <input
+            class="nmt-task__input"
+            type="text"
+            autocomplete="off"
+            v-model="openAnswerValue"
+            :placeholder="t('winterboard.widget.nmtTask.answerPlaceholder')"
+            @mousedown.stop
+            @pointerdown.stop
+          />
+        </label>
         <div
           v-if="data.showAnswer && data.correctAnswer"
           class="nmt-task__correct-hint"
@@ -164,7 +185,12 @@
             </div>
           </div>
         </div>
+        <!-- Бланк як у ЗНО: літери варіантів зверху, у рядку — кружечки; літера в кружечку лише для читачів екрана -->
         <div class="nmt-task__match-sheet">
+          <div class="nmt-task__match-head" aria-hidden="true">
+            <span class="nmt-task__match-row-label" />
+            <span v-for="opt in matching.right" :key="opt.id" class="nmt-task__match-head-cell">{{ opt.label }}</span>
+          </div>
           <div
             v-for="item in matching.left"
             :key="item.id"
@@ -180,14 +206,13 @@
               class="nmt-task__match-cell"
               :class="matchCellClass(item.id, opt.id)"
               :aria-pressed="matchPicks[item.id] === opt.id"
+              :aria-label="`${item.label} — ${opt.label}`"
               @click.stop="pickMatch(item.id, opt.id)"
               @mousedown.stop
               @pointerdown.stop
-            >{{ opt.label }}</button>
+            ><span class="nmt-task__sr">{{ opt.label }}</span></button>
           </div>
-        </div>
-        <div v-if="data.showAnswer && matchPickedCount > 0" class="nmt-task__match-score" data-testid="nmt-match-score">
-          {{ t('winterboard.widget.nmtTask.matchScore', { n: matchCorrectCount, m: matching.left.length }) }}
+          <div class="nmt-task__match-caption">{{ t('winterboard.widget.nmtTask.sheetCaption') }}</div>
         </div>
       </div>
 
@@ -208,10 +233,17 @@
 
       <!-- ── Action buttons ────────────────────────────────── -->
       <div class="nmt-task__actions">
+        <!-- Стан вибору зліва (локальний, як і сам вибір); після «Показати відповідь» у відповідності — бал -->
+        <span
+          v-if="statusText"
+          class="nmt-task__status"
+          :class="statusTone"
+          :data-testid="statusIsScore ? 'nmt-match-score' : 'nmt-status'"
+        >{{ statusText }}</span>
         <button
           v-if="hasAnswerToShow && revealControlsAllowed"
           type="button"
-          class="nmt-task__btn"
+          class="nmt-task__btn nmt-task__btn--primary"
           :class="{ 'is-active': data.showAnswer }"
           @click.stop="toggleShowAnswer"
           @mousedown.stop
@@ -246,7 +278,8 @@
 
       <!-- ── Solution block ────────────────────────────────── -->
       <div v-if="data.showSolution && data.solution" class="nmt-task__solution">
-        <span class="nmt-task__solution-icon">📖</span>
+        <div class="nmt-task__solution-title">{{ t('winterboard.widget.nmtTask.solutionTitle') }}</div>
+        <div class="nmt-task__solution-row">
         <div
           class="nmt-task__solution-text"
           :style="{ fontSize: (solutionBasePx * presentationScale) + 'px' }"
@@ -287,6 +320,7 @@
             :aria-label="t('winterboard.widget.nmtTask.solutionZoomIn')"
             @click.stop="solutionZoom.zoomIn()"
           >А+</button>
+        </div>
         </div>
       </div>
 
@@ -514,14 +548,48 @@ const typeBadge = computed(() => {
   }
 })
 
-const typeIcon = computed(() => {
-  switch (data.value.taskType) {
-    case 'single_choice': return '◉'
-    case 'matching':      return '⇄'
-    case 'open_answer':   return '✏'
-    default:              return '📋'
-  }
+/** Бали НМТ (макет 29.10): вибір однієї — 1, коротка відповідь — 2, відповідність — по одному за пару. */
+const points = computed(() => {
+  const d = data.value
+  if (d.taskType === 'single_choice') return 1
+  if (d.taskType === 'open_answer') return 2
+  if (d.taskType === 'matching') return matching.value?.left.length ?? d.pairs?.length ?? 0
+  return 0
 })
+const pointsLabel = computed(() => {
+  const n = points.value
+  const form = n === 1 ? 'one' : n >= 2 && n <= 4 ? 'few' : 'many'
+  return t(`winterboard.widget.nmtTask.points.${form}`, { n })
+})
+
+/** Плитки в один ряд — лише для коротких варіантів без картинок (до п'яти). */
+const optionsAsTiles = computed(() => {
+  const opts = data.value.options ?? []
+  if (opts.length < 2 || opts.length > 5 || opts.some((_, i) => optionImage(i))) return false
+  // На 200 % у плитку вміщується лише зовсім коротке: «7», «0,125», «√3», «24/25». «(−10; −7]» уже ні — рядками.
+  return opts.every((o) => String(o.text ?? '').replace(/\\[a-zA-Z]+|[${}\s]/g, '').length <= 6)
+})
+
+/** Рядок стану внизу картки: що обрано; у відповідності після «Показати відповідь» — бал. */
+const statusIsScore = computed(() =>
+  data.value.taskType === 'matching' && !!matching.value && data.value.showAnswer && matchPickedCount.value > 0)
+const statusText = computed(() => {
+  if (statusIsScore.value) {
+    return t('winterboard.widget.nmtTask.matchScore', { n: matchCorrectCount.value, m: matching.value!.left.length })
+  }
+  if (data.value.showAnswer) return ''
+  if (data.value.taskType === 'matching' && matching.value) {
+    return t('winterboard.widget.nmtTask.picked', { n: matchPickedCount.value, m: matching.value.left.length })
+  }
+  if (data.value.taskType === 'single_choice') {
+    const picked = (data.value.options ?? []).find((o) => selectedIds.value.has(o.id))
+    return picked ? t('winterboard.widget.nmtTask.pickedOne', { letter: picked.letter }) : t('winterboard.widget.nmtTask.pickOne')
+  }
+  return ''
+})
+const statusTone = computed(() => statusIsScore.value
+  ? (matchCorrectCount.value === matching.value!.left.length ? 'is-ok' : 'is-bad')
+  : '')
 
 // ── Companion spawn ───────────────────────────────────────────────────────────
 
@@ -631,38 +699,36 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
 </script>
 
 <style scoped>
-/* ── CSS змінні за типом задачі ──────────────────────────────────────── */
-.nmt-task--single_choice {
-  --accent:       #6366f1;
-  --accent-light: #eef2ff;
-  --accent-mid:   #a5b4fc;
-  --header-bg:    #f5f3ff;
-}
-.nmt-task--open_answer {
-  --accent:       #059669;
-  --accent-light: #f0fdf4;
-  --accent-mid:   #6ee7b7;
-  --header-bg:    #ecfdf5;
-}
-.nmt-task--matching {
-  --accent:       #7c3aed;
-  --accent-light: #faf5ff;
-  --accent-mid:   #c4b5fd;
-  --header-bg:    #f5f3ff;
-}
+/* Вигляд за макетом 29.10 (Пола, «Картки завдань — пропозиція стилю»): один колір для всіх типів, тип — значком
+   і формою зони відповіді. Картка — аркуш паперу: світла і в темній темі дошки. */
 
 /* ── Root ────────────────────────────────────────────────────────────── */
 .nmt-task {
+  --m4-paper: #ffffff;
+  --m4-ink: #0f2620;
+  --m4-ink-2: #345148;
+  --m4-ink-3: #5f7a72;
+  --m4-line: rgba(15, 38, 32, 0.10);
+  --m4-line-2: rgba(15, 38, 32, 0.18);
+  --m4-primary: #0e7a5f;
+  --m4-primary-dark: #0a5a46;
+  --m4-primary-soft: #d6ece2;
+  --m4-primary-tint: #eaf5ef;
+  --m4-bad: #c14848;
+  --m4-bad-soft: #f6dede;
+  --m4-foot: #fafcfb;
+  --m4-mono: ui-monospace, 'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace;
+
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   width: 100%;
   height: 100%;
-  background: #ffffff;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 12px;
+  background: var(--m4-paper);
+  border: 1px solid var(--m4-line);
+  border-radius: 14px;
   overflow: hidden;
   pointer-events: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07), 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 2px rgba(15, 38, 32, 0.05), 0 4px 16px rgba(15, 38, 32, 0.06);
   transition: border-color 0.15s, box-shadow 0.15s;
   /* Єдина вісь показу для пульта A−/A+: усі текстові розміри нижче беруть
      значення з цих змінних. KaTeX рахує формули в em і масштабується разом. */
@@ -672,67 +738,58 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   --nmt-font-14: calc(14px * var(--nmt-presentation-scale, 1));
   --nmt-font-15: calc(15px * var(--nmt-presentation-scale, 1));
   --nmt-font-16: calc(16px * var(--nmt-presentation-scale, 1));
+  /* Кружечок бланка й рядок варіанта — теж від масштабу, щоб на 200 % їх було видно з парти. */
+  --nmt-cell: calc(22px * var(--nmt-presentation-scale, 1));
 }
 
 .nmt-task.is-selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.18), 0 2px 8px rgba(0, 0, 0, 0.07);
+  border-color: var(--m4-primary);
+  box-shadow: 0 0 0 2px rgba(14, 122, 95, 0.18), 0 4px 16px rgba(15, 38, 32, 0.06);
 }
 
-/* ── Кольорова смуга акценту (ліворуч) ───────────────────────────────── */
-.nmt-task__accent-bar {
-  flex-shrink: 0;
-  width: 5px;
-  background: var(--accent, #6366f1);
-}
-
-/* ── Внутрішній контейнер (без смуги) ───────────────────────────────── */
-.nmt-task__header,
-.nmt-task__body {
-  /* компенсуємо flex-row: розтягуємо на всю ширину */
-}
-
-.nmt-task {
-  /* Override flex-direction для внутрішнього layout */
-}
-
-/* Обгортка: accent-bar + column-layout */
 .nmt-task__inner {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-width: 0;
+  min-height: 0;
   overflow: hidden;
 }
 
-/* ── Header ──────────────────────────────────────────────────────────── */
+/* ── Header: значок · тип · бали ─────────────────────────────────────── */
 .nmt-task__header {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 7px 12px 6px;
-  background: var(--header-bg, #f8fafc);
-  border-bottom: 1px solid #e5e7eb;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--m4-paper);
+  border-bottom: 1px solid var(--m4-line);
   pointer-events: none;
   user-select: none;
   flex-shrink: 0;
 }
 
 .nmt-task__type-icon {
-  font-size: var(--nmt-font-13);
-  color: var(--accent);
+  width: calc(16px * var(--nmt-presentation-scale, 1));
+  height: calc(16px * var(--nmt-presentation-scale, 1));
   flex-shrink: 0;
+  color: var(--m4-ink);
 }
 
 .nmt-task__type-badge {
-  font-size: var(--nmt-font-11);
+  font-size: var(--nmt-font-12);
   font-weight: 700;
-  color: var(--accent);
-  background: var(--accent-light);
-  border-radius: 5px;
-  padding: 2px 8px;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  color: var(--m4-ink);
+}
+
+.nmt-task__points {
+  margin-left: auto;
+  font: 600 var(--nmt-font-11) var(--m4-mono);
+  color: var(--m4-ink-2);
+  border: 1px solid var(--m4-line-2);
+  border-radius: 999px;
+  padding: 2px 9px;
+  white-space: nowrap;
 }
 
 .nmt-task__delete-btn {
@@ -753,26 +810,27 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   transition: background 0.12s, color 0.12s;
 }
 
+.nmt-task__points + .nmt-task__delete-btn { margin-left: 4px; }
+
 .nmt-task__delete-btn:hover {
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--m4-bad-soft);
+  color: var(--m4-bad);
 }
 
 /* ── Body ────────────────────────────────────────────────────────────── */
 .nmt-task__body {
   flex: 1;
   min-height: 0;
-  padding: 12px 14px 14px;
+  padding: 14px 16px 0;
   overflow-y: auto;
   pointer-events: auto;
 }
 
-/* Колонка й проміжки переїхали з тіла сюди: тіло тепер лише вікно з прокруткою,
-   а потік має природну висоту, яку можна виміряти й у бік зменшення. */
+/* Потік має природну висоту, яку можна виміряти й у бік зменшення (автопідгонка, INV-25). */
 .nmt-task__flow {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .nmt-task.is-readonly .nmt-task__body {
@@ -783,10 +841,9 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
 .nmt-task__question {
   font-size: var(--nmt-font-15);
   font-weight: 500;
-  line-height: 1.55;
-  color: #0f172a;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #f1f5f9;
+  line-height: 1.6;
+  color: var(--m4-ink);
+  text-wrap: pretty;
 }
 
 /* ── ілюстрації задачі (QUESTION_IMAGE / OPTION_IMAGE) ───────────────── */
@@ -795,7 +852,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
-  padding: 10px 0 4px;
+  padding: 4px 0;
 }
 .nmt-task__figure {
   max-width: 100%;
@@ -808,92 +865,67 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   max-width: 100%;
   max-height: 110px;
   object-fit: contain;
-  margin-left: 8px;
   border-radius: 4px;
   background: #fff;
 }
 
 .nmt-task__hint {
-  margin: 2px 0 6px;
+  margin: 0;
   font-size: var(--nmt-font-12);
   font-weight: 600;
   color: #b45309;
 }
 
-/* ── single_choice: options grid ─────────────────────────────────────── */
+/* ── Вибір: рядки (довгі варіанти) ───────────────────────────────────── */
 .nmt-task__options {
   display: grid;
   /* На вузькій картці дві min-content колонки виносили відповіді за рамку.
      Один стовпець без обрізання формул; на широкій картці лишаються два. */
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
-  gap: 7px;
+  gap: 8px;
 }
 
 .nmt-task__option {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 8px 11px;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 9px;
-  background: #fafafa;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--m4-line-2);
+  border-radius: 12px;
+  background: #fff;
   cursor: pointer;
   text-align: left;
-  font-size: var(--nmt-font-13);
-  color: #374151;
-  transition: border-color 0.13s, background 0.13s, transform 0.1s;
+  font-size: var(--nmt-font-14);
+  color: var(--m4-ink);
+  transition: border-color 0.12s, background 0.12s;
 }
 
-.nmt-task__option:hover {
-  border-color: var(--accent-mid);
-  background: var(--accent-light);
-  transform: translateY(-1px);
-}
+.nmt-task__option:hover { border-color: var(--m4-primary); }
 
 .nmt-task__option.is-selected {
-  border-color: var(--accent);
-  background: var(--accent-light);
+  border-color: var(--m4-primary);
+  background: var(--m4-primary-tint);
 }
 
 .nmt-task__option.is-correct {
-  border-color: #16a34a;
-  background: #f0fdf4;
+  border-color: var(--m4-primary);
+  background: var(--m4-primary-soft);
 }
 
 .nmt-task__option.is-wrong {
-  border-color: #dc2626;
-  background: #fef2f2;
+  border-color: var(--m4-bad);
+  background: var(--m4-bad-soft);
 }
 
 .nmt-task__option-letter {
   flex-shrink: 0;
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  background: #f1f5f9;
-  color: #475569;
-  font-size: var(--nmt-font-12);
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.13s, color 0.13s;
+  font: 700 var(--nmt-font-12) var(--m4-mono);
+  color: var(--m4-ink-3);
 }
 
-.nmt-task__option.is-selected .nmt-task__option-letter {
-  background: var(--accent);
-  color: var(--color-on-accent);
-}
-
-.nmt-task__option.is-correct .nmt-task__option-letter {
-  background: #16a34a;
-  color: #fff;
-}
-
-.nmt-task__option.is-wrong .nmt-task__option-letter {
-  background: #dc2626;
-  color: #fff;
-}
+.nmt-task__option.is-selected .nmt-task__option-letter,
+.nmt-task__option.is-correct .nmt-task__option-letter { color: var(--m4-primary-dark); }
+.nmt-task__option.is-wrong .nmt-task__option-letter { color: var(--m4-bad); }
 
 .nmt-task__option-text {
   flex: 1;
@@ -901,44 +933,72 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   line-height: 1.4;
 }
 
-/* ── open_answer ─────────────────────────────────────────────────────── */
+/* ── Вибір: плитки в один ряд (короткі варіанти) ─────────────────────── */
+.nmt-task__options--tiles {
+  grid-template-columns: repeat(var(--nmt-tiles, 5), minmax(0, 1fr));
+}
+
+.nmt-task__options--tiles .nmt-task__option {
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 6px 10px;
+  text-align: center;
+  font-size: var(--nmt-font-14);
+}
+
+.nmt-task__options--tiles .nmt-task__option-text { flex: none; }
+
+/* ── Коротка відповідь ───────────────────────────────────────────────── */
 .nmt-task__input-wrap {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
+}
+
+.nmt-task__input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nmt-task__input-label {
+  font-size: var(--nmt-font-13);
+  font-weight: 700;
+  color: var(--m4-ink-2);
+  flex-shrink: 0;
 }
 
 .nmt-task__input {
-  width: 100%;
-  max-width: 380px;
-  height: 42px;
-  padding: 0 13px;
-  border: 1.5px solid #d1d5db;
-  border-radius: 9px;
-  font-size: var(--nmt-font-14);
-  background: #fafafa;
-  color: #111827;
+  width: calc(150px * var(--nmt-presentation-scale, 1));
+  max-width: 100%;
+  height: calc(34px * var(--nmt-presentation-scale, 1));
+  padding: 0 12px;
+  border: 1.5px solid var(--m4-line-2);
+  border-radius: 10px;
+  font: 600 var(--nmt-font-15) var(--m4-mono);
+  background: #fff;
+  color: var(--m4-ink);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .nmt-task__input:focus {
-  border-color: var(--accent);
-  background: #fff;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+  border-color: var(--m4-primary);
+  box-shadow: 0 0 0 3px var(--m4-primary-soft);
 }
 
 .nmt-task__correct-hint {
+  align-self: flex-start;
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: var(--nmt-font-13);
-  font-weight: 600;
-  color: #166534;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 7px;
-  padding: 6px 11px;
+  font-size: var(--nmt-font-14);
+  font-weight: 700;
+  color: var(--m4-primary-dark);
+  background: var(--m4-primary-tint);
+  border: 1px solid var(--m4-primary-soft);
+  border-radius: 10px;
+  padding: 5px 12px;
 }
 
 .nmt-task__hint-icon {
@@ -946,38 +1006,49 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   flex-shrink: 0;
 }
 
-/* ── matching: бланк НМТ (LAW §9 v1.48) ──────────────────────────────── */
+/* ── Відповідність: колонки й бланк (LAW §9 v1.48) ───────────────────── */
 .nmt-task__match {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .nmt-task__match-cols {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
-  gap: 7px 16px;
+  gap: 4px 16px;
 }
 
 .nmt-task__match-col {
   display: flex;
   flex-direction: column;
-  gap: 6px;
 }
 
 .nmt-task__match-item {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  font-size: var(--nmt-font-13);
-  color: #374151;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  border-top: 1px solid var(--m4-line);
+  font-size: var(--nmt-font-14);
+  color: var(--m4-ink);
 }
 
 .nmt-task__match-label {
   flex-shrink: 0;
-  min-width: 22px;
-  font-weight: 800;
-  color: var(--accent);
+  width: calc(20px * var(--nmt-presentation-scale, 1));
+  height: calc(20px * var(--nmt-presentation-scale, 1));
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  font: 700 var(--nmt-font-12) var(--m4-mono);
+  background: var(--m4-primary-tint);
+  color: var(--m4-primary-dark);
+}
+
+.nmt-task__match-col + .nmt-task__match-col .nmt-task__match-label {
+  background: #f3f7f5;
+  color: var(--m4-ink-2);
 }
 
 .nmt-task__match-text {
@@ -987,89 +1058,102 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
 }
 
 .nmt-task__match-sheet {
+  align-self: center;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  padding: 10px 14px 8px;
+  border: 1px solid var(--m4-line);
+  border-radius: 12px;
+  background: var(--m4-foot);
 }
 
+.nmt-task__match-head,
 .nmt-task__match-row {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 6px 10px;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 9px;
-  background: #fafafa;
-  transition: border-color 0.13s, background 0.13s;
+  gap: 8px;
+  padding: 2px 6px;
+  border-radius: 999px;
 }
 
-.nmt-task__match-row.is-correct {
-  border-color: #16a34a;
-  background: #f0fdf4;
-}
+.nmt-task__match-row.is-correct { background: var(--m4-primary-tint); }
+.nmt-task__match-row.is-wrong { background: var(--m4-bad-soft); }
 
-.nmt-task__match-row.is-wrong {
-  border-color: #dc2626;
-  background: #fef2f2;
+.nmt-task__match-head-cell {
+  width: var(--nmt-cell);
+  text-align: center;
+  font: 700 var(--nmt-font-12) var(--m4-mono);
+  color: var(--m4-ink-3);
 }
 
 .nmt-task__match-row-label {
   flex-shrink: 0;
-  min-width: 22px;
-  font-size: var(--nmt-font-13);
-  font-weight: 800;
-  color: #475569;
+  width: calc(16px * var(--nmt-presentation-scale, 1));
+  text-align: center;
+  font: 700 var(--nmt-font-12) var(--m4-mono);
+  color: var(--m4-primary-dark);
 }
 
 .nmt-task__match-cell {
-  width: 34px;
-  height: 30px;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 7px;
+  width: var(--nmt-cell);
+  height: var(--nmt-cell);
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--m4-line-2);
   background: #fff;
-  color: #475569;
-  font-size: var(--nmt-font-12);
-  font-weight: 800;
   cursor: pointer;
-  transition: border-color 0.13s, background 0.13s, color 0.13s;
+  display: grid;
+  place-items: center;
+  transition: background 0.12s, border-color 0.12s;
 }
 
-.nmt-task__match-cell:hover {
-  border-color: var(--accent-mid);
-  background: var(--accent-light);
-}
+.nmt-task__match-cell:hover { border-color: var(--m4-primary); }
 
+/* Обрано — зелений кружечок з білою крапкою, як позначка в бланку */
 .nmt-task__match-cell.is-selected {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--color-on-accent);
+  background: var(--m4-primary);
+  border-color: var(--m4-primary);
+}
+.nmt-task__match-cell.is-selected::after {
+  content: '';
+  width: 32%;
+  height: 32%;
+  border-radius: 50%;
+  background: #fff;
 }
 
+/* «Показати відповідь»: правильна, яку не обрали, — зелений пунктир; обрана хибна — червона */
 .nmt-task__match-cell.is-correct {
-  border-color: #16a34a;
-  background: #f0fdf4;
-  color: #15803d;
+  border: 2px dashed var(--m4-primary);
 }
-
 .nmt-task__match-cell.is-selected.is-correct {
-  background: #16a34a;
-  color: #fff;
+  border-style: solid;
+  background: var(--m4-primary);
 }
-
 .nmt-task__match-cell.is-wrong {
-  border-color: #dc2626;
-  background: #dc2626;
-  color: #fff;
+  border-color: var(--m4-bad);
+  background: var(--m4-bad);
 }
 
-.nmt-task__match-score {
-  font-size: var(--nmt-font-13);
-  font-weight: 700;
-  color: #374151;
+.nmt-task__match-caption {
+  margin-top: 2px;
+  text-align: center;
+  font-size: var(--nmt-font-11);
+  color: var(--m4-ink-3);
 }
 
-/* ── matching (старі картки) ─────────────────────────────────────────── */
+/* Літера в кружечку — лише для читачів екрана (видима літера — у шапці бланка) */
+.nmt-task__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── Відповідність (старі картки без бланка) ─────────────────────────── */
 .nmt-task__pairs {
   display: flex;
   flex-direction: column;
@@ -1081,28 +1165,27 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   align-items: center;
   gap: 8px;
   padding: 7px 11px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fafafa;
+  border: 1px solid var(--m4-line);
+  border-radius: 10px;
+  background: #fff;
   font-size: var(--nmt-font-13);
-  color: #374151;
+  color: var(--m4-ink);
   transition: background 0.13s, border-color 0.13s;
 }
 
 .nmt-task__pair.is-answer-shown {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
+  background: var(--m4-primary-tint);
+  border-color: var(--m4-primary-soft);
 }
 
 .nmt-task__pair-letter {
   flex-shrink: 0;
   width: 24px;
   height: 24px;
-  border-radius: 6px;
-  background: var(--accent-light);
-  color: var(--accent);
-  font-size: var(--nmt-font-11);
-  font-weight: 800;
+  border-radius: 7px;
+  background: var(--m4-primary-tint);
+  color: var(--m4-primary-dark);
+  font: 700 var(--nmt-font-11) var(--m4-mono);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1116,7 +1199,7 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
 
 .nmt-task__pair-sep {
   flex-shrink: 0;
-  color: #cbd5e1;
+  color: var(--m4-line-2);
   font-size: var(--nmt-font-16);
   font-weight: 300;
 }
@@ -1124,87 +1207,96 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
 .nmt-task__pair-right {
   flex: 1;
   min-width: 0;
-  color: #166534;
+  color: var(--m4-primary-dark);
   font-weight: 500;
 }
 
-/* ── Action buttons ──────────────────────────────────────────────────── */
+/* ── Нижній рядок: стан · розбір · головна дія ───────────────────────── */
 .nmt-task__actions {
   display: flex;
-  gap: 7px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
   flex-wrap: wrap;
-  padding-top: 2px;
+  margin: 2px -16px 0;
+  padding: 10px 16px;
+  border-top: 1px solid var(--m4-line);
+  background: var(--m4-foot);
 }
+
+.nmt-task__status {
+  margin-right: auto;
+  font-size: var(--nmt-font-12);
+  color: var(--m4-ink-3);
+}
+.nmt-task__status.is-ok { color: var(--m4-primary); font-weight: 700; }
+.nmt-task__status.is-bad { color: var(--m4-bad); font-weight: 700; }
 
 .nmt-task__btn {
   padding: 6px 14px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 8px;
-  background: #f8fafc;
-  color: #475569;
+  border: 1px solid var(--m4-line-2);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--m4-ink-2);
   font-size: var(--nmt-font-12);
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: border-color 0.13s, background 0.13s, color 0.13s, transform 0.1s;
+  transition: border-color 0.13s, background 0.13s, color 0.13s;
 }
 
 .nmt-task__btn:hover {
-  border-color: var(--accent-mid);
-  background: var(--accent-light);
-  color: var(--accent);
-  transform: translateY(-1px);
+  background: var(--m4-primary-tint);
+  color: var(--m4-ink);
 }
 
 .nmt-task__btn.is-active {
-  border-color: var(--accent);
-  background: var(--accent-light);
-  color: var(--accent);
+  border-color: var(--m4-primary);
+  color: var(--m4-primary-dark);
 }
 
-.nmt-task__btn--solution {
-  border-color: #d1fae5;
-  background: #f0fdf4;
-  color: #166534;
+/* Головна дія — одна, зелена */
+.nmt-task__btn--primary {
+  order: 3;
+  background: var(--m4-primary);
+  border-color: var(--m4-primary);
+  color: #fff;
+}
+.nmt-task__btn--primary:hover {
+  background: var(--m4-primary-dark);
+  color: #fff;
+}
+.nmt-task__btn--primary.is-active {
+  background: transparent;
+  border-color: var(--m4-primary);
+  color: var(--m4-primary-dark);
 }
 
-.nmt-task__btn--solution:hover,
-.nmt-task__btn--solution.is-active {
-  border-color: #16a34a;
-  background: #dcfce7;
-  color: #14532d;
-}
-
-/* "Побудувати" — companion spawn btn (azure accent) */
+/* «Побудувати» — другорядна, як «Розбір» */
 .nmt-task__btn--build {
-  border-color: #bae6fd;
-  background: #f0f9ff;
-  color: #0369a1;
   font-size: var(--nmt-font-12);
 }
 
-.nmt-task__btn--build:hover {
-  border-color: #0ea5e9;
-  background: #e0f2fe;
-  color: #0284c7;
-  transform: translateY(-1px);
-}
-
-/* ── Solution block ──────────────────────────────────────────────────── */
+/* ── Розбір ──────────────────────────────────────────────────────────── */
 .nmt-task__solution {
   display: flex;
-  gap: 9px;
-  padding: 10px 13px;
-  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
-  border: 1px solid #bbf7d0;
-  border-radius: 9px;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--m4-line-2);
   font-size: var(--nmt-font-13);
-  color: #166534;
+  color: var(--m4-ink-2);
   line-height: 1.55;
 }
 
-.nmt-task__solution-icon {
-  flex-shrink: 0;
-  font-size: var(--nmt-font-16);
+.nmt-task__solution-title {
+  font-size: var(--nmt-font-13);
+  font-weight: 800;
+  color: var(--m4-ink);
+}
+
+.nmt-task__solution-row {
+  display: flex;
+  gap: 9px;
 }
 
 .nmt-task__solution-text {
@@ -1230,10 +1322,10 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
   width: 22px;
   height: 20px;
   padding: 0;
-  border: 1px solid #bbf7d0;
+  border: 1px solid var(--m4-line-2);
   border-radius: 5px;
   background: #fff;
-  color: #166534;
+  color: var(--m4-ink-2);
   font-size: 11px;
   line-height: 1;
   cursor: pointer;
@@ -1241,8 +1333,8 @@ function emitDataUpdate(patch: Partial<NmtTaskData>) {
 }
 
 .nmt-task__zoom-btn:hover:not(:disabled) {
-  background: #dcfce7;
-  border-color: #86efac;
+  background: var(--m4-primary-tint);
+  border-color: var(--m4-primary);
 }
 
 .nmt-task__zoom-btn:disabled {
