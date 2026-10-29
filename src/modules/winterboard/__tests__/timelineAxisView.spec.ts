@@ -220,3 +220,40 @@ describe('«на всю дошку» (власник 2026-10-29: «щоб діт
     expect(toggle).toHaveBeenCalledWith('tl1')
   })
 })
+
+describe('текст події: «… далі» і мова статті (власник 2026-10-29: «на самому цікавому місці обрізалось»)', () => {
+  const withText = () => {
+    const asset = axisAsset()
+    const events = (asset.data as { events: Array<Record<string, unknown>> }).events
+    events[0].description = 'Початок статті. Друге речення. …'
+    events[0].description_full = 'Початок статті. Друге речення. Третє.\n\nДругий абзац.'
+    events[1].description_lang = 'en'
+    return asset
+  }
+
+  it('спершу початок; натиск на «… далі» чи на сам текст — увесь вступ; записів немає', async () => {
+    const w = mountCard(withText())
+    expect(w.find('[data-testid="timeline-axis-text"]').text()).toBe('Початок статті. Друге речення. …')
+    await w.find('[data-testid="timeline-axis-more"]').trigger('click')
+    expect(w.find('[data-testid="timeline-axis-text"]').text()).toContain('Другий абзац.')
+    await w.find('[data-testid="timeline-axis-text"]').trigger('click')
+    expect(w.find('[data-testid="timeline-axis-text"]').text()).toBe('Початок статті. Друге речення. …')
+    expect(w.emitted('update:asset')).toBeUndefined()
+  })
+
+  it('інша подія — знову початок; без повного вступу кнопки «далі» немає', async () => {
+    const w = mountCard(withText())
+    await w.find('[data-testid="timeline-axis-more"]').trigger('click')
+    await w.setProps({ asset: { ...withText(), data: { ...(withText().data as object), active_event_id: 'event-2' } } })
+    expect(w.find('[data-testid="timeline-axis-more"]').exists()).toBe(false)
+    await w.setProps({ asset: withText() })
+    expect(w.find('[data-testid="timeline-axis-text"]').text()).toBe('Початок статті. Друге речення. …')
+  })
+
+  it('статті мовою матеріалу немає — чесна позначка «Стаття лише англійською»', () => {
+    const w = mountCard({ ...withText(), data: { ...(withText().data as object), active_event_id: 'event-2' } } as WBAsset)
+    expect(w.find('[data-testid="timeline-axis-lang"]').text()).toBe('Стаття лише англійською')
+    const first = mountCard(withText())
+    expect(first.find('[data-testid="timeline-axis-lang"]').exists()).toBe(false)
+  })
+})

@@ -257,7 +257,7 @@ const PURPOSES = [
   'chat', 'chat_redo_quote', 'chat_redo_hint', 'chat_redo_board_hint', 'chat_redo_language', 'chat_math_regen',
   'memory_summary', 'vision_read', 'vision_solve', 'vision_check', 'enrich', 'enrich_genre', 'review',
   'tutor_hint', 'course_plan', 'material_vision', 'material_ocr', 'cli_theory', 'history_lesson',
-  'museum_card',
+  'museum_card', 'timeline_events',
 ]
 const ALERT_CODES = ['spike', 'unknown_cost', 'reconciliation_mismatch']
 

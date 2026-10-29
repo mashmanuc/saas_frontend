@@ -88,7 +88,16 @@
         <div v-if="showAnswer" class="tl-axis__big" data-testid="timeline-axis-big">{{ bigDate(active) }}</div>
         <h2 class="tl-axis__title">{{ masked(active) }}</h2>
         <p v-if="showAnswer && fullDate" class="tl-axis__full">{{ fullDate }}</p>
-        <p v-if="showAnswer && active.description" class="tl-axis__text">{{ active.description }}</p>
+        <!-- «… далі»: увесь вступ статті по натиску — лише цей екран, без запису (власник 2026-10-29) -->
+        <p v-if="showAnswer && active.description" class="tl-axis__text"
+           :class="{ 'is-full': fullOpen, 'is-more': !!active.description_full }" data-testid="timeline-axis-text"
+           @click.stop="active.description_full && (fullOpen = !fullOpen)" @mousedown.stop @pointerdown.stop>{{ fullOpen && active.description_full ? active.description_full : active.description }}</p>
+        <button
+          v-if="showAnswer && active.description_full" type="button" class="tl-axis__more"
+          data-testid="timeline-axis-more" @click.stop="fullOpen = !fullOpen" @mousedown.stop @pointerdown.stop
+        >{{ fullOpen ? labels.less : `… ${labels.more}` }}</button>
+        <p v-if="showAnswer && active.description_lang && active.description_lang !== language"
+           class="tl-axis__lang" data-testid="timeline-axis-lang">{{ labels.articleLang[active.description_lang] }}</p>
         <div v-if="active.participants?.length" class="tl-axis__who">
           {{ labels.participants }}:
           <span v-for="p in active.participants" :key="p">{{ p }}</span>
@@ -264,7 +273,8 @@ function answer(option: string): void {
   picked.value = option
   answers.value = { ...answers.value, [ev.id]: option === bigDate(ev) ? 'ok' : 'bad' }
 }
-watch(() => props.activeId, () => { picked.value = null })
+watch(() => props.activeId, () => { picked.value = null; fullOpen.value = false })
+const fullOpen = ref(false)
 
 const quizMessage = computed(() => {
   const ev = active.value
@@ -405,6 +415,13 @@ watch(() => props.activeId, () => {
 .tl-axis__title { margin: 0; line-height: 1.2; font-size: calc(22px * var(--wb-card-text-scale, 1)); }
 .tl-axis__full { margin: 0; color: var(--tl-ink3); font-size: calc(13px * var(--wb-card-text-scale, 1)); }
 .tl-axis__text { margin: 0; color: var(--tl-ink2); max-width: 60ch; font-size: calc(15.5px * var(--wb-card-text-scale, 1)); }
+.tl-axis__text.is-more { cursor: pointer; pointer-events: auto; }
+.tl-axis__text.is-full { white-space: pre-line; max-height: calc(15em * var(--wb-card-text-scale, 1)); overflow-y: auto; }
+.tl-axis__more {
+  align-self: flex-start; border: 0; background: none; padding: 0; color: var(--tl-c); font-weight: 600;
+  font-size: calc(13px * var(--wb-card-text-scale, 1));
+}
+.tl-axis__lang { margin: 0; color: var(--tl-ink3); font-style: italic; font-size: calc(12px * var(--wb-card-text-scale, 1)); }
 .tl-axis__who {
   display: flex; gap: 6px; flex-wrap: wrap; align-items: center; color: var(--tl-ink3);
   font-size: calc(12.5px * var(--wb-card-text-scale, 1));

@@ -647,6 +647,10 @@ export function sanitizeEvents(raw) {
       sources: sanitizeSourceList(ev.sources),
       // Вигляд «вісь»: вид події, етап і учасники. Порожнього не вигадуємо — поля просто немає.
       ...(typeof ev.kind === 'string' && ev.kind.trim() ? { kind: ev.kind.trim().slice(0, 40) } : {}),
+      // Увесь вступ статті для «… далі» (2026-10-29) і мова статті, коли вона не мова матеріалу.
+      ...(typeof ev.description_full === 'string' && ev.description_full.trim()
+        ? { description_full: ev.description_full.trim().slice(0, 3000) } : {}),
+      ...(ev.description_lang === 'en' || ev.description_lang === 'uk' ? { description_lang: ev.description_lang } : {}),
       ...(Number.isInteger(ev.era) && ev.era >= 0 && ev.era < MAX_ERAS ? { era: ev.era } : {}),
       ...(Array.isArray(ev.participants) && ev.participants.some((p) => typeof p === 'string' && p.trim())
         ? { participants: ev.participants.filter((p) => typeof p === 'string' && p.trim())

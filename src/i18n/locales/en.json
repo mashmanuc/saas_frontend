@@ -5016,7 +5016,8 @@
         "material_ocr": "Material extraction: OCR",
         "cli_theory": "Theory generation (CLI)",
         "history_lesson": "History lesson: generation",
-        "museum_card": "Reference: museum card of a person"
+        "museum_card": "Reference: museum card of a person",
+        "timeline_events": "History: event timeline"
       }
     },
     "platformSettings": {

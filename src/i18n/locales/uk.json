@@ -5518,7 +5518,8 @@
         "material_ocr": "Витяг матеріалу: OCR",
         "cli_theory": "Генерація теорії (CLI)",
         "history_lesson": "Урок історії: генерація",
-        "museum_card": "Довідка: музейна картка людини"
+        "museum_card": "Довідка: музейна картка людини",
+        "timeline_events": "Історія: шкала подій"
       }
     },
     "platformSettings": {

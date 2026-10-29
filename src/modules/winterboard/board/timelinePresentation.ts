@@ -18,20 +18,23 @@ export const TIMELINE_LABELS: Record<MaterialLanguage, {
   untitled: string; empty: string; prev: string; next: string
   learn: string; quiz: string; play: string; pause: string; participants: string; stage: string
   progress: string; question: string; right: string; answer: string; score: string
+  more: string; less: string; articleLang: Record<'uk' | 'en', string>
 }> = {
   uk: {
     untitled: 'Шкала подій', empty: 'Подій ще немає', prev: 'Попередня', next: 'Наступна',
     learn: 'Стрічка', quiz: 'Перевір себе', play: 'Розповідати по черзі', pause: 'Зупинити',
     participants: 'Учасники', stage: 'Етап', progress: 'Подія {n} з {m}',
     question: 'У якому році (або роках)?', right: 'Правильно!', answer: 'Правильна відповідь: {d}',
-    score: '{ok} з {all}',
+    score: '{ok} з {all}', more: 'далі', less: 'згорнути',
+    articleLang: { en: 'Стаття лише англійською', uk: 'Стаття лише українською' },
   },
   en: {
     untitled: 'Timeline', empty: 'No events yet', prev: 'Previous', next: 'Next',
     learn: 'Timeline', quiz: 'Test yourself', play: 'Tell one by one', pause: 'Stop',
     participants: 'Participants', stage: 'Stage', progress: 'Event {n} of {m}',
     question: 'In what year (or years)?', right: 'Correct!', answer: 'Correct answer: {d}',
-    score: '{ok} of {all}',
+    score: '{ok} of {all}', more: 'more', less: 'less',
+    articleLang: { en: 'Article in English only', uk: 'Article in Ukrainian only' },
   },
 }
 

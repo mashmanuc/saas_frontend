@@ -186,7 +186,8 @@ describe('add_timeline — вигляд «вісь»', () => {
       title: 'Річ Посполита', view: 'axis',
       eras: [{ name: 'Унії', from: 1385, to: 1596 }, { name: 'Поділи', from: 1772, to: 1795 }],
       events: [
-        event('event-1', 1385, { era: 0, kind: 'унія', participants: ['Польща', ' ', 7, 'ВКЛ'] }),
+        event('event-1', 1385, { era: 0, kind: 'унія', participants: ['Польща', ' ', 7, 'ВКЛ'],
+          description_full: 'Увесь вступ.', description_lang: 'en' }),
         event('event-2', 1772, { era: 1, kind: '  ', participants: [] }),
       ],
     } })
@@ -195,6 +196,8 @@ describe('add_timeline — вигляд «вісь»', () => {
     expect(asset.data).toMatchObject({ view: 'axis', active_event_id: 'event-1' })
     expect(asset.data.eras).toHaveLength(2)
     expect(asset.data.events[0]).toMatchObject({ kind: 'унія', era: 0, participants: ['Польща', 'ВКЛ'] })
+    expect(asset.data.events[0]).toMatchObject({ description_full: 'Увесь вступ.', description_lang: 'en' })
+    expect(asset.data.events[1]).not.toHaveProperty('description_full')
     expect(asset.data.events[1]).not.toHaveProperty('kind')
     expect(asset.data.events[1]).not.toHaveProperty('participants')
   })
