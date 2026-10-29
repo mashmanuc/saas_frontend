@@ -11,14 +11,6 @@ import uk from '@/i18n/locales/uk.json'
 vi.mock('@/utils/media', () => ({ resolveMediaUrl: (u: string) => u }))
 vi.mock('../../../composables/useStudentTutor', () => ({ useTutorRevealGate: () => ({ value: true }) }))
 vi.mock('@/modules/learning-content/utils/contentRenderer', () => ({ renderTextWithLatex: (t: string) => t }))
-const topic = vi.hoisted(() => ({
-  canFix: { value: false }, open: { value: false }, loading: { value: false },
-  saving: { value: false }, error: { value: '' }, current: { value: null },
-  suggestions: { value: [] }, allTopics: { value: [] },
-  showAll: { value: false }, done: { value: '' }, rejected: { value: false },
-  toggle: () => {}, apply: () => {}, reject: () => {}, load: () => {},
-}))
-vi.mock('../composables/useTaskTopicFix', () => ({ useTaskTopicFix: () => topic }))
 
 import NmtTaskRenderer from '../components/board/objects/NmtTaskRenderer.vue'
 

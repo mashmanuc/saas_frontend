@@ -21,15 +21,6 @@ import Renderer from '../components/board/objects/NmtTaskRenderer.vue'
 vi.mock('@/utils/media', () => ({ resolveMediaUrl: (u: string) => u }))
 vi.mock('../../../composables/useStudentTutor', () => ({ useTutorRevealGate: () => ({ value: true }) }))
 vi.mock('@/modules/learning-content/utils/contentRenderer', () => ({ renderTextWithLatex: (t: string) => t }))
-vi.mock('../composables/useTaskTopicFix', () => ({
-  useTaskTopicFix: () => ({
-    canFix: { value: false }, open: { value: false }, loading: { value: false },
-    saving: { value: false }, error: { value: '' }, current: { value: null },
-    suggestions: { value: [] }, allTopics: { value: [] },
-    showAll: { value: false }, done: { value: '' },
-    toggle: () => {}, apply: () => {}, reject: () => {}, load: () => {},
-  }),
-}))
 
 const MATCHING = {
   left: [

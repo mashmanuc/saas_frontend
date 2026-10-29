@@ -37,17 +37,6 @@ vi.mock('../../../composables/useStudentTutor', () => ({
 vi.mock('@/modules/learning-content/utils/contentRenderer', () => ({
   renderTextWithLatex: (t: string) => t,
 }))
-// Контрол «✎ тема» бачить лише тьютор — у цих тестах роль не під перевіркою,
-// тож ставимо учня, щоб контрол не заважав рахувати варіанти.
-vi.mock('../composables/useTaskTopicFix', () => ({
-  useTaskTopicFix: () => ({
-    canFix: { value: false }, open: { value: false }, loading: { value: false },
-    saving: { value: false }, error: { value: '' }, current: { value: null },
-    suggestions: { value: [] }, allTopics: { value: [] },
-    showAll: { value: false }, done: { value: '' },
-    toggle: () => {}, apply: () => {}, reject: () => {}, load: () => {},
-  }),
-}))
 
 
 function makeAsset(data: Record<string, unknown>) {
@@ -196,6 +185,15 @@ describe('NmtTaskRenderer — картинки варіантів', () => {
       ],
     })
     expect(w.findAll('.nmt-task__option-img')).toHaveLength(0)
+  })
+})
+
+describe('NmtTaskRenderer — без «✎ тема»', () => {
+  // Власник 2026-10-29: «цю мітку тема прибрати і для сорокового… вона тут вже не потрібна». Ні вчителю, ні учню.
+  it('учитель (і власник) не бачить контролу теми на картці', () => {
+    const w = mountTask({ taskType: 'single_choice', question: 'Оберіть', options: OPTIONS }, true, true)
+    expect(w.find('[class*="nmt-task__topic"]').exists()).toBe(false)
+    expect(w.text()).not.toContain('тема')
   })
 })
 

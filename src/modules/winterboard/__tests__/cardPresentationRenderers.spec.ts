@@ -30,15 +30,6 @@ vi.mock('@/utils/media', () => ({ resolveMediaUrl: (u: string) => u }))
 vi.mock('../../../composables/useStudentTutor', () => ({
   useTutorRevealGate: () => ({ value: true }),
 }))
-vi.mock('../composables/useTaskTopicFix', () => ({
-  useTaskTopicFix: () => ({
-    canFix: { value: false }, open: { value: false }, loading: { value: false },
-    saving: { value: false }, error: { value: '' }, current: { value: null },
-    suggestions: { value: [] }, allTopics: { value: [] },
-    showAll: { value: false }, done: { value: '' },
-    toggle: () => {}, apply: () => {}, reject: () => {}, load: () => {},
-  }),
-}))
 
 const SRC = resolve(__dirname, '../../..')
 const read = (rel: string) => readFileSync(resolve(SRC, rel), 'utf-8').replace(/\r\n/g, '\n')

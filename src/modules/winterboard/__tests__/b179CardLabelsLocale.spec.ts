@@ -17,15 +17,6 @@ vi.mock('@/utils/media', () => ({ resolveMediaUrl: (u: string) => u }))
 vi.mock('../../../composables/useStudentTutor', () => ({ useTutorRevealGate: () => ({ value: true }) }))
 vi.mock('@/modules/learning-content/utils/contentRenderer', () => ({ renderTextWithLatex: (t: string) => t }))
 
-// Меню теми — лише вчителю; стан керуємо з тесту.
-const topic = vi.hoisted(() => ({
-  canFix: { value: true }, open: { value: true }, loading: { value: false },
-  saving: { value: false }, error: { value: '' }, current: { value: { id: 'areas.triangle', label: 'Площа трикутника' } },
-  suggestions: { value: [] as Array<{ id: string; label: string }> }, allTopics: { value: [] },
-  showAll: { value: false }, done: { value: '' }, rejected: { value: false },
-  toggle: () => {}, apply: () => {}, reject: () => {}, load: () => {},
-}))
-vi.mock('../composables/useTaskTopicFix', () => ({ useTaskTopicFix: () => topic }))
 
 import NmtTaskRenderer from '../components/board/objects/NmtTaskRenderer.vue'
 import TheoryCardRenderer from '../components/board/objects/TheoryCardRenderer.vue'
@@ -54,14 +45,12 @@ const N = { uk: uk.winterboard.widget.nmtTask, en: en.winterboard.widget.nmtTask
 
 describe('Б-179: картка задачі НМТ — підписи мовою інтерфейсу', () => {
   it.each(['en', 'ru'] as const)('%s: тип і кнопки — перекладені, жодного українського підпису картки', (loc) => {
-    topic.open.value = false
     const w = mountTask(loc)
     const text = w.text()
     expect(text).toContain(N[loc].type.openAnswer)
     expect(text).toContain(N[loc].showAnswer)
     expect(text).toContain(N[loc].showSolution)
-    for (const ukLabel of [N.uk.type.openAnswer, N.uk.showAnswer, N.uk.showSolution, '✎ тема']) {
-      if (loc === 'ru' && ukLabel === '✎ тема') continue // «тема» — те саме слово російською
+    for (const ukLabel of [N.uk.type.openAnswer, N.uk.showAnswer, N.uk.showSolution]) {
       expect(text, ukLabel).not.toContain(ukLabel)
     }
     // Текст задачі — матеріал, не перекладається
@@ -69,14 +58,12 @@ describe('Б-179: картка задачі НМТ — підписи мовою
   })
 
   it('en: відкриті відповідь і розбір — «Hide …»', () => {
-    topic.open.value = false
     const text = mountTask('en', { showAnswer: true, showSolution: true }).text()
     expect(text).toContain(N.en.hideAnswer)
     expect(text).toContain(N.en.hideSolution)
   })
 
   it('uk: як і було', () => {
-    topic.open.value = false
     const text = mountTask('uk').text()
     expect(text).toContain('Відкрита відповідь')
     expect(text).toContain('Показати відповідь')
@@ -84,29 +71,9 @@ describe('Б-179: картка задачі НМТ — підписи мовою
   })
 
   it('en: інші типи задач теж перекладені', () => {
-    topic.open.value = false
     const w = mountTask('en', { taskType: 'single_choice', options: [{ id: 'o1', letter: 'А', text: '1', isCorrect: true }] })
     expect(w.text()).toContain(N.en.type.singleChoice)
     expect(w.text()).toContain('А') // літера варіанта — правило НМТ
-  })
-
-  it('en: меню теми для вчителя — перекладене, назва теми лишається з банку', () => {
-    topic.open.value = true
-    topic.error.value = 'winterboard.widget.nmtTask.topic.saveFailed'
-    const text = mountTask('en').text()
-    expect(text).toContain('now: Площа трикутника')
-    expect(text).toContain(N.en.topic.other)
-    expect(text).toContain(N.en.topic.reject)
-    expect(text).toContain(N.en.topic.saveFailed)
-    topic.error.value = ''
-  })
-
-  it('en: задачу прибрано — позначка перекладена', () => {
-    topic.open.value = false
-    topic.rejected.value = true
-    const text = mountTask('en').text()
-    expect(text).toContain(`✓ ${N.en.topic.removed}`)
-    topic.rejected.value = false
   })
 })
 

@@ -11418,17 +11418,6 @@
           "matching": "Matching",
           "openAnswer": "Open answer",
           "task": "Task"
-        },
-        "topic": {
-          "button": "✎ topic",
-          "loading": "loading…",
-          "current": "now: {label}",
-          "other": "other…",
-          "reject": "bad task — remove",
-          "removed": "task removed from collections",
-          "loadFailed": "Couldn't load the topic list",
-          "saveFailed": "Couldn't save the topic",
-          "rejectFailed": "Couldn't remove the task"
         }
       },
       "trigCircle": {

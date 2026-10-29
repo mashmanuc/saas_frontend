@@ -31,15 +31,6 @@ vi.mock('../../../composables/useStudentTutor', () => ({
 vi.mock('@/modules/learning-content/utils/contentRenderer', () => ({
   renderTextWithLatex: (t: string) => t,
 }))
-vi.mock('../composables/useTaskTopicFix', () => ({
-  useTaskTopicFix: () => ({
-    canFix: { value: false }, open: { value: false }, loading: { value: false },
-    saving: { value: false }, error: { value: '' }, current: { value: null },
-    suggestions: { value: [] }, allTopics: { value: [] },
-    showAll: { value: false }, done: { value: '' },
-    toggle: () => {}, apply: () => {}, reject: () => {}, load: () => {},
-  }),
-}))
 
 const t = (key: string) => key
 
