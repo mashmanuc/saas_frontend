@@ -8,6 +8,11 @@
         <button type="button" :class="{ 'is-on': tilted }" :aria-pressed="tilted" data-testid="map-gl-tilt" @click.stop="setTilt(true)">{{ L.tilt }}</button>
         <button type="button" :class="{ 'is-on': !tilted }" :aria-pressed="!tilted" data-testid="map-gl-flat" @click.stop="setTilt(false)">{{ L.flat }}</button>
       </div>
+      <!-- v1.80: «Персонажі» — вимкнути / увімкнути портрети (лише цей екран) -->
+      <button
+        v-if="hasPeople" type="button" class="hgl__btn hgl__btn--txt" :class="{ 'is-on': showPeople }" :aria-pressed="showPeople"
+        data-testid="map-gl-people" @click.stop="showPeople = !showPeople"
+      >{{ L.people }}</button>
       <button type="button" class="hgl__btn" data-testid="map-gl-overview" :title="L.overview" @click.stop="overview(true)">⌂</button>
     </div>
     <div v-if="ready && interactive" class="hgl__zoom" data-export-hide @pointerdown.stop>
@@ -25,7 +30,7 @@
  * пласку карту. Набір змінено — старі межі плавно гаснуть, нові проявляються (макет: 0,7 с), змінені коротко
  * підсвічуються (1,6 с).
  */
-import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import type { BordersDataset } from '../../../board/historicalBorders'
 import { BIG_ENTITIES, ENTITY_SHORT_UK, entityColor, statesAt } from '../../../board/historicalBorders'
 import { loadPhysicalBasemap, type PhysicalBasemap } from '../../../board/historicalBasemap'
@@ -47,7 +52,7 @@ const props = withDefaults(defineProps<{
   textScale?: number
   /** v1.79: події шкал сторінки з місцем — номери; відкрита — більша, з назвою, камера наближається до неї. */
   pins?: MapEventPin[]
-  L: { tilt: string; flat: string; overview: string; zoomIn: string; zoomOut: string }
+  L: { tilt: string; flat: string; overview: string; zoomIn: string; zoomOut: string; people: string; participant: string; participantEvent: string }
 }>(), { textScale: 1, pins: () => [] })
 const emit = defineEmits<{
   ready: []
@@ -76,6 +81,19 @@ let flashTimer: ReturnType<typeof setTimeout> | null = null
 let destroyed = false
 let textK = 1
 let lastWidth = 0
+// ── v1.80: персонажі біля відкритої події ──
+/** «Наблизили» — на стільки рівнів ближче за огляд регіону (огляд залежить від розміру карти: картка чи ⛶). */
+const PEOPLE_ZOOM_STEP = 0.9
+/** Наближення до відкритої події — на стільки ближче за огляд (тоді видно й інших персонажів). */
+const EVENT_ZOOM_STEP = 1.2
+let overviewZoom = 4
+let zoomTarget: number | null = null
+/** Зсув портретів від номера події (px): основний — над номером, інші — обабіч. */
+const PERSON_OFFSETS: Array<[number, number]> = [[0, -16], [-58, -4], [58, -4]]
+const showPeople = ref(true)
+const hasPeople = computed(() => props.pins.some((p) => p.people.length))
+let personMarkers: Array<{ remove: () => void }> = []
+let peopleShown = ''
 
 type Pt = [number, number]
 const fc = (features: unknown[]) => ({ type: 'FeatureCollection', features })
@@ -134,7 +152,10 @@ const SIZES: Record<string, (k: number) => unknown> = {
   cities: (k) => byZoom(k, 'major', [11, 9.5], [15, 13]),
   'river-labels': (k) => 11 * k,
   seas: (k) => 12 * k,
+  'pin-numbers': (k) => 12 * k,
+  'pin-label': (k) => 13 * k,
 }
+const PIN_RADIUS = (k: number) => ['case', ['==', ['get', 'active'], 1], 12 * k, 9 * k]
 const ICON = (k: number) => byZoom(k, 'major', [0.8, 0.6], [1.3, 1])
 
 function currentTextK(): number {
@@ -150,6 +171,8 @@ function applyTextScale(): void {
   if (host.value) host.value.dataset.textk = k.toFixed(2)
   for (const [id, size] of Object.entries(SIZES)) if (map.getLayer(id)) map.setLayoutProperty(id, 'text-size', size(k))
   if (map.getLayer('cities')) map.setLayoutProperty('cities', 'icon-size', ICON(k))
+  if (map.getLayer('pins')) map.setPaintProperty('pins', 'circle-radius', PIN_RADIUS(k))
+  renderPeople()
 }
 
 function fillOpacity() {
@@ -243,18 +266,18 @@ function addLayers(): void {
     id: 'pins', type: 'circle', source: 'pins',
     paint: {
       'circle-color': ['case', ['==', ['get', 'active'], 1], '#b23a22', '#8a2f1d'],
-      'circle-radius': ['case', ['==', ['get', 'active'], 1], 13, 9.5], 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2,
+      'circle-radius': PIN_RADIUS(textK), 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2,
       'circle-pitch-alignment': 'viewport',
     },
   })
   map.addLayer({
     id: 'pin-numbers', type: 'symbol', source: 'pins',
-    layout: { 'text-field': ['to-string', ['get', 'n']], 'text-font': FONT, 'text-size': 12, 'text-allow-overlap': true, 'text-ignore-placement': true },
+    layout: { 'text-field': ['to-string', ['get', 'n']], 'text-font': FONT, 'text-size': SIZES['pin-numbers'](textK), 'text-allow-overlap': true, 'text-ignore-placement': true },
     paint: { 'text-color': '#ffffff' },
   })
   map.addLayer({
     id: 'pin-label', type: 'symbol', source: 'pins', filter: ['==', ['get', 'active'], 1],
-    layout: { 'text-field': ['get', 'label'], 'text-font': FONT, 'text-size': 14, 'text-anchor': 'top', 'text-offset': [0, 1.3], 'text-max-width': 12, 'text-allow-overlap': true },
+    layout: { 'text-field': ['get', 'label'], 'text-font': FONT, 'text-size': SIZES['pin-label'](textK), 'text-anchor': 'top', 'text-offset': [0, 1.3], 'text-max-width': 12, 'text-allow-overlap': true },
     paint: { 'text-color': '#8a2f1d', 'text-halo-color': 'rgba(255,255,255,0.95)', 'text-halo-width': 2 },
   })
   // Назви держав — верхній шар: рушій розставляє першими підписи верхніх шарів, міста поступаються
@@ -280,11 +303,64 @@ function pinsData() {
   })))
 }
 
+/**
+ * Персонажі відкритої події (закон §9 v1.80): основний герой — одразу; інші — лише коли карту наблизили й подія в
+ * кадрі (тоді ж уперше вантажиться їхнє зображення). Кілька — до трьох портретів і «+N». Нічого не пише.
+ */
+function renderPeople(): void {
+  if (!map || !engine.value) return
+  const pin = props.pins.find((p) => p.active)
+  const near = !!pin && map.getZoom() >= overviewZoom + PEOPLE_ZOOM_STEP && map.getBounds().contains([pin.lon, pin.lat])
+  const list = !pin || !showPeople.value ? [] : pin.people.slice(0, near ? 3 : 1)
+  const key = pin ? `${pin.key}|${list.map((p) => p.key).join(',')}|${textK.toFixed(2)}` : ''
+  if (key === peopleShown) return
+  peopleShown = key
+  personMarkers.forEach((m) => m.remove())
+  personMarkers = []
+  if (!pin) return
+  list.forEach((person, i) => {
+    const extra = i === list.length - 1 ? pin.people.length - list.length : 0
+    const el = personElement(person, i === 0, extra)
+    personMarkers.push(new engine.value.Marker({ element: el, anchor: 'bottom', offset: PERSON_OFFSETS[i] })
+      .setLngLat([pin.lon, pin.lat]).addTo(map))
+  })
+}
+
+function personElement(person: MapEventPin['people'][number], main: boolean, extra: number): HTMLElement {
+  const el = document.createElement('div')
+  el.className = `hgl-person${main ? ' is-main' : ''}`
+  // Чужі зображення не йдуть у знімок для PDF (без дозволу джерела полотно знімка не прочитати)
+  el.dataset.exportHide = ''
+  el.dataset.testid = 'map-gl-person'
+  el.style.setProperty('--k', String(Math.max(0.6, textK)))
+  const relation = person.via ? `${props.L.participant}: ${person.via}` : props.L.participantEvent
+  el.title = [person.name, relation, person.attribution].filter(Boolean).join(' — ')
+  if (person.image) {
+    const img = document.createElement('img')
+    img.src = person.image
+    img.alt = ''
+    img.referrerPolicy = 'no-referrer'
+    img.onerror = () => { img.remove(); el.classList.add('no-img') }
+    el.appendChild(img)
+  } else {
+    el.classList.add('no-img')
+  }
+  const name = document.createElement('span')
+  name.textContent = person.name
+  el.appendChild(name)
+  if (extra > 0) {
+    const more = document.createElement('em')
+    more.textContent = `+${extra}`
+    el.appendChild(more)
+  }
+  return el
+}
+
 /** Відкрили подію шкали — камера цього екрана наближається до її місця (не ближче, ніж уже є). */
 function flyToActive(): void {
   const p = props.pins.find((x) => x.active)
   if (!map || !p) return
-  map.easeTo({ center: [p.lon, p.lat], zoom: Math.max(map.getZoom(), 5.2), duration: 900 })
+  map.easeTo({ center: [p.lon, p.lat], zoom: Math.max(map.getZoom(), overviewZoom + EVENT_ZOOM_STEP), duration: 900 })
 }
 
 /** Новий рік: межі в «сплячий» шар, той проявляється, а поточний гасне; змінені держави — короткий спалах. */
@@ -324,6 +400,7 @@ function overview(animate: boolean): void {
   const cam = map.cameraForBounds(regionBounds(), { padding: 8 })
   if (!cam) return
   const target = { center: cam.center, zoom: cam.zoom + (tilted.value ? 0.25 : 0), pitch: tilted.value ? TILT : 0, bearing: 0 }
+  overviewZoom = target.zoom
   if (animate) map.easeTo({ ...target, duration: 600 })
   else map.jumpTo(target)
 }
@@ -333,8 +410,11 @@ function setTilt(on: boolean): void {
   map?.easeTo({ pitch: on ? TILT : 0, bearing: 0, duration: 600 })
 }
 
+/** «+ / −»: натиски поспіль додаються (наступний — від цілі попереднього, а не від середини руху). */
 function zoomBy(d: number): void {
-  map?.easeTo({ zoom: map.getZoom() + d, duration: 300 })
+  if (!map) return
+  zoomTarget = (map.isMoving() && zoomTarget !== null ? zoomTarget : map.getZoom()) + d
+  map.easeTo({ zoom: zoomTarget, duration: 300 })
 }
 
 /** Картка на дошці масштабується разом із дошкою — полотно карти малюємо в тій щільності, у якій її видно. */
@@ -368,6 +448,8 @@ function fail(why: string): void {
 }
 
 function teardown(): void {
+  personMarkers.forEach((m) => m.remove())
+  personMarkers = []
   resizeObs?.disconnect()
   resizeObs = null
   if (flashTimer) clearTimeout(flashTimer)
@@ -403,13 +485,14 @@ onMounted(async () => {
       overview(false)
       syncPixelRatio()
       map.on('mousemove', onMove)
+      map.on('moveend', renderPeople)
       // Камера цього екрана — у data-атрибутах (перевірки стенда; у стан дошки не йде)
       map.on('moveend', () => {
         if (!host.value || !map) return
         host.value.dataset.pitch = String(Math.round(map.getPitch()))
         host.value.dataset.zoom = map.getZoom().toFixed(2)
       })
-      map.once('idle', () => { if (!destroyed) { ready.value = true; emit('ready') } })
+      map.once('idle', () => { if (!destroyed) { ready.value = true; emit('ready'); renderPeople() } })
     })
     // Картку на дошці розкладають у розмірі екрана (масштаб дошки, ⛶): карта масштабується цілком — та сама
     // місцевість у кадрі, підписи того ж розміру відносно карти
@@ -417,7 +500,11 @@ onMounted(async () => {
       if (!map || !host.value) return
       const w = host.value.offsetWidth
       map.resize()
-      if (lastWidth > 0 && w > 0 && Math.abs(w - lastWidth) > 1) map.setZoom(map.getZoom() + Math.log2(w / lastWidth))
+      if (lastWidth > 0 && w > 0 && Math.abs(w - lastWidth) > 1) {
+        const dz = Math.log2(w / lastWidth)
+        map.setZoom(map.getZoom() + dz)
+        overviewZoom += dz
+      }
       if (w > 0) lastWidth = w
       syncPixelRatio()
       applyTextScale()
@@ -438,7 +525,9 @@ watch(() => props.pins, (now, before) => {
   const was = before?.find((p) => p.active)?.key
   const is = now.find((p) => p.active)?.key
   if (is && is !== was) flyToActive()
+  renderPeople()
 }, { deep: true })
+watch(showPeople, () => renderPeople())
 watch(() => props.hl, () => { if (map) map.setPaintProperty(`st${active}-fill`, 'fill-opacity', fillOpacity()) })
 // ⛶: інший кадр — огляд регіону наново (масштаб і підписи підлаштує ResizeObserver)
 watch(() => props.expanded, () => {
@@ -487,4 +576,25 @@ defineExpose({ overview })
 }
 .hgl--full .hgl__btn { min-width: calc(52 * var(--u)); height: calc(52 * var(--u)); border-radius: calc(12 * var(--u)); }
 .hgl__btn:hover, .hgl__seg button:hover:not(.is-on) { background: #e3f5ee; }
+.hgl__btn--txt { font-size: 1em; padding: 0 calc(10 * var(--u)); }
+.hgl__btn--txt.is-on { background: #047857; color: #fff; }
+/* v1.80: портрет учасника — круг із білою облямівкою й ім'ям під ним; основний герой більший */
+:deep(.hgl-person) {
+  --s: calc(38px * var(--k, 1)); position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  pointer-events: auto; cursor: default; filter: drop-shadow(0 2px 3px rgba(19, 38, 31, 0.35));
+}
+:deep(.hgl-person.is-main) { --s: calc(48px * var(--k, 1)); }
+:deep(.hgl-person img) {
+  width: var(--s); height: var(--s); border-radius: 50%; object-fit: cover; object-position: 50% 20%;
+  border: 2.5px solid #fff; background: #efe9da;
+}
+:deep(.hgl-person span) {
+  font: 700 calc(11px * var(--k, 1)) system-ui, -apple-system, "Segoe UI", sans-serif; color: #13261f;
+  background: rgba(255, 255, 255, 0.92); border-radius: 6px; padding: 1px 6px; white-space: nowrap;
+}
+:deep(.hgl-person em) {
+  position: absolute; top: 0; right: -6px; font: 700 calc(10px * var(--k, 1)) system-ui, sans-serif; font-style: normal;
+  color: #fff; background: #8a2f1d; border: 1.5px solid #fff; border-radius: 999px; padding: 0 5px;
+}
+:deep(.hgl-person.no-img span) { font-size: calc(12px * var(--k, 1)); }
 </style>

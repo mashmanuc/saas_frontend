@@ -12,7 +12,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 
-const engine = vi.hoisted(() => ({ supported: true, failCreate: false, maps: [] as any[] }))
+const engine = vi.hoisted(() => ({ supported: true, failCreate: false, maps: [] as any[], markers: [] as any[] }))
 
 vi.mock('../board/webglSupport', () => ({ webglSupported: () => engine.supported }))
 vi.mock('../board/mapEngine', () => {
@@ -48,6 +48,8 @@ vi.mock('../board/mapEngine', () => {
     setZoom(z: number) { this.zoom = z }
     getPitch() { return 45 }
     queryRenderedFeatures() { return [] }
+    getBounds() { return { contains: () => true } }
+    isMoving() { return false }
     dragPan = { enable() {}, disable() {} }
     dragRotate = { enable() {}, disable() {} }
     scrollZoom = { enable() {}, disable() {} }
@@ -55,7 +57,14 @@ vi.mock('../board/mapEngine', () => {
     doubleClickZoom = { enable() {}, disable() {} }
     touchPitch = { enable() {}, disable() {} }
   }
-  return { default: { Map: FakeMap } }
+  class FakeMarker {
+    el: HTMLElement
+    constructor(opts: any) { this.el = opts.element }
+    setLngLat() { return this }
+    addTo() { engine.markers.push(this); return this }
+    remove() { const i = engine.markers.indexOf(this); if (i >= 0) engine.markers.splice(i, 1) }
+  }
+  return { default: { Map: FakeMap, Marker: FakeMarker } }
 })
 
 import { BORDER_DATASETS, CLIOPATRIA_EAST_EUROPE, loadBorders, statesAt } from '../board/historicalBorders'
@@ -63,7 +72,7 @@ import { loadPhysicalBasemap } from '../board/historicalBasemap'
 import HistoricalMapCard from '../components/board/objects/HistoricalMapCard.vue'
 import MapCardRenderer from '../components/board/objects/MapCardRenderer.vue'
 import type { WBAsset } from '../types/winterboard'
-import { sanitizeEvents, sanitizePlace } from '../../intent/boardActions'
+import { sanitizeEvents, sanitizePeople, sanitizePlace } from '../../intent/boardActions'
 import { linkedHistoricalMapUpdates, timelineMapPins } from '../board/evidenceLinkage'
 import { datasetYears } from '../board/historicalBorders'
 import { createRemoteScenarioAdapter } from '../remote/remoteScenarioAdapter'
@@ -86,7 +95,7 @@ beforeAll(async () => {
   await loadBorders(CLIOPATRIA_EAST_EUROPE, VERSION)
   await loadPhysicalBasemap('east_europe')
 })
-afterEach(() => { engine.supported = true; engine.failCreate = false; engine.maps.length = 0 })
+afterEach(() => { engine.supported = true; engine.failCreate = false; engine.maps.length = 0; engine.markers.length = 0 })
 
 async function mountCard(asset = historicalMap(), props: Record<string, unknown> = {}) {
   const w = mount(HistoricalMapCard, { props: { asset, interactive: true, ...props }, attachTo: document.body })
@@ -275,6 +284,90 @@ describe('INV-HGL-7 · номери подій і рік карти за шка�
     await w.setProps({ events: timelineMapPins([timeline('e2')]) })
     await nextTick()
     expect(ease).toHaveBeenCalledWith(expect.objectContaining({ center: [31.26, 49.42] }))
+    w.unmount()
+  })
+})
+
+// ── Закон §9 v1.80: персонажі й пояснення події на карті ─────────────────────────────────────────────────────
+const KHM = {
+  ref: { provider: 'wikidata', id: 'Q203808' }, name: 'Богдан Хмельницький', event_ids: ['e1', 'e2'],
+  via: { e1: 'Хмельниччина', e2: 'Хмельниччина' },
+  image: { url: 'https://upload.wikimedia.org/k.jpg', author: 'Willem Hondius', license: 'Public domain', attribution: 'Willem Hondius · Public domain', file_page: 'https://commons.wikimedia.org/wiki/File:K.jpg' },
+}
+const BOHUN = { ref: { provider: 'wikidata', id: 'Q730067' }, name: 'Іван Богун', event_ids: ['e2'] }
+const KRYV = { ref: { provider: 'wikidata', id: 'Q2624048' }, name: 'Максим Кривоніс', event_ids: ['e2'],
+  image: { url: 'https://upload.wikimedia.org/m.jpg', author: 'Alex Tora', license: 'Public domain', attribution: 'Alex Tora · Public domain', file_page: '' } }
+function timelineWithPeople(active: string, people: unknown[] = [KHM, BOHUN, KRYV]): WBAsset {
+  const t = timeline(active, [
+    { ...ev('e1', 1648, 'Жовті Води', { lat: 48.35, lon: 33.5 }), description: 'Перша перемога козацького війська.' },
+    { ...ev('e2', 1648, 'Корсунь', { lat: 49.42, lon: 31.26 }), description: 'Козацько-татарське військо розбило коронне.' },
+  ])
+  return { ...t, data: { ...(t.data as object), people } } as WBAsset
+}
+
+describe('INV-HGL-8 · люди теми — при вставці перевірено', () => {
+  it('лише події цієї шкали; портрет — https з автором і ліцензією; «через» — лише для своїх подій', () => {
+    const events = sanitizeEvents([ev('e1', 1648, 'Жовті Води'), ev('e2', 1648, 'Корсунь')])
+    const out = sanitizePeople([
+      KHM,
+      { ...BOHUN, event_ids: ['e9'] },                                                  // жодної події цієї шкали
+      { ...KRYV, image: { ...KRYV.image, url: 'http://x/m.jpg' } },                   // не https — лише ім'я
+      { ...KRYV, ref: { provider: 'wikidata', id: 'Q1' }, image: { ...KRYV.image, author: '' } },
+      { ...KHM, ref: { provider: 'wikidata', id: 'Q2' }, via: { e1: 'Хмельниччина', e7: 'Чуже' } },
+    ], events)
+    const people = (out as any).people
+    expect(people.map((p: any) => p.ref.id)).toEqual(['Q203808', 'Q2624048', 'Q1', 'Q2'])
+    expect(people[0].image.attribution).toBe('Willem Hondius · Public domain')
+    expect(people[1].image).toBeUndefined()
+    expect(people[2].image).toBeUndefined()
+    expect(people[3].via).toEqual({ e1: 'Хмельниччина' })
+    expect(sanitizePeople('нема', events)).toEqual({})
+  })
+
+  it('номер події несе її текст і людей у порядку шкали (перший — основний)', () => {
+    const [p1, p2] = timelineMapPins([timelineWithPeople('e2')])
+    expect(p1.text).toBe('Перша перемога козацького війська.')
+    expect(p1.people.map((x) => x.name)).toEqual(['Богдан Хмельницький'])
+    expect(p2.people.map((x) => [x.name, x.via, !!x.image])).toEqual([
+      ['Богдан Хмельницький', 'Хмельниччина', true], ['Іван Богун', '', false], ['Максим Кривоніс', '', true]])
+  })
+})
+
+describe('INV-HGL-9 · пояснення відкритої події на карті', () => {
+  it('текст відкритої події; «✕» ховає; інша подія — знову видно', async () => {
+    engine.supported = false
+    const w = await mountCard(historicalMap(1648), { events: timelineMapPins([timelineWithPeople('e1')]) })
+    expect(w.find('[data-testid=map-card-event-info]').text()).toContain('Перша перемога козацького війська.')
+    await w.find('.hmap__info-x').trigger('click')
+    expect(w.find('[data-testid=map-card-event-info]').exists()).toBe(false)
+    await w.setProps({ events: timelineMapPins([timelineWithPeople('e2')]) })
+    expect(w.find('[data-testid=map-card-event-info]').text()).toContain('Корсунь')
+    w.unmount()
+  })
+})
+
+describe('INV-HGL-10 · персонажі: основний одразу, інші — при наближенні; «Персонажі» вимикає', () => {
+  it('огляд — лише основний герой і «+2»; наблизили — троє; «Персонажі» — жодного', async () => {
+    const w = await mountCard(historicalMap(1648), { events: timelineMapPins([timelineWithPeople('e2')]) })
+    const map = engine.maps[0]
+    const names = () => engine.markers.map((m: any) => m.el.querySelector('span')?.textContent)
+    expect(names()).toEqual(['Богдан Хмельницький'])
+    expect(engine.markers[0].el.querySelector('em')?.textContent).toBe('+2')
+    expect(engine.markers[0].el.title).toContain('учасник: Хмельниччина')
+    expect(engine.markers[0].el.hasAttribute('data-export-hide')).toBe(true)
+    map.zoom = 6
+    map.fire('moveend')
+    expect(names()).toEqual(['Богдан Хмельницький', 'Іван Богун', 'Максим Кривоніс'])
+    expect(engine.markers[1].el.querySelector('img')).toBeNull()
+    await w.find('[data-testid=map-gl-people]').trigger('click')
+    expect(engine.markers).toHaveLength(0)
+    w.unmount()
+  })
+
+  it('подія без людей — портретів немає, кнопки «Персонажі» теж', async () => {
+    const w = await mountCard(historicalMap(1648), { events: timelineMapPins([timeline('e1')]) })
+    expect(engine.markers).toHaveLength(0)
+    expect(w.find('[data-testid=map-gl-people]').exists()).toBe(false)
     w.unmount()
   })
 })

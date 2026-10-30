@@ -663,6 +663,47 @@ export function sanitizeEvents(raw) {
   return out
 }
 
+const httpsUrl = (v, max = 600) => (typeof v === 'string' && /^https:\/\//.test(v) && v.length <= max ? v : '')
+const shortText = (v, max) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '')
+
+/**
+ * Люди теми (закон §9 v1.80): посилання на сутність (непрозоре), ім'я, портрет із атрибуцією, події шкали, з якими
+ * зв'язок підтверджено, і назва війни, коли зв'язок через неї. Портрет без адреси https чи без автора й ліцензії —
+ * лише ім'я. Людина без жодної події цієї шкали — не потрапляє. `{}` — людей немає.
+ */
+export function sanitizePeople(raw, events) {
+  if (!Array.isArray(raw)) return {}
+  const ids = new Set((events || []).map((e) => e.id))
+  const out = []
+  for (const p of raw.slice(0, 5)) {
+    if (!p || typeof p !== 'object') continue
+    const provider = shortText(p.ref?.provider, 20)
+    const id = shortText(p.ref?.id, 40)
+    const name = shortText(p.name, 80)
+    const eventIds = Array.isArray(p.event_ids) ? p.event_ids.map(String).filter((x) => ids.has(x)).slice(0, 12) : []
+    if (!provider || !id || !name || !eventIds.length) continue
+    const via = {}
+    if (p.via && typeof p.via === 'object') {
+      for (const [ev, label] of Object.entries(p.via)) {
+        if (eventIds.includes(ev) && shortText(label, 80)) via[ev] = shortText(label, 80)
+      }
+    }
+    const img = p.image && typeof p.image === 'object' ? p.image : null
+    const url = img ? httpsUrl(img.url) : ''
+    const author = img ? shortText(img.author, 120) : ''
+    const license = img ? shortText(img.license, 60) : ''
+    out.push({
+      ref: { provider, id }, name, event_ids: eventIds,
+      ...(Object.keys(via).length ? { via } : {}),
+      ...(url && author && license ? { image: {
+        url, author, license, attribution: shortText(img.attribution, 200) || `${author} · ${license}`,
+        file_page: httpsUrl(img.file_page),
+      } } : {}),
+    })
+  }
+  return out.length ? { people: out } : {}
+}
+
 /** Місце події: координата в межах землі, назва місця — до 80 знаків. `{}` — місця немає. */
 export function sanitizePlace(raw) {
   if (!raw || typeof raw !== 'object') return {}
@@ -906,7 +947,7 @@ const HANDLERS = {
   // для розв'язків/пояснень (гарна картка замість голого текстового поля).
   // H2: шкала подій. Один запис штатним `addAsset` — власного write-path,
   // окремого REST чи мутації стану повз операцію немає (ТЗ §9.3).
-  async add_timeline({ title, layout, orientation, events, knowledge_set_id, corridor, sources, source_status, view, eras }, ctx) {
+  async add_timeline({ title, layout, orientation, events, knowledge_set_id, corridor, sources, source_status, view, eras, people }, ctx) {
     const { store, page } = await _store(ctx)
     // Вигляд «вісь» приходить лише зі шкали теми (сервер, історія, гейт); решта — як і досі, список.
     const axis = view === 'axis'
@@ -924,6 +965,8 @@ const HANDLERS = {
         orientation: orientation === 'vertical' ? 'vertical' : 'horizontal',
         ...(axis ? { view: 'axis', eras: sanitizeEras(eras) } : {}),
         events: cleanEvents,
+        // Закон §9 v1.80: люди теми з джерела — портрети біля подій на історичній карті
+        ...sanitizePeople(people, cleanEvents),
         // У макеті одна подія розгорнута завжди — перша; у списку, як і досі, жодна.
         active_event_id: axis && cleanEvents.length ? cleanEvents[0].id : null,
         ...(knowledge_set_id ? { knowledge_set_id: String(knowledge_set_id).slice(0, 120) } : {}),

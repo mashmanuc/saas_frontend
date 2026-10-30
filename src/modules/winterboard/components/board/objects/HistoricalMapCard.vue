@@ -62,6 +62,13 @@
             <text v-if="p.active" class="hmap__pin-lb" :x="p.x" :y="p.y + 34" text-anchor="middle">{{ p.label }}</text>
           </g>
         </svg>
+        <!-- v1.80: пояснення відкритої події шкали — текст із джерела; «✕» ховає до наступної події (цей екран) -->
+        <div v-if="infoPin" class="hmap__info" data-testid="map-card-event-info" @pointerdown.stop>
+          <button v-if="interactive" type="button" class="hmap__info-x" :aria-label="L.hideInfo" :title="L.hideInfo" @click.stop="infoHidden = infoPin.key">✕</button>
+          <small>{{ infoPin.year }} · {{ L.eventN.replace('{n}', String(infoPin.n)) }}</small>
+          <b>{{ infoPin.label }}</b>
+          <p>{{ infoPin.text }}</p>
+        </div>
         <p class="hmap__attr" data-testid="map-card-borders-note">{{ attribution }}</p>
         <div v-if="tip" class="hmap__tip" :style="{ left: `${tip.x}px`, top: `${tip.y}px` }">
           <b>{{ tip.title }}</b><span>{{ tip.text }}</span>
@@ -338,6 +345,12 @@ const pins = computed(() => {
   const ys = dataset.value?.meta.years
   return ys ? props.events.filter((p) => p.year >= ys[0] && p.year <= ys[1]) : []
 })
+/** v1.80: відкрита подія з поясненням — віконце на карті, доки вчитель його не сховав. */
+const infoHidden = ref<string | null>(null)
+const infoPin = computed(() => {
+  const p = pins.value.find((x) => x.active)
+  return p && p.text && infoHidden.value !== p.key ? p : null
+})
 const svgPins = computed(() => pins.value.flatMap((p) => {
   const at = project(p.lat, p.lon, spec.value)
   return at ? [{ ...p, x: at.x * VB, y: at.y * VBH.value }] : []
@@ -404,6 +417,21 @@ defineExpose({ ready: () => loadBorders(data.value.borders?.dataset, data.value.
   stroke: rgba(255, 255, 255, 0.92); paint-order: stroke; stroke-linejoin: round; pointer-events: none; letter-spacing: 0.01em;
 }
 .hmap__lb--big { letter-spacing: 0.08em; }
+.hmap__info {
+  position: absolute; left: calc(8 * var(--u)); bottom: calc(28 * var(--u)); width: min(52%, calc(300 * var(--u)));
+  max-height: 46%; overflow: auto; z-index: 3; background: rgba(255, 255, 255, 0.96); border-radius: calc(10 * var(--u));
+  box-shadow: 0 2px 10px rgba(19, 38, 31, 0.18); padding: calc(8 * var(--u)) calc(12 * var(--u));
+  font-size: calc(12 * var(--u) * var(--t)); line-height: 1.4; color: #13261f; pointer-events: auto; scrollbar-width: thin;
+}
+.hmap--full .hmap__info { width: min(44%, calc(560 * var(--u))); font-size: calc(20 * var(--u) * var(--t)); bottom: calc(44 * var(--u)); left: calc(16 * var(--u)); padding: calc(16 * var(--u)) calc(22 * var(--u)); }
+.hmap__info small { display: block; color: #8a2f1d; font-weight: 700; }
+.hmap__info b { display: block; font-size: 1.15em; margin: 0.15em 0 0.3em; padding-right: 1.4em; }
+.hmap__info p { margin: 0; color: #24332d; }
+.hmap__info-x {
+  position: absolute; top: calc(6 * var(--u)); right: calc(6 * var(--u)); border: 0; background: none; cursor: pointer;
+  color: #5f8379; font: inherit; font-size: 1em; line-height: 1; padding: 2px 4px;
+}
+.hmap__info-x:hover { color: #13261f; }
 .hmap__pin circle { fill: #8a2f1d; stroke: #fff; stroke-width: 2.5; }
 .hmap__pin text { fill: #fff; font: 700 14px system-ui, -apple-system, "Segoe UI", sans-serif; pointer-events: none; }
 .hmap__pin.is-on circle { fill: #b23a22; }

@@ -785,6 +785,16 @@ export interface WBTimelineEra {
   to: number
 }
 
+/** Закон §9 v1.80: людина теми з джерела — посилання (непрозоре), ім'я, портрет, події шкали, з якими зв'язок
+ *  підтверджено, і назва війни, коли зв'язок через неї (`via[event_id]`). */
+export interface WBTimelinePerson {
+  ref: { provider: string; id: string }
+  name: string
+  event_ids: string[]
+  via?: Record<string, string>
+  image?: { url: string; author: string; license: string; attribution: string; file_page: string }
+}
+
 export interface TimelineCardData {
   version: 1
   title: string
@@ -798,6 +808,8 @@ export interface TimelineCardData {
   knowledge_set_id?: string
   /** `axis` — вигляд за макетом дизайнера (вісь у масштабі часу, етапи, «Перевір себе»); без поля — список. */
   view?: 'axis'
+  /** v1.80: люди теми; перший — основний герой (найбільше подій шкали). */
+  people?: WBTimelinePerson[]
   eras?: WBTimelineEra[]
   sources: WBSourceRef[]
   /** LAW §9.D, INV-26 — як у решти матеріалів Інтегралика. */

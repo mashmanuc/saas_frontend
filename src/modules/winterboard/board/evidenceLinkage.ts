@@ -45,6 +45,10 @@ export interface MapEventPin {
   lat: number
   lon: number
   active: boolean
+  /** v1.80: пояснення події (вступ статті з джерела) — у віконці на карті. */
+  text: string
+  /** v1.80: люди цієї події в порядку шкали (перший — основний герой); `via` — війна, через яку зв'язок. */
+  people: Array<{ key: string; name: string; image: string | null; attribution: string; via: string }>
 }
 
 function timelineEventsOf(asset: WBAsset) {
@@ -57,12 +61,21 @@ export function timelineMapPins(assets: readonly WBAsset[]): MapEventPin[] {
   const out: MapEventPin[] = []
   for (const asset of assets) {
     if (asset?.type !== 'timeline_card') continue
-    const active = (asset.data as TimelineCardData | undefined)?.active_event_id ?? null
+    const data = asset.data as TimelineCardData | undefined
+    const active = data?.active_event_id ?? null
+    const people = Array.isArray(data?.people) ? data.people : []
     timelineEventsOf(asset).forEach((event, i) => {
       const p = event?.place
       const year = event?.date_start?.year
       if (!p || !Number.isFinite(p.lat) || !Number.isFinite(p.lon) || typeof year !== 'number') return
-      out.push({ key: `${asset.id}:${event.id}`, n: i + 1, label: event.label, year, lat: p.lat, lon: p.lon, active: event.id === active })
+      out.push({
+        key: `${asset.id}:${event.id}`, n: i + 1, label: event.label, year, lat: p.lat, lon: p.lon, active: event.id === active,
+        text: event.description || '',
+        people: people.filter((x) => x?.event_ids?.includes(event.id)).map((x) => ({
+          key: `${x.ref.provider}:${x.ref.id}`, name: x.name, image: x.image?.url ?? null,
+          attribution: x.image?.attribution ?? '', via: x.via?.[event.id] ?? '',
+        })),
+      })
     })
   }
   return out
