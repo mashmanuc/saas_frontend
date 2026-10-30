@@ -1277,10 +1277,14 @@ const allStrokes = computed(() => props.strokes ?? [])
 // Картки «Навчальних обʼєктів» ховаються тут, БІЛЯ ДЖЕРЕЛА: нижче з цього
 // списку ростуть і HTML-оверлеї, і Konva-проксі, тож інакше на полотні лишався
 // б невидимий прямокутник, який ловить кліки (правило — `board/evidenceCards`).
+// 2026-10-30: пілот «Історична карта» (/me pilots) — своя карта з кордонами видна й поза гейтом коридорів
+const bordersPilot = computed(() =>
+  Boolean((useAuthStore().user as { pilots?: string[] } | null)?.pilots?.includes('historical_borders')))
 const assets = computed(() => filterEvidenceCards(props.assets ?? [], {
   evidenceEnabled: evidenceEnabled.value,
   isTutor: props.isTutor !== false,
   mode: wbStore.mode,
+  bordersEnabled: bordersPilot.value,
 }))
 
 // Phase 3C: Media assets (audio/video) rendered as HTML overlays — excluded from Konva

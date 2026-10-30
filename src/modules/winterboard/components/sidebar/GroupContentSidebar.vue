@@ -611,7 +611,10 @@ const scenesEnabled = computed(() =>
 // «Збірник» — лише пілоту zbirnyk з /me (власник 2026-10-28: збірник чужий, «не знаю, чи маю право виставляти для всіх»).
 const zbirnykEnabled = computed(() =>
   Boolean((authStore.user as { pilots?: string[] } | null)?.pilots?.includes('zbirnyk')))
-const gateOpts = computed(() => ({ evidence: evidenceEnabled.value, scenes: scenesEnabled.value }))
+// «Історична карта» — лише пілоту historical_borders з /me (власник 2026-10-30: нове — спершу для 220).
+const bordersEnabled = computed(() =>
+  Boolean((authStore.user as { pilots?: string[] } | null)?.pilots?.includes('historical_borders')))
+const gateOpts = computed(() => ({ evidence: evidenceEnabled.value, scenes: scenesEnabled.value, borders: bordersEnabled.value }))
 const shownApps = computed(() => visibleApps(gateOpts.value))
 const toolResults = computed(() =>
   visibleInserts(gateOpts.value, searchInserts(toolQuery.value)))
@@ -642,7 +645,7 @@ const sceneEntries = computed<InsertEntry[]>(
   () => visibleInserts(gateOpts.value).filter(e => e.family === 'scenes'))
 const inequalityEntries = computed<InsertEntry[]>(() => allInserts().filter(e => e.family === 'inequalities'))
 const contentEntries = computed<InsertEntry[]>(
-  () => visibleInserts(gateOpts.value).filter(e => e.family === 'evidence'))
+  () => visibleInserts(gateOpts.value).filter(e => e.family === 'evidence' || e.family === 'historical_maps'))
 
 // ── Filter + Search state (у бібліотеці — на сервері, щоб «Показати ще» йшло по всіх файлах) ──
 const activeFilter = ref<string>('all')

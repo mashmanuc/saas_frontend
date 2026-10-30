@@ -434,6 +434,7 @@ export const InsertIcon: FunctionalComponent<{ family: string; iconKey: string }
     case '3d': return threeDIcon(props.iconKey)
     case 'geomash': return geomashIcon()
     case 'evidence': return evidenceIcon(props.iconKey)
+    case 'historical_maps': return evidenceIcon(props.iconKey)
     case 'inequalities': return numberLineIcon()
     case 'scenes': return scenesIcon()
     case 'instruments': {

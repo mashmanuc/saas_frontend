@@ -11266,6 +11266,8 @@
       "hintBuilding": "Ready — building…"
     },
     "insertTiles": {
+      "historicalMap": "Historical map",
+      "historicalMapSub": "state borders by year",
       "blank3d": "Blank 3D scene",
       "surface3d": "Surface z=f(x,y)",
       "curve3d": "Parametric curve",

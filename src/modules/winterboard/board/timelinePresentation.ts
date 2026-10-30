@@ -77,6 +77,42 @@ export const MAP_LABELS: Record<MaterialLanguage, {
   },
 }
 
+/** Історична карта (кордони в часі) — тексти за макетом дизайнера 30.10 («Картка на дошці», «На весь екран»). */
+export const HISTORICAL_MAP_LABELS: Record<MaterialLanguage, {
+  bordersAt: string; bordersAtFull: string; onMap: string; changed: string; added: string
+  noData: string; disputed: string; noDataTip: string; noDataTip2: string
+  tipChanged: string; tipAdded: string; tipAt: string
+  first: string; since: string; changedList: string; addedList: string; goneList: string; none: string
+  prev: string; next: string; play: string; pause: string; unavailable: string; attribution: string
+}> = {
+  uk: {
+    bordersAt: 'Межі на', bordersAtFull: 'Межі держав на', onMap: 'На карті у {y} році',
+    changed: 'межі змінилися', added: 'зʼявилася',
+    noData: 'Немає даних', disputed: 'Спірні / приблизні межі',
+    noDataTip: 'Немає даних про кордони', noDataTip2: 'Карта тут нічого не домальовує',
+    tipChanged: 'межі змінилися з {y}', tipAdded: 'зʼявилася в даних у {y}', tipAt: 'межі на {y} р.',
+    first: 'Перший знімок. Натисніть → або «По черзі», щоб побачити, як змінювалися межі.',
+    since: 'Від {y} р. ', changedList: 'межі змінилися: ', addedList: 'зʼявилися: ', goneList: 'зникли: ',
+    none: 'межі в даних не змінилися',
+    prev: 'Попередня зміна меж', next: 'Наступна зміна меж', play: 'По черзі', pause: 'Пауза',
+    unavailable: 'Набір меж цієї версії недоступний — кордонів не показано',
+    attribution: 'Кордони: {source}, {license}; геометрію спрощено. Суша: Natural Earth',
+  },
+  en: {
+    bordersAt: 'Borders in', bordersAtFull: 'State borders in', onMap: 'On the map in {y}',
+    changed: 'borders changed', added: 'appeared',
+    noData: 'No data', disputed: 'Disputed / approximate borders',
+    noDataTip: 'No border data', noDataTip2: 'The map draws nothing here',
+    tipChanged: 'borders changed since {y}', tipAdded: 'appears in the data in {y}', tipAt: 'borders in {y}',
+    first: 'First snapshot. Press → or “Step through” to see how the borders changed.',
+    since: 'Since {y}: ', changedList: 'borders changed: ', addedList: 'appeared: ', goneList: 'disappeared: ',
+    none: 'no border changes in the data',
+    prev: 'Previous border change', next: 'Next border change', play: 'Step through', pause: 'Pause',
+    unavailable: 'This version of the border dataset is unavailable — borders are not shown',
+    attribution: 'Borders: {source}, {license}; geometry simplified. Land: Natural Earth',
+  },
+}
+
 export const SOURCE_LIST_LABELS: Record<MaterialLanguage, {
   sources: string; author: string; license: string; revision: string; retrieved: string
 }> = {

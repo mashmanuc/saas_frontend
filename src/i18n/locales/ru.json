@@ -10032,6 +10032,8 @@
       "hintBuilding": "Готово — строю…"
     },
     "insertTiles": {
+      "historicalMap": "Историческая карта",
+      "historicalMapSub": "границы государств по годам",
       "blank3d": "Пустая 3D-сцена",
       "surface3d": "Поверхность z=f(x,y)",
       "curve3d": "Параметрическая кривая",

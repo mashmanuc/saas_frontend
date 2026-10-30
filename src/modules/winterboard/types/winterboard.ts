@@ -820,12 +820,16 @@ export interface MapCardData {
   version: 1
   title: string
   /** Локально закріплена основа. Live tiles заборонені ТЗ §7.2. */
-  basemap: 'world' | 'europe' | 'ukraine'
+  basemap: 'world' | 'europe' | 'ukraine' | 'east_europe'
   basemap_version: string
   projection: 'mercator'
   /** `none` — сучасна основа; історичні межі дозволені лише після появи
-   *  окремого закріпленого набору з provenance і ліцензією (ТЗ §7.2). */
-  historical_boundary_mode: 'none'
+   *  окремого закріпленого набору з provenance і ліцензією (ТЗ §7.2).
+   *  `dataset` (2026-10-30) — межі з такого набору, `borders`. */
+  historical_boundary_mode: 'none' | 'dataset'
+  /** Кордони держав у часі (ТЗ TZ_HISTORICAL_BORDERS_MAP_2026-10-30): лише посилання на набір певної версії й рік —
+   *  жодних координат у стані дошки. */
+  borders?: MapBorders
   markers: WBMapMarker[]
   routes: WBMapRoute[]
   regions: WBMapRegion[]
@@ -834,6 +838,13 @@ export interface MapCardData {
   sources: WBSourceRef[]
   content_language?: WBMaterialData['content_language']
   provenance?: WBMaterialData['provenance']
+}
+
+export interface MapBorders {
+  dataset: string
+  version: string
+  /** Рік, на який показано межі (включно з `from`–`to` версії держави). */
+  year: number
 }
 
 /** Маршрут-стрілка між місцями (за id marker-ів, не за координатами). */

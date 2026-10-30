@@ -169,9 +169,10 @@ export const BOARD_ASSET_STANDARD: Readonly<Record<string, BoardObjectStandardEn
   // H2–H3: шкала й карта — звичайні картки-оверлеї. Власних списків
   // можливостей у них немає (ТЗ §9.2), лише спільний стандарт.
   // Шкала — з ⛶ «на всю дошку» (власник 2026-10-29: «щоб діти могли це бачити», LAW §9 v1.74): рендерер
-  // підтримує `isExpanded` (більший шрифт, без виміру висоти). Карта — поки вбудовано, як картка теорії.
+  // підтримує `isExpanded` (більший шрифт, без виміру висоти).
   timeline_card: card('overlay', { fullscreen: true, ...TEXT_CARD }),
-  map_card: card('overlay', TEXT_CARD),
+  // Карта — теж ⛶ «на всю дошку» (2026-10-30, макет історичної карти «На весь екран»): рендерер приймає `isExpanded`.
+  map_card: card('overlay', { fullscreen: true, ...TEXT_CARD }),
   mash_scene: card('overlay'),
   geomash_scene: card('overlay', { fullscreen: true }),
   graphmash_3d: card('overlay', { fullscreen: true }),

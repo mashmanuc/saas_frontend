@@ -445,11 +445,12 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
     dataAttr: 'data-map-card-id',
     testidPrefix: 'map-card-overlay',
     buildProps: (asset, ctx) => ({
-      ...stdProps(asset, ctx),
+      // ⛶ «на всю дошку» (2026-10-30) — той самий локальний board-expand, що в шкали подій.
+      ...expProps(asset, ctx),
       navigable: ctx.isTutor && ctx.boardMode === 'edit',
     }),
     buildEvents: (asset, ctx) => ({
-      ...stdEvents(asset, ctx),
+      ...expEvents(asset, ctx),
       'activate-linked': (ids: string[]) => ctx.onActivateLinked(asset, ids),
     }),
   },

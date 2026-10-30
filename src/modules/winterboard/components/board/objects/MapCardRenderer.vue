@@ -23,7 +23,16 @@
     :style="textScaleStyle"
     :data-testid="`map-card-${asset.id}`"
   >
-    <header class="map-card__header">
+    <!-- 2026-10-30: карта з кордонами в часі — окрема картка за макетом дизайнера (той самий об'єкт map_card) -->
+    <HistoricalMapCard
+      v-if="data.borders"
+      ref="historicalEl"
+      :asset="asset"
+      :interactive="interactive"
+      :is-expanded="isExpanded"
+      @update:asset="emit('update:asset', $event)"
+    />
+    <header v-if="!data.borders" class="map-card__header">
       <span class="map-card__icon">🗺️</span>
       <span class="map-card__title">{{ data.title || labels.untitled }}</span>
       <button
@@ -37,7 +46,7 @@
       >×</button>
     </header>
 
-    <div ref="bodyEl" class="map-card__body">
+    <div v-if="!data.borders" ref="bodyEl" class="map-card__body">
       <div ref="flowEl" class="map-card__flow">
         <div class="map-card__plot">
           <div class="map-card__zoom" @mousedown.stop @pointerdown.stop>
@@ -108,7 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { WBAsset, MapCardData, WBMapMarker } from '../../../types/winterboard'
 import { useHostWindowControls } from '../../../composables/boardWindowControls'
@@ -120,13 +129,14 @@ import { useCardContentFit } from '../../../composables/useCardContentFit'
 import { MAP_LABELS } from '../../../board/timelinePresentation'
 import { BASEMAPS, basemapAspect, basemapSpec, landPaths, project } from '../../../board/basemaps'
 import SourceList from './SourceList.vue'
+import HistoricalMapCard from './HistoricalMapCard.vue'
 
 const { t } = useI18n()
 const VB = 1000
 
 const props = withDefaults(
-  defineProps<{ asset: WBAsset; isSelected?: boolean; interactive?: boolean; canFit?: boolean }>(),
-  { isSelected: false, interactive: true, canFit: true },
+  defineProps<{ asset: WBAsset; isSelected?: boolean; interactive?: boolean; canFit?: boolean; isExpanded?: boolean }>(),
+  { isSelected: false, interactive: true, canFit: true, isExpanded: false },
 )
 
 const emit = defineEmits<{
@@ -134,7 +144,9 @@ const emit = defineEmits<{
   'activate-linked': [ids: string[]]
   delete: []
   'request-height': [neededPx: number]
+  expand: []
 }>()
+const historicalEl = ref<{ ready: () => Promise<unknown> } | null>(null)
 
 const rootEl = ref<HTMLElement | null>(null)
 const bodyEl = ref<HTMLElement | null>(null)
@@ -260,7 +272,8 @@ useCardContentFit({
   root: rootEl,
   body: bodyEl,
   flow: flowEl,
-  canMeasure: () => props.canFit && !isMinimizedOnBoard(props.asset),
+  // Історична карта має сталий розмір за макетом (960×600) — висоту під вміст не міряємо
+  canMeasure: () => props.canFit && !isMinimizedOnBoard(props.asset) && !data.value.borders,
   sources: [
     () => data.value.title,
     () => data.value.basemap,
@@ -276,7 +289,14 @@ useCardContentFit({
   emitHeight: (neededPx) => emit('request-height', neededPx),
 })
 
-useExportCapture(() => props.asset?.id, (signal) => snapshotElement(rootEl.value, signal))
+// Знімок для PDF: історична карта — лише коли межі вже домальовані (набір вантажиться окремо)
+useExportCapture(() => props.asset?.id, async (signal) => {
+  if (data.value.borders) {
+    await historicalEl.value?.ready()
+    await nextTick()
+  }
+  return snapshotElement(rootEl.value, signal)
+})
 
 defineExpose({ BASEMAPS })
 </script>

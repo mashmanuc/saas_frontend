@@ -30,7 +30,7 @@ import { TRIG_CIRCLE_DRAG_MIME } from '../../constants/trigCircleDefaults'
 import { HELIX_DRAG_MIME } from '../../constants/helixDefaults'
 import { TRIG_SOLVER_DRAG_MIME } from '../../constants/trigSolverDefaults'
 import { GRAPHMASH_3D_DRAG_MIME, GEOMASH_DRAG_MIME } from '../../constants/mashInsertDefaults'
-import { MAP_CARD_DRAG_MIME, TIMELINE_CARD_DRAG_MIME } from '../../constants/evidenceCardDefaults'
+import { HISTORICAL_MAP_DRAG_MIME, MAP_CARD_DRAG_MIME, TIMELINE_CARD_DRAG_MIME } from '../../constants/evidenceCardDefaults'
 import { NUMBER_LINE_DRAG_MIME } from '../../constants/numberLineDefaults'
 import { MATH_SCENE_DRAG_MIME } from '../../types/mathScene'
 import { RULER_DRAG_MIME } from '../../constants/rulerDefaults'
@@ -47,6 +47,7 @@ export type MashFamily =
   | 'inequalities' // Нерівності: числова пряма (Б-184)
   | 'trig'        // Тригонометрія (trig_circle + helix + trig_solver)
   | 'evidence'    // Універсальні доказові об'єкти: шкала й карта
+  | 'historical_maps' // 2026-10-30: карта з кордонами в часі — пілот `historical_borders`, у картці «Навчальні об'єкти»
   | 'scenes'      // «Наочні сцени» (2026-10-20, пілот math_scenes): готові живі сцени в вікні
   | 'instruments' // Креслярські інструменти (2026-10-22): лінійка; живуть у «Геометрії»
   | '2d' | '3d' | 'geomash' | 'other'
@@ -300,6 +301,14 @@ const EVIDENCE_INSERTS: InsertEntry[] = [
     sublabel: 'місця · маршрути · джерела',
     keywords: kw('карта подій', 'map', 'місця', 'маршрут', 'географія'),
   },
+  {
+    id: 'evidence.historical_map', family: 'historical_maps', category: 'evidence',
+    dragMime: HISTORICAL_MAP_DRAG_MIME, payload: '{}',
+    labelKey: 'winterboard.insertTiles.historicalMap', labelFallback: 'Історична карта',
+    iconKey: 'map', sublabelKey: 'winterboard.insertTiles.historicalMapSub',
+    sublabel: 'кордони держав за роками',
+    keywords: kw('історична карта', 'кордони', 'історія', 'держави', 'map', 'history'),
+  },
 ]
 
 // ── Креслярські інструменти (2026-10-22) — екранна лінійка; усім учителям, у картці «Геометрія» ──
@@ -389,16 +398,18 @@ export function allInserts(): InsertEntry[] {
  * до 2026-09-24 гейта не було зовсім і їх бачили всі на проді).
  */
 export function visibleInserts(
-  opts: { evidence: boolean; scenes?: boolean },
+  opts: { evidence: boolean; scenes?: boolean; borders?: boolean },
   entries: InsertEntry[] = allInserts(),
 ): InsertEntry[] {
   // «Наочні сцени» — лише пілоту math_scenes (власник 2026-10-20: «поки будемо включати його для ID40»).
-  return entries.filter((e) => (opts.evidence || e.family !== 'evidence') && (opts.scenes || e.family !== 'scenes'))
+  // «Історична карта» — лише пілоту historical_borders (власник 2026-10-30: нове — спершу для 220).
+  return entries.filter((e) => (opts.evidence || e.family !== 'evidence') && (opts.scenes || e.family !== 'scenes')
+    && (opts.borders || e.family !== 'historical_maps'))
 }
 
 /** Те саме для карток-застосунків root-каталогу. */
-export function visibleApps(opts: { evidence: boolean; scenes?: boolean }): typeof MASH_APPS {
-  return MASH_APPS.filter((a) => (opts.evidence || a.app !== 'content') && (opts.scenes || a.app !== 'scenes'))
+export function visibleApps(opts: { evidence: boolean; scenes?: boolean; borders?: boolean }): typeof MASH_APPS {
+  return MASH_APPS.filter((a) => (opts.evidence || opts.borders || a.app !== 'content') && (opts.scenes || a.app !== 'scenes'))
 }
 
 /** Пошук за labelFallback / id / keywords (case-insensitive). Порожній q = всі. */
@@ -431,6 +442,7 @@ const FAMILY_TO_APP: Readonly<Record<string, MashApp>> = {
   planimetry: 'geometry', geomash: 'geometry', instruments: 'geometry',
   stereo: 'stereo',
   evidence: 'content',
+  historical_maps: 'content',
   scenes: 'scenes',
 }
 

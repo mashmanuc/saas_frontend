@@ -11354,6 +11354,8 @@
       "hintBuilding": "Готово — будую…"
     },
     "insertTiles": {
+      "historicalMap": "Історична карта",
+      "historicalMapSub": "кордони держав за роками",
       "blank3d": "Порожня 3D-сцена",
       "surface3d": "Поверхня z=f(x,y)",
       "curve3d": "Параметрична крива",

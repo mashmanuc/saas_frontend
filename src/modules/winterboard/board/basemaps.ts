@@ -17,7 +17,7 @@ import naturalEarthLand from './data/ne_110m_land.json'
  * сюди не вкладено: доки немає затвердженого українського overlay із
  * provenance і ліцензією, карта показує фізичну сушу без державних меж.
  */
-export type BasemapId = 'world' | 'europe' | 'ukraine'
+export type BasemapId = 'world' | 'europe' | 'ukraine' | 'east_europe'
 
 export interface BasemapSpec {
   id: BasemapId
@@ -48,6 +48,8 @@ export const BASEMAPS: Readonly<Record<BasemapId, BasemapSpec>> = Object.freeze(
   world: { id: 'world', bounds: [-180, -60, 180, 85], grid: 30 },
   europe: { id: 'europe', bounds: [-25, 34, 45, 71], grid: 10 },
   ukraine: { id: 'ukraine', bounds: [21, 44, 41, 53], grid: 2 },
+  // 2026-10-30: регіон набору кордонів у часі (Річ Посполита, Московія, Крим, Молдавія…), `board/historicalBorders.ts`
+  east_europe: { id: 'east_europe', bounds: [14, 41, 46, 58.5], grid: 5 },
 })
 
 export function basemapSpec(id: unknown): BasemapSpec {
@@ -111,6 +113,17 @@ type LandGeometry = {
   coordinates?: PolygonCoordinates | MultiPolygonCoordinates
 }
 type LandCollection = { features?: Array<{ geometry?: LandGeometry }> }
+
+/** SVG path багатокутників (кільця [lon, lat]; отвори — evenodd). Як і суша: точки поза основою не відкидаємо —
+ * SVG обрізає їх сам, без фальшивих ліній по краях. */
+export function polygonsPath(polygons: Position[][][], spec: BasemapSpec, viewBox = 1000, viewBoxHeight = viewBox): string {
+  return polygons.map(polygon => polygon.map((ring) => ring.flatMap((point, index) => {
+    const [lon, lat] = point
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return []
+    const p = projectRaw(lat, lon, spec)
+    return [`${index === 0 ? 'M' : 'L'}${(p.x * viewBox).toFixed(1)},${(p.y * viewBoxHeight).toFixed(1)}`]
+  }).join('') + 'Z').join('')).join('')
+}
 
 /** SVG paths фізичної суші для заданої основи. Координати поза viewport не
  * відкидаємо: SVG clip обрізає їх коректно, без фальшивих ліній по краях. */

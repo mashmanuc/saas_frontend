@@ -33,7 +33,7 @@ import { TRIG_SOLVER_DRAG_MIME } from '../../../constants/trigSolverDefaults'
 import { GEOMETRY_2D_V2_DRAG_MIME } from '../../../constants/geometry2dV2Defaults'
 import { GRAPHMASH_3D_DRAG_MIME, GEOMASH_DRAG_MIME } from '../../../constants/mashInsertDefaults'
 import {
-  MAP_CARD_DRAG_MIME,
+  HISTORICAL_MAP_DRAG_MIME, MAP_CARD_DRAG_MIME,
   TIMELINE_CARD_DRAG_MIME,
 } from '../../../constants/evidenceCardDefaults'
 
@@ -55,6 +55,7 @@ const RESOLVER_MIMES = new Set<string>([
   GEOMASH_DRAG_MIME,       // geomash_scene (Ф3.1)
   TIMELINE_CARD_DRAG_MIME, // timeline_card
   MAP_CARD_DRAG_MIME,      // map_card
+  HISTORICAL_MAP_DRAG_MIME,
   NUMBER_LINE_DRAG_MIME,   // number_line (Б-184)
   MATH_SCENE_DRAG_MIME,    // math_scene («Наочна сцена», 2026-10-20)
   RULER_DRAG_MIME,         // ruler (екранна лінійка, 2026-10-22)

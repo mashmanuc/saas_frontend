@@ -22,6 +22,8 @@ import {
 import { BOARD_RECIPE_MIME, BoardRecipeError, buildBoardRecipeAsset } from '../board/preparedBoardRecipes'
 import {
   MAP_CARD_DRAG_MIME,
+  HISTORICAL_MAP_DRAG_MIME,
+  buildHistoricalMapAsset,
   TIMELINE_CARD_DRAG_MIME,
   buildBlankMapAsset,
   buildBlankTimelineAsset,
@@ -1209,6 +1211,12 @@ export function useContentDrop(options: UseContentDropOptions) {
       }
       if (typeof parsed.id !== 'string' || !parsed.id) return
       void placeZbirnykTask(parsed.id, pos, parsed.at === 'top')
+      return
+    }
+
+    if (mime === HISTORICAL_MAP_DRAG_MIME) {
+      const localeValue = (i18n.global.locale as unknown as { value?: string })?.value
+      onAssetAdd(buildHistoricalMapAsset(pos, localeValue === 'en' ? 'en' : 'uk'))
       return
     }
 

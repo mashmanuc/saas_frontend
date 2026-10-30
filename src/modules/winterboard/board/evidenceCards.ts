@@ -20,6 +20,14 @@ export interface EvidenceVisibility {
   isTutor: boolean
   /** `wbStore.mode`: 'edit' | 'replay' | … */
   mode: string
+  /** 2026-10-30: пілот «Історична карта» — карта з кордонами з набору видна й поза гейтом коридорів. */
+  bordersEnabled?: boolean
+}
+
+/** Карта з кордонами в часі (`borders` з закріпленого набору) — окремий пілот, не шар Інтегралика. */
+function isBordersMap(asset: { type: string; data?: unknown }): boolean {
+  return asset.type === 'map_card'
+    && (asset.data as { historical_boundary_mode?: string } | null | undefined)?.historical_boundary_mode === 'dataset'
 }
 
 export function hideEvidenceCards(v: EvidenceVisibility): boolean {
@@ -27,10 +35,10 @@ export function hideEvidenceCards(v: EvidenceVisibility): boolean {
 }
 
 /** Прибрати картки шару з того, що піде на полотно (і в Konva-проксі теж). */
-export function filterEvidenceCards<T extends { type: string }>(
+export function filterEvidenceCards<T extends { type: string; data?: unknown }>(
   assets: readonly T[],
   v: EvidenceVisibility,
 ): T[] {
   if (!hideEvidenceCards(v)) return assets as T[]
-  return assets.filter((a) => !EVIDENCE_CARD_TYPES.has(a.type))
+  return assets.filter((a) => !EVIDENCE_CARD_TYPES.has(a.type) || (v.bordersEnabled === true && isBordersMap(a)))
 }

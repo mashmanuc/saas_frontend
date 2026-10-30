@@ -133,9 +133,9 @@ describe('INV-STD-4 · похідні списки не змінили пове�
     expect([...OVERLAY_PROXY_TYPES].sort()).toEqual(PROXY_TYPES_BEFORE_TLV2_05A)
   })
 
-  it('fullscreen = попередній набір + капсула (TLV2-05A) + «Наочна сцена» (власник 2026-10-21) + шкала подій (власник 2026-10-29)', () => {
+  it('fullscreen = попередній набір + капсула (TLV2-05A) + «Наочна сцена» (власник 2026-10-21) + шкала подій (власник 2026-10-29) + карта (історична карта 2026-10-30)', () => {
     const fullscreen = STANDARD_ASSET_TYPES.filter(isFullscreenAsset).sort()
-    expect(fullscreen).toEqual([...FULLSCREEN_BEFORE_TLV2_05A, 'visual_capsule', 'math_scene', 'timeline_card'].sort())
+    expect(fullscreen).toEqual([...FULLSCREEN_BEFORE_TLV2_05A, 'visual_capsule', 'math_scene', 'timeline_card', 'map_card'].sort())
   })
 
   it('лінійка (2026-10-22) — нативний Konva-вузол: рухається й розтягується, без ⛶, трею й верхньої панелі', () => {
