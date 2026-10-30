@@ -37,7 +37,7 @@ import { getNmtPresentationScale, resetNmtPresentationScales, setNmtPresentation
 import { closeMediaShow, isImageShowAsset, isShowAsset, mediaShow, openMediaShow } from '../board/mediaShow'
 import { setShowMode, showMode } from '../board/showMode'
 import { isMinimizedOnBoard } from '../board/objectStandard'
-import { TIMELINE_ASSET_TYPE, currentPageKind, scenarioKind } from '../remote/remoteScenarioAdapter'
+import { currentPageKind, isBoardExpandCard, scenarioKind } from '../remote/remoteScenarioAdapter'
 import {
   hasSharedTextScale, nextPresentationScale, presentationScaleOf, withPresentationScale,
 } from '../board/cardPresentation'
@@ -172,7 +172,8 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     if (!asset) return false
     // v1.75: шкала подій — своє «на всю дошку» (v1.74): той самий локальний board-expand, що ⛶ на картці, зі
     // шрифтом за шириною. Без ops; «Уся сторінка» (`resetFocus`) згортає, як «Задачу на екран».
-    if (asset.type === TIMELINE_ASSET_TYPE) {
+    // v1.77: історична карта — так само (її ⛶ «на весь екран» за макетом).
+    if (isBoardExpandCard(asset)) {
       if (savedView || objectFocus) endObjectFocus()
       if (store.expandedAssetId) endTaskPresentation()
       store.expandedAssetId = assetId
@@ -329,7 +330,7 @@ export function createRemoteViewAdapter(store: RemoteViewStore, opts: RemoteView
     const id = store.expandedAssetId
     if (!id) return null
     const asset = store.pages[store.currentPageIndex]?.assets.find((a) => a && a.id === id)
-    return asset?.type === TIMELINE_ASSET_TYPE && !isMinimizedOnBoard(asset) ? id : null
+    return asset && isBoardExpandCard(asset) && !isMinimizedOnBoard(asset) ? id : null
   }
 
   /** v1.34: вид об'єкта для пульта або null — пульт із ним не працює (маніфест П1). */

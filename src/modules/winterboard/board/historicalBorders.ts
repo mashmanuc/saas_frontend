@@ -11,6 +11,7 @@
  * `scripts/borders/build_cliopatria_east_europe.py`; що змінено — у `meta.changes_by_m4sh` набору.
  */
 import type { BasemapId } from './basemaps'
+import type { MapBorders } from '../types/winterboard'
 
 type Position = [number, number]
 
@@ -92,6 +93,14 @@ export function loadBorders(dataset: unknown, version: unknown): Promise<Borders
 }
 
 /** Держави, чиї межі діють цього року (`from ≤ year ≤ to`, роки набору включні). */
+/** Кордони карти з дошки — {dataset, version, year} або null (немає / зіпсовано). Лише наші id, без координат. */
+export function mapBordersOf(asset: { type?: string | null; data?: unknown }): MapBorders | null {
+  if (asset.type !== 'map_card') return null
+  const b = (asset.data as { borders?: Partial<MapBorders> } | null | undefined)?.borders
+  if (!b || typeof b.dataset !== 'string' || typeof b.version !== 'string' || !Number.isInteger(b.year)) return null
+  return { dataset: b.dataset, version: b.version, year: b.year as number }
+}
+
 export function statesAt(data: BordersDataset, year: number): BorderState[] {
   return data.states.filter((s) => s.from <= year && year <= s.to)
 }

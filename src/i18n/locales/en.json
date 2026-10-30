@@ -9925,6 +9925,12 @@
         "tell": "One by one",
         "telling": "Telling",
         "stopTelling": "Stop",
+        "mapBordersAt": "Borders in",
+        "mapPrev": "← Previous change",
+        "mapNext": "Next change →",
+        "mapPause": "Pause",
+        "mapFirst": "First snapshot",
+        "mapUnchanged": "Borders unchanged",
         "whyFirstEvent": "This is the first event",
         "whyLastEvent": "This is the last event"
       },

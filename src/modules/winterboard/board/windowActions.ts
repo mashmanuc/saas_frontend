@@ -27,6 +27,7 @@ import { canMinimize, type TrayViewer } from './boardTray'
 import { assetCapabilities, isCardAsset } from './objectStandard'
 import { hasHandwritableSolution, isIntegralykSolvable } from './handwriteSolution'
 import { isHomeworkCardData } from './homeworkCard'
+import { mapBordersOf } from './historicalBorders'
 
 export interface CardWindowActions {
   /** TLV2-05C: `A− / 100% / A+` — спільний учительський масштаб тексту. */
@@ -70,7 +71,8 @@ export function cardWindowActions(
   return {
     scale: viewer.mode === 'edit' && caps.textScale === 'teacher-shared',
     minimize: canMinimize(asset, viewer),
-    expand: caps.fullscreen,
+    // ⛶ карти — лише історичній (з кордонами, макет «На весь екран»); звичайна карта Інтегралика — як до 30.10
+    expand: caps.fullscreen && (asset.type !== 'map_card' || mapBordersOf(asset) !== null),
     delete: caps.deletable && viewer.mode === 'edit' && asset.locked !== true,
     handwrite: (viewer.mode === 'edit' && ready) || solves,
     handwriteSolves: solves,

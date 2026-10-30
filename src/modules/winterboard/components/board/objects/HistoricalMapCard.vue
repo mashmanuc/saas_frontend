@@ -116,11 +116,12 @@ import {
   snapshotYears, statesAt, stepYear, type BordersDataset,
 } from '../../../board/historicalBorders'
 import { HISTORICAL_MAP_LABELS } from '../../../board/timelinePresentation'
+import { isTimelinePlaying, setTimelinePlaying } from '../../../board/timelinePlayback'
 import { useHostWindowControls } from '../../../composables/boardWindowControls'
 
 const props = withDefaults(
-  defineProps<{ asset: WBAsset; interactive?: boolean; isExpanded?: boolean }>(),
-  { interactive: true, isExpanded: false },
+  defineProps<{ asset: WBAsset; interactive?: boolean; isExpanded?: boolean; navigable?: boolean }>(),
+  { interactive: true, isExpanded: false, navigable: false },
 )
 const emit = defineEmits<{ 'update:asset': [asset: WBAsset]; 'borders-ready': [] }>()
 
@@ -156,7 +157,9 @@ const gridLines = computed(() => {
 // ── Набір цієї версії ────────────────────────────────────────────────────────────────────────────────────
 const dataset = shallowRef<BordersDataset | null>(null)
 const missing = ref(false)
-watch(() => [data.value.borders?.dataset, data.value.borders?.version] as const, ([id, version]) => {
+// Два джерела, а не масив з одного: інакше кожен новий рік (новий asset) перезапускав би набір — карта на мить
+// порожня, усі держави проявлялися б наново, а «по черзі» скидалося
+watch([() => data.value.borders?.dataset, () => data.value.borders?.version], ([id, version]) => {
   dataset.value = null
   missing.value = false
   void loadBorders(id, version).then((loaded) => {
@@ -259,9 +262,9 @@ const attribution = computed(() => {
 })
 
 // ── Рік: один asset_update ───────────────────────────────────────────────────────────────────────────────
-function writeYear(y: number): void {
+function writeYear(y: number, allowed = props.interactive): void {
   const borders = data.value.borders
-  if (!props.interactive || !borders || y === borders.year) return
+  if (!allowed || !borders || y === borders.year) return
   emit('update:asset', { ...props.asset, data: { ...data.value, borders: { ...borders, year: y } } } as WBAsset)
 }
 function go(y: number): void { stopPlay(); writeYear(y) }
@@ -269,25 +272,33 @@ function step(dir: 1 | -1): void {
   stopPlay()
   if (dataset.value) writeYear(stepYear(dataset.value, snapshot.value, dir))
 }
-// «По черзі» — макет: крок раз на 2,4 с до останньої зміни; стан «грає» — лише цього екрана
-const playing = ref(false)
+// «По черзі» — макет: крок раз на 2,4 с до останньої зміни; з останнього року — з першого.
+// «Грає» — спільний стан екрана (`board/timelinePlayback`): ▶ на пульті вмикає саме цей таймер (LAW §9 v1.77).
+// Таймер пише за `navigable` (учитель, редагування), а не за інструментом: з пульта крокує й тоді, коли в руці перо.
+const playing = computed(() => isTimelinePlaying(props.asset.id))
 let playTimer: ReturnType<typeof setInterval> | null = null
-function stopPlay(): void {
+function clearPlayTimer(): void {
   if (playTimer) clearInterval(playTimer)
   playTimer = null
-  playing.value = false
+}
+function stopPlay(): void {
+  setTimelinePlaying(props.asset.id, false)
 }
 function togglePlay(): void {
-  if (playing.value || !dataset.value) { stopPlay(); return }
-  playing.value = true
+  setTimelinePlaying(props.asset.id, !playing.value)
+}
+function startPlayTimer(): void {
+  clearPlayTimer()
+  const canWrite = props.navigable || props.interactive
   const next = () => {
     if (!dataset.value || snapshot.value >= lastYear.value) { stopPlay(); return }
-    writeYear(stepYear(dataset.value, snapshot.value, 1))
+    writeYear(stepYear(dataset.value, snapshot.value, 1), canWrite)
   }
-  if (snapshot.value >= lastYear.value) writeYear(years.value[0])
+  if (snapshot.value >= lastYear.value) writeYear(years.value[0], canWrite)
   else next()
   playTimer = setInterval(next, 2400)
 }
+watch(() => playing.value && !!dataset.value, (on) => (on ? startPlayTimer() : clearPlayTimer()), { immediate: true })
 
 // ── Лише вигляд: спалах змінених, підсвітка, підказка ────────────────────────────────────────────────────
 const flash = ref(false)
@@ -310,6 +321,7 @@ function showTip(e: MouseEvent, title: string, text: string): void {
 }
 
 onBeforeUnmount(() => {
+  clearPlayTimer()
   stopPlay()
   if (flashTimer) clearTimeout(flashTimer)
 })

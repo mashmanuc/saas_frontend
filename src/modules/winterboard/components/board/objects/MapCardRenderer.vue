@@ -30,6 +30,7 @@
       :asset="asset"
       :interactive="interactive"
       :is-expanded="isExpanded"
+      :navigable="navigable"
       @update:asset="emit('update:asset', $event)"
     />
     <header v-if="!data.borders" class="map-card__header">
@@ -135,8 +136,12 @@ const { t } = useI18n()
 const VB = 1000
 
 const props = withDefaults(
-  defineProps<{ asset: WBAsset; isSelected?: boolean; interactive?: boolean; canFit?: boolean; isExpanded?: boolean }>(),
-  { isSelected: false, interactive: true, canFit: true, isExpanded: false },
+  defineProps<{
+    asset: WBAsset; isSelected?: boolean; interactive?: boolean; canFit?: boolean; isExpanded?: boolean
+    /** Учитель у режимі редагування (не залежить від інструмента) — «по черзі» з пульта пише й з пером (v1.77). */
+    navigable?: boolean
+  }>(),
+  { isSelected: false, interactive: true, canFit: true, isExpanded: false, navigable: false },
 )
 
 const emit = defineEmits<{

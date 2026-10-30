@@ -63,8 +63,13 @@ export interface RemoteScenarioItem {
   eventCount?: number
   eventIndex?: number
   eventTitle?: string
-  /** v1.75: «по черзі» — лише шкала з віссю; немає поля — кнопок ▶/❚❚ немає */
+  /** v1.75: «по черзі» — лише шкала з віссю; немає поля — кнопок ▶/❚❚ немає. v1.77 — і історична карта. */
   playing?: boolean
+  /** v1.77: історична карта сторінки, що на екрані — наш id набору, версія, рік (три разом). Роки змін, плашки й
+   *  мінікарту телефон рахує сам із того самого набору (`board/historicalBorders`). */
+  mapDataset?: string
+  mapVersion?: string
+  mapYear?: number
 }
 
 export interface RemoteStateDetail {
@@ -358,9 +363,22 @@ export function parseRemoteScenario(raw: any): RemoteStateDetail['scenario'] | u
     const item: RemoteScenarioItem = { objectId: id, kind, title: title.slice(0, SCENARIO_TITLE_MAX), pageIndex, minimized }
     // Необов'язкові поля: null = немає, як `is not None` на сервері
     const { state, error, volume, doc_page: docPage, doc_pages: docPages, pos, dur } = it
+    // v1.77: історична карта — три поля разом, лише в картки, без подій (як `_validate_remote_map` на сервері)
+    const { map_dataset: mapDataset, map_version: mapVersion, map_year: mapYear } = it
+    const isMap = mapDataset != null || mapVersion != null || mapYear != null
+    if (isMap) {
+      if (kind !== 'card' || it.event_count != null || it.event_index != null || it.event_title != null) return undefined
+      if (typeof mapDataset !== 'string' || !/^[a-z0-9-]{1,64}$/.test(mapDataset)) return undefined
+      if (typeof mapVersion !== 'string' || !/^[A-Za-z0-9._-]{1,32}$/.test(mapVersion)) return undefined
+      if (!isInt(mapYear) || mapYear < -5000 || mapYear > 2100) return undefined
+      Object.assign(item, { mapDataset, mapVersion, mapYear })
+    }
     // v1.75: поля шкали подій — лише в картки (як `_validate_remote_timeline` на сервері)
     const { event_count: eventCount, event_index: eventIndex, event_title: eventTitle, playing } = it
-    if (eventCount != null || eventIndex != null || eventTitle != null || playing != null) {
+    if (isMap && playing != null) {
+      if (typeof playing !== 'boolean') return undefined
+      item.playing = playing
+    } else if (eventCount != null || eventIndex != null || eventTitle != null || playing != null) {
       if (kind !== 'card') return undefined
       if (eventCount == null || !isInt(eventCount) || eventCount < 1 || eventCount > TIMELINE_EVENTS_MAX) return undefined
       item.eventCount = eventCount

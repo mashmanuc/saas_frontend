@@ -9639,6 +9639,12 @@
         "tell": "По черзі",
         "telling": "Розповідає",
         "stopTelling": "Зупинити",
+        "mapBordersAt": "Межі на",
+        "mapPrev": "← Попередня зміна",
+        "mapNext": "Наступна зміна →",
+        "mapPause": "Пауза",
+        "mapFirst": "Перший знімок",
+        "mapUnchanged": "Межі не змінилися",
         "whyFirstEvent": "Це перша подія",
         "whyLastEvent": "Це остання подія"
       },

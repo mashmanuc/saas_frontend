@@ -25,12 +25,17 @@
  * шкала подій — картка з подіями. У стані — скільки подій, яка відкрита і її назва, чи «по черзі»; дії — ті самі,
  * що кнопки картки: крок — один `asset_update` `active_event_id` (з картою — ще її підсвітка, як на картці),
  * «по черзі» — той самий ▶ (`board/timelinePlayback`), «На весь екран» — те саме «на всю дошку», що ⛶ на картці.
+ *
+ * v1.77 (2026-10-30, макет дизайнера «Пульт»): історична карта (`map_card` з `borders`) — так само. У стані — наш id
+ * набору, його версія і рік (решту телефон рахує сам із того самого набору); крок — один `asset_update` `borders.year`
+ * на сусідній рік зміни меж, як ←/→ картки; «по черзі» — той самий ▶ картки; «На весь екран» — її ⛶.
  */
 import type { WBAsset } from '../types/winterboard'
 import { canMinimize, canShowTray, minimizedAsset, restoredAsset, type TrayViewer } from '../board/boardTray'
 import { isMinimizableAsset, isMinimizedOnBoard } from '../board/objectStandard'
 import { linkedEvidenceUpdate } from '../board/evidenceLinkage'
 import { isTimelinePlaying, setTimelinePlaying } from '../board/timelinePlayback'
+import { BORDER_DATASETS, clampYear, loadBorders, mapBordersOf, snapshotYears, stepYear } from '../board/historicalBorders'
 import {
   changeVideoVolume, pauseVideo, playVideo, videoTime, ytPlayErrors, ytPlayStates, ytTimeMarks, ytVolumes,
 } from '../board/youtubeRemoteControl'
@@ -60,6 +65,10 @@ export interface RemoteScenarioItem {
   event_index?: number
   event_title?: string
   playing?: boolean
+  /** v1.77: історична карта сторінки, що на екрані — наш id набору, версія, рік (три разом); `playing` — «по черзі». */
+  map_dataset?: string
+  map_version?: string
+  map_year?: number
 }
 
 export interface RemoteScenarioState {
@@ -74,6 +83,11 @@ export const SCENARIO_TITLE_MAX = 200
 /** v1.75: стеля подій шкали в стані пульта (сервер — `REMOTE_TIMELINE_EVENTS_MAX`). */
 export const TIMELINE_EVENTS_MAX = 100
 export const TIMELINE_ASSET_TYPE = 'timeline_card'
+
+/** v1.74/v1.77: картки з власним «на всю дошку» (board-expand) — шкала подій і історична карта з кордонами. */
+export function isBoardExpandCard(asset: { type?: string | null; data?: unknown }): boolean {
+  return asset.type === TIMELINE_ASSET_TYPE || mapBordersOf(asset) !== null
+}
 
 export interface RemoteScenarioView {
   focusObject: (id: string) => boolean
@@ -131,6 +145,9 @@ function scenarioTitle(asset: WBAsset, kind: ScenarioKind): string {
   let title: string
   if (kind === 'card') {
     title = asset.type === 'discussion_question' ? text(data.question) : (text(data.title) || text(data.body))
+    // v1.77: історична карта без власної назви — назва набору («Східна Європа»), як у шапці картки
+    const borders = mapBordersOf(asset)
+    if (!title && borders) title = BORDER_DATASETS[borders.dataset]?.title[data.content_language === 'en' ? 'en' : 'uk'] ?? ''
   } else if (kind === 'image') {
     title = text(data.caption) || text(data.title)
   } else {
@@ -206,6 +223,14 @@ function timelineFields(asset: WBAsset): Pick<RemoteScenarioItem, 'event_count' 
   }
 }
 
+/** v1.77: поля карти для пульта. Межі протоколу (сервер відкидає `scenario` цілим) — тут же: краще без кнопок. */
+function mapFields(asset: WBAsset): Pick<RemoteScenarioItem, 'map_dataset' | 'map_version' | 'map_year' | 'playing'> {
+  const b = mapBordersOf(asset)
+  if (!b || !/^[a-z0-9-]{1,64}$/.test(b.dataset) || !/^[A-Za-z0-9._-]{1,32}$/.test(b.version)) return {}
+  if (b.year < -5000 || b.year > 2100) return {}
+  return { map_dataset: b.dataset, map_version: b.version, map_year: b.year, playing: isTimelinePlaying(asset.id) }
+}
+
 function docFields(asset: WBAsset): Pick<RemoteScenarioItem, 'doc_page' | 'doc_pages'> {
   const total = Math.trunc(Number(asset.totalPages ?? 0))
   if (!(total >= 1)) return {}
@@ -256,6 +281,7 @@ export function createRemoteScenarioAdapter(deps: RemoteScenarioDeps) {
           if (kind === 'video' || kind === 'audio') Object.assign(item, playbackFields(asset))
           else if (isDocKind(kind)) Object.assign(item, docFields(asset))
           else if (asset.type === TIMELINE_ASSET_TYPE) Object.assign(item, timelineFields(asset))
+          else if (asset.type === 'map_card') Object.assign(item, mapFields(asset))
         }
         items.push(item)
       }
@@ -290,11 +316,12 @@ export function createRemoteScenarioAdapter(deps: RemoteScenarioDeps) {
    * ⛶ — полотно цього екрана до об'єкта; в аудіо цієї кнопки немає. У картці теж (v1.25):
    * текст картки не росте з полотном (§9.C), «на весь екран» дав би велику рамку з дрібним текстом.
    * v1.75: крім шкали подій — у неї своє «на всю дошку» зі шрифтом за шириною (v1.74), його й вмикає вигляд.
+   * v1.77: і історичної карти — її ⛶ «на весь екран» за макетом.
    */
   function focus(id: string): void {
     const found = findCurrent(id)
     if (!found || found.kind === 'audio' || isMinimizedOnBoard(found.asset)) return
-    if (found.kind === 'card' && found.asset.type !== TIMELINE_ASSET_TYPE) return
+    if (found.kind === 'card' && !isBoardExpandCard(found.asset)) return
     deps.view.focusObject(id)
   }
 
@@ -340,6 +367,45 @@ export function createRemoteScenarioAdapter(deps: RemoteScenarioDeps) {
     if (found?.asset.type === TIMELINE_ASSET_TYPE) setTimelinePlaying(id, false)
   }
 
+  /** v1.77: історична карта поточної сторінки, з якою можна працювати як на дошці (учитель, редагування, запис). */
+  function editableMap(id: string): WBAsset | null {
+    const found = findCurrent(id)
+    if (!found || !mapBordersOf(found.asset) || isMinimizedOnBoard(found.asset) || !canEditBoard()) return null
+    return found.asset
+  }
+
+  /**
+   * v1.77 ← / → — те саме, що стрілки картки (`HistoricalMapCard.step`): сусідній рік зміни меж; на межі нічого.
+   * Набір той самий, що вже намалювала картка (кеш `loadBorders`); перед записом карту беремо наново — за час
+   * завантаження її могли змінити чи згорнути.
+   */
+  function mapStep(id: string, dir: -1 | 1): void {
+    const asset = editableMap(id)
+    const b = asset && mapBordersOf(asset)
+    if (!b) return
+    void loadBorders(b.dataset, b.version).then((data) => {
+      const now = data && editableMap(id)
+      const cur = now && mapBordersOf(now)
+      if (!data || !now || !cur || cur.dataset !== b.dataset || cur.version !== b.version) return
+      const target = stepYear(data, snapshotYears(data, clampYear(data, cur.year)).snapshot, dir)
+      if (target === cur.year) return
+      const d = ((now as unknown as { data?: Record<string, unknown> }).data ?? {})
+      deps.updateAsset({ ...now, data: { ...d, borders: { ...(d.borders as object), year: target } } } as WBAsset)
+    })
+  }
+
+  /** v1.77 «▶ По черзі» / «❚❚ Пауза» — той самий ▶ картки (таймер у картці, кожен крок — її запис). */
+  function mapPlay(id: string): void {
+    const asset = editableMap(id)
+    if (asset) setTimelinePlaying(asset.id, true)
+  }
+
+  function mapPause(id: string): void {
+    const found = findCurrent(id)
+    // Зупинити можна завжди — зупинка нічого не пише
+    if (found && mapBordersOf(found.asset)) setTimelinePlaying(id, false)
+  }
+
   /** «— Згорнути» — те саме, що на картці: програвач спершу на паузу, потім asset_update. */
   function minimize(id: string): void {
     const found = findCurrent(id)
@@ -370,7 +436,10 @@ export function createRemoteScenarioAdapter(deps: RemoteScenarioDeps) {
     deps.updateAsset({ ...found.asset, currentPage: next })
   }
 
-  return { state, play, pause, volume, focus, minimize, restore, docPage, timelineStep, timelinePlay, timelinePause }
+  return {
+    state, play, pause, volume, focus, minimize, restore, docPage, timelineStep, timelinePlay, timelinePause,
+    mapStep, mapPlay, mapPause,
+  }
 }
 
 export type RemoteScenarioAdapter = ReturnType<typeof createRemoteScenarioAdapter>

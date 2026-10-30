@@ -91,8 +91,10 @@
     </template>
 
     <!-- Презентація, PDF, документ; v1.25 — картинка (⛶ і «Згорнути») і картка (лише «Згорнути»);
-         v1.75 — шкала подій: ◀ назва події ▶, «по черзі» (лише з віссю), ⛶ «на всю дошку» -->
+         v1.75 — шкала подій: ◀ назва події ▶, «по черзі» (лише з віссю), ⛶ «на всю дошку»;
+         v1.77 — історична карта за макетом «Пульт» (мінікарта, рік, ← / → з роком, «По черзі», ⛶) -->
     <template v-else>
+      <RemoteHistoricalMap v-if="isMap" :item="item" :focus-id="focusId" :ready="ready" :id-prefix="idPrefix" @send="send" />
       <template v-if="isTimeline">
         <div class="wb-scn__row wb-scn__row--pager">
           <div class="wb-scn__slot" @click="why('eventPrev')">
@@ -159,6 +161,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { RemoteScenarioItem } from '../../composables/useRemoteChannel'
+import RemoteHistoricalMap from './RemoteHistoricalMap.vue'
 
 const props = withDefaults(defineProps<{
   item: RemoteScenarioItem
@@ -175,6 +178,8 @@ const { t } = useI18n()
 const isPlayable = (it: RemoteScenarioItem) => it.kind === 'video' || it.kind === 'audio'
 /** v1.75: шкала подій — картка, для якої ноутбук прислав події. Немає поля — звичайна картка (П1). */
 const isTimeline = computed(() => props.item.kind === 'card' && typeof props.item.eventCount === 'number')
+/** v1.77: історична карта — картка, для якої ноутбук прислав набір і рік. Її ⛶ — у панелі карти. */
+const isMap = computed(() => props.item.kind === 'card' && typeof props.item.mapYear === 'number')
 
 /** Грає просто зараз (незгорнутий програвач чи шкала «по черзі») — зелена крапка в рядку стану. */
 function isPlayingNow(it: RemoteScenarioItem): boolean {

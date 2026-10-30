@@ -162,6 +162,7 @@ export interface RemoteCommandDetail {
     | 'photo.add' | 'photo.background' | 'photo.background_clear'
     | 'video.volume' | 'view.focus' | 'card.minimize' | 'card.restore' | 'doc.page'
     | 'timeline.step' | 'timeline.play' | 'timeline.pause'
+    | 'map.step' | 'map.play' | 'map.pause'
     | 'assistant.ask' | 'assistant.answer'
     | 'recording.start' | 'recording.stop'
     | 'card.handwrite' | 'card.handwrite_next' | 'object.select' | 'board.dictate' | 'dictation.action'
@@ -777,6 +778,26 @@ export function useBoardRemote(opts: UseBoardRemoteOptions) {
         else opts.scenario.timelinePause(objectId)
         adoptScenarioObject(objectId)
         sendState()   // не вийшло (учень, перегляд, згорнута) — телефон усе одно бачить справжній стан
+        return
+      }
+      // v1.77: історична карта — крок до сусіднього року зміни меж, «по черзі», пауза. Рік пише ноутбук тим самим
+      // записом, що ←/→ картки; стан (рік, «грає») реактивний — watch сценарію надішле його сам.
+      case 'map.step': {
+        const objectId = String(d.args?.object_id ?? '')
+        const dir = d.args?.dir
+        if (!opts.scenario || !objectId || (dir !== 1 && dir !== -1)) return
+        opts.scenario.mapStep(objectId, dir as -1 | 1)
+        adoptScenarioObject(objectId)
+        return
+      }
+      case 'map.play':
+      case 'map.pause': {
+        const objectId = String(d.args?.object_id ?? '')
+        if (!opts.scenario || !objectId) return
+        if (d.cmd === 'map.play') opts.scenario.mapPlay(objectId)
+        else opts.scenario.mapPause(objectId)
+        adoptScenarioObject(objectId)
+        sendState()
         return
       }
       // v1.9: фото вже в «Матеріалах»; перевіряє й кладе ноутбук, пульт лише просить
