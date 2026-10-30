@@ -88,7 +88,7 @@ export function timelineMapPins(assets: readonly WBAsset[]): MapEventPin[] {
 export function linkedHistoricalMapUpdates(
   assets: readonly WBAsset[],
   timeline: WBAsset,
-  yearsOf: (dataset: string, version: string) => readonly [number, number] | null,
+  yearsOf: (borders: NonNullable<MapCardData['borders']>) => readonly [number, number] | null,
 ): WBAsset[] {
   if (timeline.type !== 'timeline_card') return []
   const data = timeline.data as TimelineCardData | undefined
@@ -100,7 +100,7 @@ export function linkedHistoricalMapUpdates(
     if (asset?.type !== 'map_card') continue
     const map = asset.data as MapCardData
     const b = map?.borders
-    const years = b ? yearsOf(b.dataset, b.version) : null
+    const years = b ? yearsOf(b) : null
     if (!b || !years || year < years[0] || year > years[1] || b.year === year) continue
     out.push({ ...asset, data: { ...map, borders: { ...b, year } } } as WBAsset)
   }

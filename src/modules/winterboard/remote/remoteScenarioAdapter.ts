@@ -35,7 +35,7 @@ import { canMinimize, canShowTray, minimizedAsset, restoredAsset, type TrayViewe
 import { isMinimizableAsset, isMinimizedOnBoard } from '../board/objectStandard'
 import { linkedEvidenceUpdate, linkedHistoricalMapUpdates } from '../board/evidenceLinkage'
 import { isTimelinePlaying, setTimelinePlaying } from '../board/timelinePlayback'
-import { BORDER_DATASETS, clampYear, datasetYears, loadBorders, mapBordersOf, snapshotYears, stepYear } from '../board/historicalBorders'
+import { BORDER_DATASETS, bordersYears, clampYear, loadBordersFor, mapBordersOf, snapshotYears, stepYear } from '../board/historicalBorders'
 import {
   changeVideoVolume, pauseVideo, playVideo, videoTime, ytPlayErrors, ytPlayStates, ytTimeMarks, ytVolumes,
 } from '../board/youtubeRemoteControl'
@@ -353,7 +353,7 @@ export function createRemoteScenarioAdapter(deps: RemoteScenarioDeps) {
       if (linked) deps.updateAsset(linked)
     }
     // v1.79: рік історичної карти сторінки — за подією (той самий запис, що з кнопок картки)
-    for (const map of linkedHistoricalMapUpdates([...(deps.pages()[deps.currentPageIndex()]?.assets ?? [])], next, datasetYears)) {
+    for (const map of linkedHistoricalMapUpdates([...(deps.pages()[deps.currentPageIndex()]?.assets ?? [])], next, bordersYears)) {
       deps.updateAsset(map)
     }
   }
@@ -387,7 +387,7 @@ export function createRemoteScenarioAdapter(deps: RemoteScenarioDeps) {
     const asset = editableMap(id)
     const b = asset && mapBordersOf(asset)
     if (!b) return
-    void loadBorders(b.dataset, b.version).then((data) => {
+    void loadBordersFor(b).then((data) => {
       const now = data && editableMap(id)
       const cur = now && mapBordersOf(now)
       if (!data || !now || !cur || cur.dataset !== b.dataset || cur.version !== b.version) return

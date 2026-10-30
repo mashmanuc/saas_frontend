@@ -30,7 +30,7 @@ import type { DictationAction } from '../../board/dictationLine'
 import { topmostForeignOverlayAssetId } from '../../utils/overlayTopHit'
 import { detectCardPreset } from '../../utils/detectCardPreset'
 import { linkedEvidenceUpdate, linkedHistoricalMapUpdates, timelineMapPins } from '../../board/evidenceLinkage'
-import { datasetYears } from '../../board/historicalBorders'
+import { bordersYears } from '../../board/historicalBorders'
 import {
   OVERLAY_RENDERERS,
   isOverlayType,
@@ -200,7 +200,7 @@ const ctx = computed<OverlayCtx>(() => ({
     const before = props.assets.find((a) => a.id === asset.id)
     const was = (before?.data as { active_event_id?: unknown } | undefined)?.active_event_id
     if (was === (asset.data as { active_event_id?: unknown } | undefined)?.active_event_id) return
-    for (const map of linkedHistoricalMapUpdates(props.assets, asset, datasetYears)) emit('asset-update', map)
+    for (const map of linkedHistoricalMapUpdates(props.assets, asset, bordersYears)) emit('asset-update', map)
   },
   // v1.79: події шкал сторінки з місцем — номери на історичній карті
   timelinePins: timelineMapPins(props.assets),

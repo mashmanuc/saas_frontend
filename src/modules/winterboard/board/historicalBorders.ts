@@ -31,6 +31,8 @@ export interface BorderState {
 }
 
 export interface BordersDataset {
+  /** Світовий набір: держави, чий підпис — великими літерами (найбільші в кадрі); інакше — BIG_ENTITIES. */
+  big?: string[]
   meta: {
     dataset: string
     version: string
@@ -57,6 +59,11 @@ interface DatasetEntry {
 }
 
 export const CLIOPATRIA_EAST_EUROPE = 'cliopatria-east-europe-1648-1687'
+/** Світовий набір (власник 30.10: «універсальність, а не прив'язка до цієї теми»): уся Cliopatria від року 0,
+ *  статичні шматки `public/maps/borders/<версія>/` (збирач `scripts/borders/build_cliopatria_world.py`). Регіон і
+ *  роки — у `borders` картки (з подій шкали при вставці). */
+export const CLIOPATRIA_WORLD = 'cliopatria-world'
+export const CLIOPATRIA_WORLD_VERSION = 'w1-83a876a6a2'
 
 /** Закріплені набори. Нова версія — новий файл і новий рядок; старий лишається для старих дошок. */
 export const BORDER_DATASETS: Readonly<Record<string, DatasetEntry>> = Object.freeze({
@@ -71,7 +78,126 @@ export const BORDER_DATASETS: Readonly<Record<string, DatasetEntry>> = Object.fr
     load: () => import('./data/borders_cliopatria_east_europe_1648_1687.json'),
     years: [1648, 1687],
   },
+  [CLIOPATRIA_WORLD]: {
+    version: CLIOPATRIA_WORLD_VERSION,
+    basemap: 'world',
+    title: { uk: 'Історична карта', en: 'Historical map' },
+    note: {
+      uk: 'Межі держав схематичні. Не всі держави є в наборі: Гетьманщини немає — карта її не домальовує.',
+      en: 'Borders are schematic. Not every state is in the dataset: the Cossack Hetmanate is missing.',
+    },
+    // Світовий набір не вантажиться цілим — лише шматки регіону й років (`loadBordersFor`)
+    load: () => Promise.resolve(null),
+    years: [0, 2024],
+  },
 })
+
+/** Назва держави в Cliopatria → наша сутність (палітра дизайнера, короткі назви) для 11 держав макета. */
+const KNOWN_ENTITIES: Readonly<Record<string, string>> = Object.freeze({
+  'Polish-Lithuanian Commonwealth': 'commonwealth', 'Tsardom of Russia': 'muscovy', 'Ottoman Empire': 'ottoman',
+  'Crimean Khanate': 'crimea', 'Zaporozhian Cossacks': 'zaporozhian_cossacks', 'Principality of Moldavia': 'moldavia',
+  'Principality of Wallachia': 'wallachia', 'Principality of Transylvania': 'transylvania',
+  'Habsburg Monarchy': 'habsburg', 'Swedish Empire': 'sweden', 'Brandenburg-Prussia': 'brandenburg_prussia',
+})
+
+/** Укр. назви 11 держав макета — коли у Вікіданих укр. назви немає (замір 30.10: «Habsburg Monarchy»). */
+const KNOWN_UK: Readonly<Record<string, string>> = Object.freeze({
+  commonwealth: 'Річ Посполита', muscovy: 'Московське царство', ottoman: 'Османська імперія', crimea: 'Кримське ханство',
+  zaporozhian_cossacks: 'Запорозькі козаки', moldavia: 'Молдавське князівство', wallachia: 'Валахія',
+  transylvania: 'Трансильванія', habsburg: 'Габсбурзька монархія', sweden: 'Шведська імперія',
+  brandenburg_prussia: 'Бранденбург-Пруссія',
+})
+
+interface WorldIndexState {
+  id: string; en: string; uk: string; wd: string; from: number; to: number
+  bbox: [number, number, number, number]; label: Position | null; pack: string
+}
+interface WorldIndex { meta: { version: string; source: BordersDataset['meta']['source'] & { sha256?: string } }; states: WorldIndexState[] }
+
+const worldIndex = new Map<string, Promise<WorldIndex | null>>()
+const worldPacks = new Map<string, Promise<Record<string, Position[][][]> | null>>()
+
+function fetchJson<T>(url: string): Promise<T | null> {
+  return fetch(url).then((r) => (r.ok ? r.json() as Promise<T> : null)).catch((err) => {
+    console.warn('[WB:borders] не завантажилось', url, err instanceof Error ? err.name : 'fetch_failed')
+    return null
+  })
+}
+
+function cached<T>(map: Map<string, Promise<T | null>>, key: string, load: () => Promise<T | null>): Promise<T | null> {
+  let p = map.get(key)
+  if (!p) {
+    p = load().then((v) => { if (v === null) map.delete(key); return v })
+    map.set(key, p)
+  }
+  return p
+}
+
+const overlaps = (b: number[], r: number[]) => !(b[2] < r[0] || b[0] > r[2] || b[3] < r[1] || b[1] > r[3])
+
+/**
+ * Світовий набір під тему: з покажчика — держави, що перетинають регіон у роки теми; з шматків — лише їхня геометрія.
+ * Роки змін — з `from` держав у межах років теми. «Великі» підписи — держави, що займають ≥ 12 % регіону.
+ */
+async function loadWorld(b: MapBorders): Promise<BordersDataset | null> {
+  const region = b.region
+  const years = b.years
+  if (!region || !years) return null
+  const base = `/maps/borders/${b.version}`
+  const index = await cached(worldIndex, b.version, () => fetchJson<WorldIndex>(`${base}/index.json`))
+  if (!index || index.meta?.version !== b.version) return null
+  const picked = index.states.filter((s) => s.to >= years[0] && s.from <= years[1] && overlaps(s.bbox, region))
+  const packs = await Promise.all([...new Set(picked.map((s) => s.pack))].map((p) =>
+    cached(worldPacks, `${b.version}/${p}`, () => fetchJson<Record<string, Position[][][]>>(`${base}/p/${p}.json`))
+      .then((body) => [p, body] as const)))
+  const geo = new Map(packs)
+  if (packs.some(([, body]) => !body)) return null
+  const states: BorderState[] = picked.map((s) => {
+    const entity = KNOWN_ENTITIES[s.en] ?? (s.wd ? `wd:${s.wd}` : `en:${s.en}`)
+    return { id: s.id, entity, name_uk: s.uk || KNOWN_UK[entity] || s.en, name_en: s.en, from: s.from, to: s.to, label: s.label,
+      wikidata: s.wd || null, polygons: geo.get(s.pack)?.[s.id] ?? [] }
+  }).filter((s) => s.polygons.length)
+  const regionArea = Math.max(1e-6, (region[2] - region[0]) * (region[3] - region[1]))
+  const big = [...new Set(picked.filter((s) => {
+    const w = Math.min(s.bbox[2], region[2]) - Math.max(s.bbox[0], region[0])
+    const h = Math.min(s.bbox[3], region[3]) - Math.max(s.bbox[1], region[1])
+    return w > 0 && h > 0 && (w * h) / regionArea >= 0.12
+  }).map((s) => KNOWN_ENTITIES[s.en] ?? (s.wd ? `wd:${s.wd}` : `en:${s.en}`)))]
+  const change = [...new Set(states.map((s) => Math.max(s.from, years[0])).filter((y) => y <= years[1]))].sort((a, z) => a - z)
+  if (!change.length || change[0] !== years[0]) change.unshift(years[0])
+  return {
+    big,
+    meta: {
+      dataset: CLIOPATRIA_WORLD, version: b.version, region, years, change_years: change,
+      source: { title: index.meta.source.title, url: index.meta.source.url, license: index.meta.source.license,
+        license_url: index.meta.source.license_url },
+      changes_by_m4sh: 'роки від 0; без об\'єднань у дужках; спрощено 0,02°; укр. назви — з Вікіданих',
+      years_inclusive: true, verified_by_historian: false,
+    },
+    states,
+  }
+}
+
+const worldCache = new Map<string, Promise<BordersDataset | null>>()
+
+/** Набір меж для карти: «Східна Європа 1648–1687» — файлом версії; світовий — шматками регіону й років. */
+export function loadBordersFor(b: MapBorders | null | undefined): Promise<BordersDataset | null> {
+  if (!b) return Promise.resolve(null)
+  if (b.dataset !== CLIOPATRIA_WORLD) return loadBorders(b.dataset, b.version)
+  if (b.version !== CLIOPATRIA_WORLD_VERSION) return Promise.resolve(null)
+  return cached(worldCache, `${b.version}|${(b.region ?? []).join(',')}|${(b.years ?? []).join(',')}`, () => loadWorld(b))
+}
+
+/** Підпис держави великими літерами: у світовому наборі — найбільші в регіоні, у «Східній Європі» — три імперії. */
+export function isBigEntity(data: BordersDataset | null | undefined, entity: string): boolean {
+  return data?.big ? data.big.includes(entity) : BIG_ENTITIES.has(entity)
+}
+
+/** Роки, у межах яких карта йде за подіями шкали: світовий набір — роки теми, інакше — роки файла набору. */
+export function bordersYears(b: MapBorders): readonly [number, number] | null {
+  if (b.dataset === CLIOPATRIA_WORLD) return b.years && b.version === CLIOPATRIA_WORLD_VERSION ? b.years : null
+  return datasetYears(b.dataset, b.version)
+}
 
 /** Роки набору рівно цієї версії або null (невідомий набір чи інша версія). */
 export function datasetYears(dataset: string, version: string): readonly [number, number] | null {
@@ -107,7 +233,9 @@ export function mapBordersOf(asset: { type?: string | null; data?: unknown }): M
   if (asset.type !== 'map_card') return null
   const b = (asset.data as { borders?: Partial<MapBorders> } | null | undefined)?.borders
   if (!b || typeof b.dataset !== 'string' || typeof b.version !== 'string' || !Number.isInteger(b.year)) return null
-  return { dataset: b.dataset, version: b.version, year: b.year as number }
+  const region = Array.isArray(b.region) && b.region.length === 4 && b.region.every(Number.isFinite) ? b.region : undefined
+  const years = Array.isArray(b.years) && b.years.length === 2 && b.years.every(Number.isInteger) ? b.years : undefined
+  return { dataset: b.dataset, version: b.version, year: b.year as number, ...(region ? { region } : {}), ...(years ? { years } : {}) }
 }
 
 export function statesAt(data: BordersDataset, year: number): BorderState[] {

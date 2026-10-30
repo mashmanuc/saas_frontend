@@ -37,6 +37,7 @@ vi.mock('../board/mapEngine', () => {
     getLayer(id: string) { return this.layers[id] }
     setPaintProperty(id: string, k: string, v: any) { this.paint[`${id}.${k}`] = v }
     setLayoutProperty() {}
+    setFilter(id: string, f: any) { this.paint[`${id}.filter`] = f }
     cameraForBounds() { return { center: [30, 50], zoom: 4 } }
     jumpTo() {}
     easeTo() {}
@@ -74,7 +75,8 @@ import MapCardRenderer from '../components/board/objects/MapCardRenderer.vue'
 import type { WBAsset } from '../types/winterboard'
 import { sanitizeEvents, sanitizePeople, sanitizePlace } from '../../intent/boardActions'
 import { linkedHistoricalMapUpdates, timelineMapPins } from '../board/evidenceLinkage'
-import { datasetYears } from '../board/historicalBorders'
+import { bordersYears, CLIOPATRIA_WORLD, CLIOPATRIA_WORLD_VERSION, loadBordersFor } from '../board/historicalBorders'
+import { buildHistoricalMapAsset, mainPlaces, topicRegion } from '../constants/evidenceCardDefaults'
 import { createRemoteScenarioAdapter } from '../remote/remoteScenarioAdapter'
 
 const VERSION = BORDER_DATASETS[CLIOPATRIA_EAST_EUROPE].version
@@ -245,12 +247,12 @@ describe('INV-HGL-7 · номери подій і рік карти за шка�
 
   it('відкрита подія в роках набору — рік карти стає її роком; поза набором чи той самий рік — нічого', () => {
     const map = historicalMap(1659)
-    const [moved] = linkedHistoricalMapUpdates([map, timeline('e2')], timeline('e2'), datasetYears)
+    const [moved] = linkedHistoricalMapUpdates([map, timeline('e2')], timeline('e2'), bordersYears)
     expect((moved.data as any).borders.year).toBe(1648)
-    expect(linkedHistoricalMapUpdates([map], timeline('e4'), datasetYears)).toEqual([])
-    expect(linkedHistoricalMapUpdates([historicalMap(1648)], timeline('e1'), datasetYears)).toEqual([])
+    expect(linkedHistoricalMapUpdates([map], timeline('e4'), bordersYears)).toEqual([])
+    expect(linkedHistoricalMapUpdates([historicalMap(1648)], timeline('e1'), bordersYears)).toEqual([])
     const other = { ...map, data: { ...(map.data as object), borders: { dataset: CLIOPATRIA_EAST_EUROPE, version: 'v0', year: 1659 } } } as WBAsset
-    expect(linkedHistoricalMapUpdates([other], timeline('e2'), datasetYears)).toEqual([])
+    expect(linkedHistoricalMapUpdates([other], timeline('e2'), bordersYears)).toEqual([])
   })
 
   it('пульт: крок шкали — і рік карти тим самим записом', () => {
@@ -379,6 +381,80 @@ describe('INV-HGL-10 · персонажі: основний одразу, ін�
     const w = await mountCard(historicalMap(1648), { events: timelineMapPins([timeline('e1')]) })
     expect(engine.markers).toHaveLength(0)
     expect(w.find('[data-testid=map-gl-people]').exists()).toBe(false)
+    w.unmount()
+  })
+})
+
+// ── Світова карта: будь-яка тема (власник 30.10: «універсальність, а не прив'язка до цієї теми») ──────────────
+describe('INV-HGL-11 · світова карта під тему шкали', () => {
+  it('регіон — з місць подій із запасом, не менше 14° × 9°; роки — з подій', () => {
+    const r = topicRegion([{ lat: 48.35, lon: 33.5 }, { lat: 50.35, lon: 25.1 }])
+    expect(r[0]).toBeLessThan(25.1)
+    expect(r[2]).toBeGreaterThan(33.5)
+    expect(r[2] - r[0]).toBeGreaterThanOrEqual(14)
+    expect(r[3] - r[1]).toBeGreaterThanOrEqual(9)
+    const one = topicRegion([{ lat: 40.7, lon: -74 }])
+    expect(one[2] - one[0]).toBeCloseTo(14, 0)
+  })
+
+  it('далекі поодинокі місця регіону не розтягують (війна 1812 — центр Росії; Тихий океан у Другій світовій)', () => {
+    const napoleon = [{ lon: 2.4, lat: 48.9 }, { lon: 8.7, lat: 44.9 }, { lon: 16.8, lat: 49.1 }, { lon: -4.2, lat: 40.2 },
+      { lon: 12.4, lat: 51.3 }, { lon: 70.1, lat: 58.6 }]
+    expect(mainPlaces(napoleon)).toHaveLength(5)
+    expect(topicRegion(napoleon)[2]).toBeLessThan(30)
+    const ww2 = [{ lon: 19, lat: 52 }, { lon: 27, lat: 65 }, { lon: 6.1, lat: 49.8 }, { lon: -2, lat: 54 }, { lon: 26, lat: 59 },
+      { lon: -157.9, lat: 21.4 }, { lon: -178, lat: 30 }, { lon: 44.5, lat: 48.7 }, { lon: -0.6, lat: 49.3 }, { lon: 13.4, lat: 52.5 },
+      { lon: 132.5, lat: 34.4 }]
+    const kept = mainPlaces(ww2)
+    expect(kept.some((p) => p.lon === 44.5)).toBe(true)          // Сталінград — у кадрі
+    expect(kept.some((p) => p.lon < -150 || p.lon > 100)).toBe(false)
+  })
+
+  it('вставка: є шкала з місцями — світовий набір, регіон і роки теми, назва шкали; немає — «Східна Європа»', () => {
+    const world = buildHistoricalMapAsset({ x: 0, y: 0 }, 'uk', undefined,
+      { title: 'Наполеонівські війни', places: [{ lat: 48.2, lon: 16.4 }, { lat: 55.7, lon: 37.6 }], years: [1799, 1815] })
+    const b = (world.data as any).borders
+    expect(b).toMatchObject({ dataset: CLIOPATRIA_WORLD, version: CLIOPATRIA_WORLD_VERSION, year: 1799, years: [1799, 1815] })
+    expect(b.region).toHaveLength(4)
+    expect((world.data as any).title).toBe('Наполеонівські війни')
+    const plain = buildHistoricalMapAsset({ x: 0, y: 0 }, 'uk')
+    expect((plain.data as any).borders).toEqual({ dataset: CLIOPATRIA_EAST_EUROPE, version: VERSION, year: 1648 })
+    expect(JSON.stringify(world.data)).not.toMatch(/polygons|coordinates/)
+  })
+
+  it('завантаження — лише держави регіону й років і лише їхні шматки; «великі» — за площею в регіоні', async () => {
+    const index = { meta: { version: CLIOPATRIA_WORLD_VERSION, source: { title: 'Cliopatria', url: 'u', license: 'CC BY 4.0', license_url: 'l' } },
+      states: [
+        { id: 's1', en: 'Ottoman Empire', uk: 'Османська імперія', wd: 'Q12560', from: 1600, to: 1700, bbox: [20, 30, 45, 48], label: [35, 40], pack: 'a' },
+        { id: 's2', en: 'Kingdom of France', uk: 'Франція', wd: 'Q70972', from: 1600, to: 1700, bbox: [-5, 42, 8, 51], label: [2, 47], pack: 'b' },
+        { id: 's3', en: 'Inca Empire', uk: 'Інки', wd: 'Q28573', from: 1438, to: 1533, bbox: [-80, -30, -60, 0], label: null, pack: 'c' },
+      ] }
+    const asked: string[] = []
+    const fetchMock = vi.fn(async (url: string) => {
+      asked.push(url)
+      const body = url.endsWith('index.json') ? index
+        : url.endsWith('/a.json') ? { s1: [[[[20, 30], [45, 30], [45, 48], [20, 30]]]] }
+          : url.endsWith('/b.json') ? { s2: [[[[-5, 42], [8, 42], [8, 51], [-5, 42]]]] } : {}
+      return { ok: true, json: async () => body }
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const data = await loadBordersFor({ dataset: CLIOPATRIA_WORLD, version: CLIOPATRIA_WORLD_VERSION, year: 1650,
+      region: [15, 35, 40, 55], years: [1648, 1687] })
+    vi.unstubAllGlobals()
+    expect(data!.states.map((s) => [s.entity, s.name_uk])).toEqual([['ottoman', 'Османська імперія']])
+    expect(asked.some((u) => u.endsWith('/b.json') || u.endsWith('/c.json'))).toBe(false)
+    expect(data!.big).toEqual(['ottoman'])
+    expect(data!.meta.change_years).toEqual([1648])
+    expect(bordersYears({ dataset: CLIOPATRIA_WORLD, version: CLIOPATRIA_WORLD_VERSION, year: 1650, years: [1648, 1687] })).toEqual([1648, 1687])
+  })
+
+  it('обʼємна карта («Східна Європа»): міста — лише з року заснування', async () => {
+    const w = await mountCard(historicalMap(1648))
+    const map = engine.maps[0]
+    expect(map.layers.cities.filter).toEqual(['<=', ['get', 'from'], 1648])
+    await w.setProps({ asset: historicalMap(1653) })
+    await nextTick()
+    expect(map.paint['cities.filter']).toEqual(['<=', ['get', 'from'], 1653])
     w.unmount()
   })
 })

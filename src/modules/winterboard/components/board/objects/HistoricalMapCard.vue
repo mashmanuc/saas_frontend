@@ -137,7 +137,8 @@ import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import type { MapCardData, WBAsset } from '../../../types/winterboard'
 import { basemapAspect, basemapSpec, landPaths, polygonsPath, project } from '../../../board/basemaps'
 import {
-  BIG_ENTITIES, BORDER_DATASETS, ENTITY_SHORT_UK, bordersDiff, changeYears, clampYear, entityColor, loadBorders,
+  BORDER_DATASETS, CLIOPATRIA_WORLD, ENTITY_SHORT_UK, bordersDiff, changeYears, clampYear, entityColor, isBigEntity,
+  loadBordersFor,
   snapshotYears, statesAt, stepYear, type BordersDataset,
 } from '../../../board/historicalBorders'
 import { HISTORICAL_MAP_LABELS } from '../../../board/timelinePresentation'
@@ -165,7 +166,13 @@ const entry = computed(() => BORDER_DATASETS[data.value.borders?.dataset ?? ''])
 const title = computed(() => data.value.title || entry.value?.title[lang.value] || '')
 const note = computed(() => entry.value?.note[lang.value] ?? '')
 
-const spec = computed(() => basemapSpec(data.value.basemap))
+// Світова карта — регіон теми з `borders.region`; «Східна Європа» — закріплена основа
+const spec = computed(() => {
+  const b = data.value.borders
+  if (b?.dataset !== CLIOPATRIA_WORLD || !b.region) return basemapSpec(data.value.basemap)
+  const span = Math.max(b.region[2] - b.region[0], b.region[3] - b.region[1])
+  return { id: 'world' as const, bounds: b.region, grid: span > 40 ? 10 : 5 }
+})
 const VBH = computed(() => Math.round(VB * basemapAspect(spec.value)))
 const land = computed(() => landPaths(spec.value, VB, VBH.value))
 const gridLines = computed(() => {
@@ -188,11 +195,16 @@ const dataset = shallowRef<BordersDataset | null>(null)
 const missing = ref(false)
 // Два джерела, а не масив з одного: інакше кожен новий рік (новий asset) перезапускав би набір — карта на мить
 // порожня, усі держави проявлялися б наново, а «по черзі» скидалося
-watch([() => data.value.borders?.dataset, () => data.value.borders?.version], ([id, version]) => {
+// Ключ набору — набір, версія, регіон і роки (світова карта); новий рік його не міняє — карта не перезавантажується
+const bordersKey = computed(() => {
+  const b = data.value.borders
+  return b ? [b.dataset, b.version, (b.region ?? []).join(','), (b.years ?? []).join(',')].join('|') : ''
+})
+watch(bordersKey, (key) => {
   dataset.value = null
   missing.value = false
-  void loadBorders(id, version).then((loaded) => {
-    if (data.value.borders?.dataset !== id || data.value.borders?.version !== version) return
+  void loadBordersFor(data.value.borders).then((loaded) => {
+    if (bordersKey.value !== key) return
     dataset.value = loaded
     missing.value = !loaded
     emit('borders-ready')
@@ -243,13 +255,13 @@ const labels = computed(() => {
   const placed: Array<{ x1: number; x2: number; y1: number; y2: number }> = []
   const items = current.value
     .filter(({ s }) => s.label)
-    .map(({ s, size }) => ({ s, pr: (BIG_ENTITIES.has(s.entity) ? 1e6 : 0) + size }))
+    .map(({ s, size }) => ({ s, pr: (isBigEntity(dataset.value, s.entity) ? 1e6 : 0) + size }))
     .sort((a, b) => b.pr - a.pr)
   const out: Array<{ id: string; text: string; x: number; y: number; fs: number; big: boolean }> = []
   for (const { s } of items) {
     const p = project(s.label![1], s.label![0], spec.value)
     if (!p) continue
-    const big = BIG_ENTITIES.has(s.entity)
+    const big = isBigEntity(dataset.value, s.entity)
     const size = big ? fs * 1.08 : fs
     const text = nameOf(s.entity, s.name_uk, s.name_en, !props.isExpanded)
     const w = text.length * size * (big ? 0.78 : 0.6)
@@ -382,7 +394,7 @@ onBeforeUnmount(() => {
   if (flashTimer) clearTimeout(flashTimer)
 })
 
-defineExpose({ ready: () => loadBorders(data.value.borders?.dataset, data.value.borders?.version) })
+defineExpose({ ready: () => loadBordersFor(data.value.borders) })
 </script>
 
 <style scoped>

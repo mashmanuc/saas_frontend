@@ -32,8 +32,8 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import type { BordersDataset } from '../../../board/historicalBorders'
-import { BIG_ENTITIES, ENTITY_SHORT_UK, entityColor, statesAt } from '../../../board/historicalBorders'
-import { loadPhysicalBasemap, type PhysicalBasemap } from '../../../board/historicalBasemap'
+import { CLIOPATRIA_WORLD, ENTITY_SHORT_UK, entityColor, isBigEntity, statesAt } from '../../../board/historicalBorders'
+import { loadPhysicalBasemap, loadPhysicalFor, type PhysicalBasemap } from '../../../board/historicalBasemap'
 import { webglSupported } from '../../../board/webglSupport'
 import type { BasemapId } from '../../../board/basemaps'
 import type { MapEventPin } from '../../../board/evidenceLinkage'
@@ -103,7 +103,7 @@ const poly = (polygons: Pt[][][], properties: Record<string, unknown> = {}) =>
 function stateName(entity: string, uk: string, en: string): string {
   if (props.lang === 'en') return en
   const name = props.expanded ? uk : ENTITY_SHORT_UK[entity] ?? uk
-  return BIG_ENTITIES.has(entity) ? name.toLocaleUpperCase('uk') : name
+  return isBigEntity(props.dataset, entity) ? name.toLocaleUpperCase('uk') : name
 }
 
 function statesData(year: number) {
@@ -113,7 +113,7 @@ function statesData(year: number) {
 function labelsData(year: number) {
   return fc(statesAt(props.dataset, year).filter((s) => s.label).map((s) => ({
     type: 'Feature',
-    properties: { text: stateName(s.entity, s.name_uk, s.name_en), big: BIG_ENTITIES.has(s.entity) ? 1 : 0 },
+    properties: { text: stateName(s.entity, s.name_uk, s.name_en), big: isBigEntity(props.dataset, s.entity) ? 1 : 0 },
     geometry: { type: 'Point', coordinates: s.label },
   })))
 }
@@ -131,6 +131,10 @@ function hatchImage(): { width: number; height: number; data: Uint8ClampedArray 
   for (const o of [-12, 0, 12]) { g.beginPath(); g.moveTo(o, 12); g.lineTo(o + 12, 0); g.stroke() }
   return { width: 12, height: 12, data: g.getImageData(0, 0, 12, 12).data }
 }
+
+const isWorld = () => props.dataset.meta.dataset === CLIOPATRIA_WORLD
+/** Місто — лише з року заснування (світова основа: Одеса не з'явиться на карті 1648 р.). */
+const cityFilter = (year: number) => ['<=', ['get', 'from'], year]
 
 /** Крапка міста: темна з білою облямівкою (24 px, щільність 2 — 12 px на екрані при розмірі 1). */
 function dotImage(): { width: number; height: number; data: Uint8ClampedArray } | null {
@@ -191,7 +195,7 @@ function addLayers(): void {
       geometry: { type: 'MultiLineString', coordinates: r.lines },
     }))) })
     map.addSource('cities', { type: 'geojson', data: fc(P.cities.map((c) => ({
-      type: 'Feature', properties: { name: props.lang === 'en' ? c.name_en : c.name_uk, major: c.major ? 1 : 0 },
+      type: 'Feature', properties: { name: props.lang === 'en' ? c.name_en : c.name_uk, major: c.major ? 1 : 0, from: c.from ?? -100000 },
       geometry: { type: 'Point', coordinates: [c.lon, c.lat] },
     }))) })
     map.addSource('seas', { type: 'geojson', data: fc(P.seas.map((s) => ({
@@ -199,7 +203,8 @@ function addLayers(): void {
       geometry: { type: 'Point', coordinates: [s.lon, s.lat] },
     }))) })
     map.addLayer({ id: 'land', type: 'fill', source: 'land', paint: hatch ? { 'fill-pattern': 'nd-hatch' } : { 'fill-color': '#efe9da' } })
-    map.addLayer({ id: 'coast', type: 'line', source: 'land', paint: { 'line-color': '#cbbf9f', 'line-width': 0.8 } })
+    // Світова основа — шматки 30°, обрізані по краях клітинок: обвідка суші дала б шви, тож лише в «Східній Європі»
+    if (!isWorld()) map.addLayer({ id: 'coast', type: 'line', source: 'land', paint: { 'line-color': '#cbbf9f', 'line-width': 0.8 } })
   }
   // Межі — два шари по черзі: старі гаснуть, нові проявляються (макет: 0,7 с)
   for (const i of [0, 1]) {
@@ -245,12 +250,14 @@ function addLayers(): void {
       paint: { 'text-color': '#5f8fa3' },
     })
   }
-  if (P) {
+  // Світова основа: міст не показуємо — назви сучасні («Осло» на карті 1799 р. замість Християнії, «Дніпро» замість
+  // Катеринослава); у «Східній Європі» — підібрані назви того часу (Вільно, Берестя)
+  if (P && !isWorld()) {
     // Місто — крапка й назва разом: немає місця для назви — немає й крапки (без «німих» крапок)
     const dot = dotImage()
     if (dot) map.addImage('city-dot', dot, { pixelRatio: 2 })
     map.addLayer({
-      id: 'cities', type: 'symbol', source: 'cities',
+      id: 'cities', type: 'symbol', source: 'cities', filter: cityFilter(props.year),
       layout: {
         'icon-image': 'city-dot', 'icon-size': ICON(textK),
         'text-field': ['get', 'name'], 'text-font': FONT, 'text-anchor': 'left', 'text-offset': [0.6, 0], 'text-padding': 3,
@@ -461,7 +468,8 @@ function teardown(): void {
 onMounted(async () => {
   if (!webglSupported()) { emit('fail'); return }
   try {
-    const [mod, base] = await Promise.all([import('../../../board/mapEngine'), loadPhysicalBasemap(props.basemap)])
+    const physical$ = isWorld() ? loadPhysicalFor(props.dataset.meta.region) : loadPhysicalBasemap(props.basemap)
+    const [mod, base] = await Promise.all([import('../../../board/mapEngine'), physical$])
     if (destroyed || !host.value) return
     engine.value = mod.default
     physical = base
@@ -518,7 +526,11 @@ onMounted(async () => {
 
 onBeforeUnmount(() => { destroyed = true; teardown() })
 
-watch(() => props.year, (y, old) => { if (map && ready.value) showYear(y, old !== undefined && y !== old) })
+watch(() => props.year, (y, old) => {
+  if (!map || !ready.value) return
+  showYear(y, old !== undefined && y !== old)
+  if (map.getLayer('cities')) map.setFilter('cities', cityFilter(y))
+})
 watch(() => props.textScale, () => applyTextScale())
 watch(() => props.pins, (now, before) => {
   if (!map || !ready.value) return

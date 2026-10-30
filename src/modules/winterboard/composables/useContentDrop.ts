@@ -1,7 +1,7 @@
 import { type Ref } from 'vue'
 import { learningContentApi, renderContentToSvgDataUrl } from '@/modules/learning-content'
 import type { ContentDragPayload } from '@/modules/learning-content'
-import type { WBAsset, SolidAsset, SolidType } from '../types/winterboard'
+import type { WBAsset, SolidAsset, SolidType, TimelineCardData } from '../types/winterboard'
 import {
   SIDEBAR_DRAG_MIME,
   CONTENT_DRAG_MIME,
@@ -24,6 +24,7 @@ import {
   MAP_CARD_DRAG_MIME,
   HISTORICAL_MAP_DRAG_MIME,
   buildHistoricalMapAsset,
+  type HistoricalMapTopic,
   TIMELINE_CARD_DRAG_MIME,
   buildBlankMapAsset,
   buildBlankTimelineAsset,
@@ -146,6 +147,21 @@ function _buildMediaProxyUrl(src: string): string | null {
     if (!_PROXY_HOSTS.includes(u.hostname)) return null
     return `${_apiBase}/v1/uploads/media-proxy/?url=${encodeURIComponent(src)}`
   } catch { return null }
+}
+
+/** Тема для історичної карти — перша шкала сторінки з місцями подій (назва, місця, роки подій). */
+function topicOfPage(assets: readonly WBAsset[]): HistoricalMapTopic | null {
+  for (const asset of assets) {
+    if (asset?.type !== 'timeline_card') continue
+    const data = asset.data as TimelineCardData | undefined
+    const events = Array.isArray(data?.events) ? data.events : []
+    const places = events.flatMap((e) => (e?.place && Number.isFinite(e.place.lat) && Number.isFinite(e.place.lon) ? [e.place] : []))
+    const years = events.map((e) => e?.date_start?.year).filter((y): y is number => Number.isInteger(y))
+    if (places.length && years.length) {
+      return { title: data?.title || '', places, years: [Math.min(...years), Math.max(...years)] }
+    }
+  }
+  return null
 }
 
 export function useContentDrop(options: UseContentDropOptions) {
@@ -1216,7 +1232,10 @@ export function useContentDrop(options: UseContentDropOptions) {
 
     if (mime === HISTORICAL_MAP_DRAG_MIME) {
       const localeValue = (i18n.global.locale as unknown as { value?: string })?.value
-      onAssetAdd(buildHistoricalMapAsset(pos, localeValue === 'en' ? 'en' : 'uk'))
+      // Власник 30.10 — універсальність: на сторінці є шкала теми з місцями подій — карта під її регіон і роки
+      const store = getActivePinia() ? useWBStore() : null
+      onAssetAdd(buildHistoricalMapAsset(pos, localeValue === 'en' ? 'en' : 'uk', undefined,
+        topicOfPage(store?.currentPage?.assets ?? [])))
       return
     }
 
