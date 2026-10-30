@@ -87,7 +87,7 @@ export const HISTORICAL_MAP_LABELS: Record<MaterialLanguage, {
   /** v1.78 — об'ємна карта: камера цього екрана */
   tilt: string; flat: string; overview: string; zoomIn: string; zoomOut: string
   /** v1.80 — персонажі й пояснення події */
-  people: string; participant: string; participantEvent: string; eventN: string; hideInfo: string
+  people: string; participant: string; participantEvent: string; eventN: string; hideInfo: string; showInfo: string
 }> = {
   uk: {
     bordersAt: 'Межі на', bordersAtFull: 'Межі держав на', onMap: 'На карті у {y} році',
@@ -103,7 +103,7 @@ export const HISTORICAL_MAP_LABELS: Record<MaterialLanguage, {
     attribution: 'Кордони: {source}, {license}; геометрію спрощено. Суша, річки, міста: Natural Earth',
     tilt: 'Обʼємно', flat: 'Згори', overview: 'Увесь регіон', zoomIn: 'Наблизити', zoomOut: 'Віддалити',
     people: 'Персонажі', participant: 'учасник', participantEvent: 'учасник події', eventN: 'подія {n}',
-    hideInfo: 'Сховати пояснення',
+    hideInfo: 'Згорнути пояснення', showInfo: 'Розгорнути пояснення',
   },
   en: {
     bordersAt: 'Borders in', bordersAtFull: 'State borders in', onMap: 'On the map in {y}',
@@ -119,7 +119,7 @@ export const HISTORICAL_MAP_LABELS: Record<MaterialLanguage, {
     attribution: 'Borders: {source}, {license}; geometry simplified. Land, rivers, cities: Natural Earth',
     tilt: '3D', flat: 'Top', overview: 'Whole region', zoomIn: 'Zoom in', zoomOut: 'Zoom out',
     people: 'People', participant: 'took part in', participantEvent: 'took part in the event', eventN: 'event {n}',
-    hideInfo: 'Hide the explanation',
+    hideInfo: 'Collapse the explanation', showInfo: 'Expand the explanation',
   },
 }
 

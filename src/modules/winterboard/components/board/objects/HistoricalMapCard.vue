@@ -62,12 +62,17 @@
             <text v-if="p.active" class="hmap__pin-lb" :x="p.x" :y="p.y + 34" text-anchor="middle">{{ p.label }}</text>
           </g>
         </svg>
-        <!-- v1.80: пояснення відкритої події шкали — текст із джерела; «✕» ховає до наступної події (цей екран) -->
-        <div v-if="infoPin" class="hmap__info" data-testid="map-card-event-info" @pointerdown.stop>
-          <button v-if="interactive" type="button" class="hmap__info-x" :aria-label="L.hideInfo" :title="L.hideInfo" @click.stop="infoHidden = infoPin.key">✕</button>
-          <small>{{ infoPin.year }} · {{ L.eventN.replace('{n}', String(infoPin.n)) }}</small>
-          <b>{{ infoPin.label }}</b>
-          <p>{{ infoPin.text }}</p>
+        <!-- v1.80: пояснення відкритої події шкали — текст із джерела. Власник 30.10: «треба, щоб згорталося… і
+             розгорталося. А не хрестик» — заголовок згортає й розгортає (цей екран; вибір тримається між подіями) -->
+        <div v-if="infoPin" class="hmap__info" :class="{ 'is-collapsed': infoCollapsed }" data-testid="map-card-event-info" @pointerdown.stop>
+          <button
+            type="button" class="hmap__info-hd" :aria-expanded="!infoCollapsed" :title="infoCollapsed ? L.showInfo : L.hideInfo"
+            data-testid="map-card-event-info-toggle" @click.stop="infoCollapsed = !infoCollapsed"
+          >
+            <span><small>{{ infoPin.year }} · {{ L.eventN.replace('{n}', String(infoPin.n)) }}</small><b>{{ infoPin.label }}</b></span>
+            <i aria-hidden="true">{{ infoCollapsed ? '▴' : '▾' }}</i>
+          </button>
+          <p v-if="!infoCollapsed">{{ infoPin.text }}</p>
         </div>
         <p class="hmap__attr" data-testid="map-card-borders-note">{{ attribution }}</p>
         <div v-if="tip" class="hmap__tip" :style="{ left: `${tip.x}px`, top: `${tip.y}px` }">
@@ -345,11 +350,11 @@ const pins = computed(() => {
   const ys = dataset.value?.meta.years
   return ys ? props.events.filter((p) => p.year >= ys[0] && p.year <= ys[1]) : []
 })
-/** v1.80: відкрита подія з поясненням — віконце на карті, доки вчитель його не сховав. */
-const infoHidden = ref<string | null>(null)
+/** v1.80: відкрита подія з поясненням — віконце на карті; згорнуте лишається згорнутим і для наступних подій. */
+const infoCollapsed = ref(false)
 const infoPin = computed(() => {
   const p = pins.value.find((x) => x.active)
-  return p && p.text && infoHidden.value !== p.key ? p : null
+  return p && p.text ? p : null
 })
 const svgPins = computed(() => pins.value.flatMap((p) => {
   const at = project(p.lat, p.lon, spec.value)
@@ -400,7 +405,8 @@ defineExpose({ ready: () => loadBorders(data.value.borders?.dataset, data.value.
 .hmap__title { flex: 1; min-width: 0; font-weight: 600; color: #1e3a5f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hmap__range { color: #5f8379; font-size: 0.93em; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .hmap__bd { flex: 1; min-height: 0; display: grid; grid-template-columns: 62.5% minmax(0, 1fr); }
-.hmap--full .hmap__bd { grid-template-columns: 66.5% minmax(0, 1fr); }
+/* Власник 30.10: «на весь екран… справа поле з датою дуже багато місця займає… Краще б карту показувати» */
+.hmap--full .hmap__bd { grid-template-columns: 76% minmax(0, 1fr); }
 .hmap__map { position: relative; overflow: hidden; background: #d3e5ee; border-right: 1px solid rgba(5, 150, 105, 0.16); pointer-events: auto; }
 .hmap.is-readonly .hmap__map, .hmap.is-readonly .hmap__side { pointer-events: none; }
 .hmap__svg { display: block; width: 100%; height: 100%; }
@@ -423,15 +429,20 @@ defineExpose({ ready: () => loadBorders(data.value.borders?.dataset, data.value.
   box-shadow: 0 2px 10px rgba(19, 38, 31, 0.18); padding: calc(8 * var(--u)) calc(12 * var(--u));
   font-size: calc(12 * var(--u) * var(--t)); line-height: 1.4; color: #13261f; pointer-events: auto; scrollbar-width: thin;
 }
-.hmap--full .hmap__info { width: min(44%, calc(560 * var(--u))); font-size: calc(20 * var(--u) * var(--t)); bottom: calc(44 * var(--u)); left: calc(16 * var(--u)); padding: calc(16 * var(--u)) calc(22 * var(--u)); }
-.hmap__info small { display: block; color: #8a2f1d; font-weight: 700; }
-.hmap__info b { display: block; font-size: 1.15em; margin: 0.15em 0 0.3em; padding-right: 1.4em; }
-.hmap__info p { margin: 0; color: #24332d; }
-.hmap__info-x {
-  position: absolute; top: calc(6 * var(--u)); right: calc(6 * var(--u)); border: 0; background: none; cursor: pointer;
-  color: #5f8379; font: inherit; font-size: 1em; line-height: 1; padding: 2px 4px;
+.hmap--full .hmap__info { width: min(44%, calc(620 * var(--u))); font-size: calc(20 * var(--u) * var(--t)); bottom: calc(44 * var(--u)); left: calc(16 * var(--u)); padding: calc(14 * var(--u)) calc(20 * var(--u)); }
+.hmap__info.is-collapsed { width: auto; max-width: min(52%, calc(300 * var(--u))); }
+.hmap--full .hmap__info.is-collapsed { max-width: min(44%, calc(620 * var(--u))); }
+.hmap__info-hd {
+  display: flex; align-items: flex-start; gap: 0.6em; width: 100%; border: 0; background: none; padding: 0; margin: 0;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
 }
-.hmap__info-x:hover { color: #13261f; }
+.hmap__info-hd span { flex: 1; min-width: 0; }
+.hmap__info-hd i { font-style: normal; font-size: 1.5em; line-height: 1; color: #047857; padding: 0 0.1em; }
+.hmap__info-hd:hover i { color: #13261f; }
+.hmap__info small { display: block; color: #8a2f1d; font-weight: 700; }
+.hmap__info b { display: block; font-size: 1.15em; margin-top: 0.15em; }
+.hmap__info.is-collapsed b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hmap__info p { margin: 0.4em 0 0; color: #24332d; }
 .hmap__pin circle { fill: #8a2f1d; stroke: #fff; stroke-width: 2.5; }
 .hmap__pin text { fill: #fff; font: 700 14px system-ui, -apple-system, "Segoe UI", sans-serif; pointer-events: none; }
 .hmap__pin.is-on circle { fill: #b23a22; }
@@ -454,27 +465,27 @@ defineExpose({ ready: () => loadBorders(data.value.borders?.dataset, data.value.
   padding: calc(14 * var(--u)) calc(16 * var(--u)) calc(12 * var(--u)); gap: calc(12 * var(--u));
   font-size: calc(13 * var(--u) * var(--t));
 }
-.hmap--full .hmap__side { padding: calc(44 * var(--u)) calc(48 * var(--u)) calc(36 * var(--u)); gap: calc(28 * var(--u)); font-size: calc(24 * var(--u) * var(--t)); }
+.hmap--full .hmap__side { padding: calc(28 * var(--u)) calc(28 * var(--u)) calc(24 * var(--u)); gap: calc(18 * var(--u)); font-size: calc(19 * var(--u) * var(--t)); }
 .hmap__yr { display: flex; align-items: flex-end; justify-content: space-between; gap: calc(8 * var(--u)); }
 .hmap__yr small { display: block; font-size: calc(12 * var(--u) * var(--t)); color: #5f8379; font-weight: 600; margin-bottom: calc(4 * var(--u)); }
-.hmap--full .hmap__yr small { font-size: calc(22 * var(--u) * var(--t)); margin-bottom: calc(12 * var(--u)); }
+.hmap--full .hmap__yr small { font-size: calc(18 * var(--u) * var(--t)); margin-bottom: calc(8 * var(--u)); }
 .hmap__n {
   font-size: calc(64 * var(--u) * var(--t)); font-weight: 800; letter-spacing: -0.04em; line-height: 0.85; font-variant-numeric: tabular-nums;
   animation: hmap-flip 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2);
 }
-.hmap--full .hmap__n { font-size: calc(200 * var(--u) * var(--t)); }
+.hmap--full .hmap__n { font-size: calc(96 * var(--u) * var(--t)); }
 @keyframes hmap-flip { from { opacity: 0; transform: translateY(8px); } }
 .hmap__arrows { display: flex; gap: calc(6 * var(--u)); flex: none; }
 .hmap__arrows button {
   width: calc(38 * var(--u)); height: calc(38 * var(--u)); border-radius: 50%; border: 1.5px solid rgba(5, 150, 105, 0.16);
   background: #fff; display: grid; place-items: center; font-size: calc(16 * var(--u)); color: #1f6b5a; cursor: pointer; padding: 0;
 }
-.hmap--full .hmap__arrows button { width: calc(72 * var(--u)); height: calc(72 * var(--u)); font-size: calc(30 * var(--u)); border-width: 2px; }
+.hmap--full .hmap__arrows button { width: calc(54 * var(--u)); height: calc(54 * var(--u)); font-size: calc(24 * var(--u)); border-width: 2px; }
 .hmap__arrows button:hover:not(:disabled) { border-color: #047857; color: #047857; }
 .hmap__arrows button:disabled { opacity: 0.35; cursor: default; }
 .hmap__chg { margin: 0; color: #1f6b5a; line-height: 1.35; }
 .hmap__scrub { position: relative; height: calc(34 * var(--u)); margin: 0 calc(14 * var(--u)); }
-.hmap--full .hmap__scrub { height: calc(52 * var(--u)); }
+.hmap--full .hmap__scrub { height: calc(44 * var(--u)); margin: 0 calc(10 * var(--u)); }
 .hmap__rail, .hmap__fill { position: absolute; left: 0; top: calc(13 * var(--u)); height: calc(4 * var(--u)); border-radius: 2px; }
 .hmap--full .hmap__rail, .hmap--full .hmap__fill { top: calc(18 * var(--u)); height: calc(6 * var(--u)); }
 .hmap__rail { right: 0; background: #e3ebe8; }
@@ -487,9 +498,9 @@ defineExpose({ ready: () => loadBorders(data.value.borders?.dataset, data.value.
   width: calc(18 * var(--u)); height: calc(18 * var(--u)); border-radius: 50%; background: #fff;
   border: calc(2.5 * var(--u)) solid #c9d6d1; transition: border-color 0.2s, transform 0.2s;
 }
-.hmap--full .hmap__scrub button i { width: calc(26 * var(--u)); height: calc(26 * var(--u)); border-width: calc(3.5 * var(--u)); }
+.hmap--full .hmap__scrub button i { width: calc(22 * var(--u)); height: calc(22 * var(--u)); border-width: calc(3 * var(--u)); }
 .hmap__scrub button span { font-size: calc(11 * var(--u) * var(--t)); font-weight: 700; color: #5f8379; font-variant-numeric: tabular-nums; }
-.hmap--full .hmap__scrub button span { font-size: calc(18 * var(--u) * var(--t)); }
+.hmap--full .hmap__scrub button span { font-size: calc(15 * var(--u) * var(--t)); }
 .hmap__scrub button.is-past i { border-color: #047857; }
 .hmap__scrub button.is-on i { background: #047857; border-color: #047857; transform: scale(1.15); }
 .hmap__scrub button.is-on span { color: #0d4a3e; }
@@ -498,7 +509,7 @@ defineExpose({ ready: () => loadBorders(data.value.borders?.dataset, data.value.
   padding: calc(8 * var(--u)) calc(14 * var(--u)); font: inherit; font-weight: 700; background: #e3f5ee; color: #047857;
   cursor: pointer; white-space: nowrap;
 }
-.hmap--full .hmap__play { font-size: calc(22 * var(--u) * var(--t)); padding: calc(18 * var(--u)) calc(28 * var(--u)); border-radius: calc(16 * var(--u)); }
+.hmap--full .hmap__play { font-size: calc(19 * var(--u) * var(--t)); padding: calc(12 * var(--u)) calc(20 * var(--u)); border-radius: calc(12 * var(--u)); }
 .hmap__play:hover:not(:disabled), .hmap__play.is-on { background: #047857; color: #fff; }
 .hmap__play i { font-style: normal; font-size: 0.85em; }
 .hmap__leg { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 1px; margin: 0 calc(-6 * var(--u)); scrollbar-width: thin; }
@@ -507,12 +518,12 @@ defineExpose({ ready: () => loadBorders(data.value.borders?.dataset, data.value.
   font-size: calc(11 * var(--u) * var(--t)); font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #5f8379;
   margin: 0 calc(6 * var(--u)) calc(4 * var(--u));
 }
-.hmap--full .hmap__leg h4 { font-size: calc(16 * var(--u) * var(--t)); margin-bottom: calc(8 * var(--u)); }
+.hmap--full .hmap__leg h4 { font-size: calc(14 * var(--u) * var(--t)); margin-bottom: calc(6 * var(--u)); }
 .hmap__it {
   display: flex; align-items: center; gap: calc(8 * var(--u)); padding: calc(4 * var(--u)) calc(6 * var(--u));
   border-radius: calc(7 * var(--u)); font: inherit; font-weight: 600; border: 0; background: none; text-align: left; width: 100%; color: inherit;
 }
-.hmap--full .hmap__it { gap: calc(14 * var(--u)); padding: calc(6 * var(--u)) calc(8 * var(--u)); }
+.hmap--full .hmap__it { gap: calc(10 * var(--u)); padding: calc(4 * var(--u)) calc(6 * var(--u)); }
 button.hmap__it { cursor: default; }
 button.hmap__it:hover { background: #f3f7f6; }
 .hmap__it.is-dim { color: #5f8379; font-weight: 500; }
@@ -521,10 +532,10 @@ button.hmap__it:hover { background: #f3f7f6; }
   font-style: normal; font-size: 0.8em; font-weight: 700; color: #b45309; background: #fef3c7; border-radius: 999px;
   padding: calc(1 * var(--u)) calc(7 * var(--u)); white-space: nowrap;
 }
-.hmap--full .hmap__it em { font-size: calc(15 * var(--u) * var(--t)); padding: calc(2 * var(--u)) calc(10 * var(--u)); }
+.hmap--full .hmap__it em { font-size: calc(13 * var(--u) * var(--t)); padding: calc(1 * var(--u)) calc(8 * var(--u)); }
 .hmap__it em.is-new { color: #1d4ed8; background: #dbeafe; }
 .hmap__sw { display: inline-block; width: calc(12 * var(--u)); height: calc(12 * var(--u)); border-radius: calc(3 * var(--u)); flex: 0 0 calc(12 * var(--u)); }
-.hmap--full .hmap__sw { width: calc(22 * var(--u)); height: calc(22 * var(--u)); flex-basis: calc(22 * var(--u)); border-radius: calc(5 * var(--u)); }
+.hmap--full .hmap__sw { width: calc(18 * var(--u)); height: calc(18 * var(--u)); flex-basis: calc(18 * var(--u)); border-radius: calc(4 * var(--u)); }
 .hmap__sw--nd { background: repeating-linear-gradient(135deg, #efe9da 0 3px, #d6ccb3 3px 4px); border: 1px solid #cfc4a9; }
 .hmap__sw--dp { background: repeating-linear-gradient(135deg, #e07a5f 0 3px, #f5c9bc 3px 6px); outline: 1.5px dashed #13261f; outline-offset: -1.5px; }
 .hmap__sep { height: 1px; background: rgba(5, 150, 105, 0.16); margin: calc(6 * var(--u)); }

@@ -334,14 +334,22 @@ describe('INV-HGL-8 · люди теми — при вставці переві�
 })
 
 describe('INV-HGL-9 · пояснення відкритої події на карті', () => {
-  it('текст відкритої події; «✕» ховає; інша подія — знову видно', async () => {
+  it('текст відкритої події; заголовок згортає й розгортає; згорнуте лишається згорнутим для наступної події', async () => {
     engine.supported = false
     const w = await mountCard(historicalMap(1648), { events: timelineMapPins([timelineWithPeople('e1')]) })
-    expect(w.find('[data-testid=map-card-event-info]').text()).toContain('Перша перемога козацького війська.')
-    await w.find('.hmap__info-x').trigger('click')
-    expect(w.find('[data-testid=map-card-event-info]').exists()).toBe(false)
+    const info = () => w.find('[data-testid=map-card-event-info]')
+    const toggle = () => w.find('[data-testid=map-card-event-info-toggle]')
+    expect(info().text()).toContain('Перша перемога козацького війська.')
+    await toggle().trigger('click')
+    expect(info().exists()).toBe(true)
+    expect(info().text()).toContain('Жовті Води')
+    expect(info().text()).not.toContain('Перша перемога')
+    expect(toggle().attributes('aria-expanded')).toBe('false')
     await w.setProps({ events: timelineMapPins([timelineWithPeople('e2')]) })
-    expect(w.find('[data-testid=map-card-event-info]').text()).toContain('Корсунь')
+    expect(info().text()).toContain('Корсунь')
+    expect(info().text()).not.toContain('Козацько-татарське')
+    await toggle().trigger('click')
+    expect(info().text()).toContain('Козацько-татарське військо розбило коронне.')
     w.unmount()
   })
 })
