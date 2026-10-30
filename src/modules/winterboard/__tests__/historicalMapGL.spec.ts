@@ -50,6 +50,7 @@ vi.mock('../board/mapEngine', () => {
     queryRenderedFeatures() { return [] }
     dragPan = { enable() {}, disable() {} }
     dragRotate = { enable() {}, disable() {} }
+    scrollZoom = { enable() {}, disable() {} }
     touchZoomRotate = { enable() {}, disable() {} }
     doubleClickZoom = { enable() {}, disable() {} }
     touchPitch = { enable() {}, disable() {} }
@@ -105,8 +106,23 @@ describe('INV-HGL-1 · є WebGL — об\'ємна карта на місці п
     const ds = (await loadBorders(CLIOPATRIA_EAST_EUROPE, VERSION))!
     const active = map.paint['st1-fill.fill-opacity'] ? 'st1' : 'st0'
     expect(map.sources[active].data.features).toHaveLength(statesAt(ds, 1648).length)
-    expect(map.opts.scrollZoom).toBe(false)
+    expect(map.opts.scrollZoom).toBe(true)   // власник 30.10: колесо над картою — наближення карти
     expect(map.opts.canvasContextAttributes.preserveDrawingBuffer).toBe(true)
+    w.unmount()
+  })
+})
+
+describe('INV-HGL-1b · колесо миші над картою', () => {
+  it('зі стрілкою — наближає карту й не доходить до дошки; з пером — дошці', async () => {
+    const board = vi.fn()
+    document.body.addEventListener('wheel', board)
+    const w = await mountCard()
+    await w.find('.hgl__host').trigger('wheel', { deltaY: -100 })
+    expect(board).not.toHaveBeenCalled()
+    await w.setProps({ interactive: false })
+    await w.find('.hgl__host').trigger('wheel', { deltaY: -100 })
+    expect(board).toHaveBeenCalledTimes(1)
+    document.body.removeEventListener('wheel', board)
     w.unmount()
   })
 })

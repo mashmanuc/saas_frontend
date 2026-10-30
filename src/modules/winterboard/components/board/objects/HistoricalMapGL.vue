@@ -1,8 +1,8 @@
 <template>
   <!-- Закон §9 v1.78: об'ємна історична карта на рушії карт. Лише вигляд цього екрана: камера локальна, рік — з дошки.
-       Перетягування в межах карти рухає карту, а не картку; колесо миші лишається дошці. -->
+       Перетягування й колесо миші в межах карти (зі стрілкою) — рух і наближення карти, а не картки й дошки. -->
   <div class="hgl" :class="{ 'hgl--full': expanded }">
-    <div ref="host" class="hgl__host" @pointerdown.stop @mouseleave="emit('hover', null)" @mouseenter="syncPixelRatio" />
+    <div ref="host" class="hgl__host" @pointerdown.stop @wheel="onWheel" @mouseleave="emit('hover', null)" @mouseenter="syncPixelRatio" />
     <div v-if="ready && interactive" class="hgl__ctl" data-export-hide @pointerdown.stop>
       <div class="hgl__seg" role="group">
         <button type="button" :class="{ 'is-on': tilted }" :aria-pressed="tilted" data-testid="map-gl-tilt" @click.stop="setTilt(true)">{{ L.tilt }}</button>
@@ -354,6 +354,12 @@ function onMove(e: any): void {
   emit('hover', land ? { x: e.point.x, y: e.point.y, entity: null } : null)
 }
 
+/** Власник 30.10: «колесо на миші на карті не працює як зум» — над картою зі стрілкою колесо наближає карту і не
+ *  доходить до дошки (інакше разом масштабувалась би й дошка); з пером карта прозора — колесо масштабує дошку. */
+function onWheel(e: WheelEvent): void {
+  if (props.interactive && map) e.stopPropagation()
+}
+
 function fail(why: string): void {
   if (destroyed) return
   console.warn('[WB:borders] об\'ємна карта недоступна — пласка', why)
@@ -382,7 +388,7 @@ onMounted(async () => {
       style: { version: 8, glyphs: `${window.location.origin}/maps/glyphs/{fontstack}/{range}.pbf`, sources: {}, layers: [{ id: 'sea', type: 'background', paint: { 'background-color': SEA } }] },
       bounds: regionBounds(), fitBoundsOptions: { padding: 8 },
       maxBounds: [[bw - 6, bs - 5], [be + 6, bn + 5]], minZoom: 0.5, maxZoom: 9, maxPitch: 55,
-      attributionControl: false, scrollZoom: false, boxZoom: false, keyboard: false, doubleClickZoom: true,
+      attributionControl: false, scrollZoom: props.interactive, boxZoom: false, keyboard: false, doubleClickZoom: true,
       dragRotate: true, touchPitch: true, interactive: true,
       canvasContextAttributes: { preserveDrawingBuffer: true },
     })
@@ -443,7 +449,7 @@ watch(() => props.expanded, () => {
 // З пером карта прозора для малювання — тоді й камера не рухається
 watch(() => props.interactive, (on) => {
   if (!map) return
-  for (const h of [map.dragPan, map.dragRotate, map.touchZoomRotate, map.doubleClickZoom, map.touchPitch]) {
+  for (const h of [map.dragPan, map.dragRotate, map.scrollZoom, map.touchZoomRotate, map.doubleClickZoom, map.touchPitch]) {
     if (on) h.enable(); else h.disable()
   }
 }, { immediate: false })
