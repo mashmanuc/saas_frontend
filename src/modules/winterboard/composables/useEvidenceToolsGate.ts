@@ -18,15 +18,20 @@ import { fetchCorridorRegistry } from '@/modules/intent/corridors/corridorApi'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 
 const enabled = ref(false)
+// Предмети вчителя з налаштувань («Мої предмети»), як їх відфільтрував сервер; без вибору — усі активні.
+// Порожньо — сервер ще не відповів або гейт закритий: інструменти як і досі (власник 2026-10-30:
+// «окремо для математиків показувати їхні інструменти. Для істориків окремо»).
+const subjects = ref<string[]>([])
 let asked: Promise<void> | null = null
 
 /** Лише для тестів: забути відповідь сервера. */
 export function _resetEvidenceToolsGate(): void {
   enabled.value = false
+  subjects.value = []
   asked = null
 }
 
-export function useEvidenceToolsGate(): { evidenceEnabled: Ref<boolean> } {
+export function useEvidenceToolsGate(): { evidenceEnabled: Ref<boolean>; teachingSubjects: Ref<string[]> } {
   // 2026-09-27: сервер питаємо лише тоді, коли відповідь щось вирішує і не обернеться
   // тостом чи викиданням людини зі сторінки:
   //   • гість — 401, а apiClient на 401 показує «Сесію завершено. Увійдіть знову.» людині,
@@ -41,16 +46,18 @@ export function useEvidenceToolsGate(): { evidenceEnabled: Ref<boolean> } {
   // змінився (увійшов, bootstrap пройшов) — наступний виклик спитає сервер.
   const auth = useAuthStore()
   if (!auth.isBootstrapped || !auth.isAuthenticated || auth.user?.role === 'student') {
-    return { evidenceEnabled: enabled }
+    return { evidenceEnabled: enabled, teachingSubjects: subjects }
   }
   asked ??= fetchCorridorRegistry('uk')
     .then((reg: unknown) => {
-      enabled.value = !!(reg as { enabled?: boolean } | null)?.enabled
+      const r = reg as { enabled?: boolean; subjects?: Array<{ id?: unknown }> } | null
+      enabled.value = !!r?.enabled
+      subjects.value = (r?.subjects ?? []).map((s) => String(s?.id ?? '')).filter(Boolean)
     })
     .catch(() => {
       // 404 = акаунт поза rollout-гейтом; будь-яка інша помилка — теж без
       // інструментів (fail-closed: краще не показати, ніж показати зайве).
       enabled.value = false
     })
-  return { evidenceEnabled: enabled }
+  return { evidenceEnabled: enabled, teachingSubjects: subjects }
 }

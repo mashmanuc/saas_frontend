@@ -13,6 +13,16 @@ export function fetchCorridorRegistry(locale = 'uk') {
   return apiClient.get('/v1/intents/corridors/', { params: { locale } }).then(unwrap)
 }
 
+/** Бібліотека шкал тем (власник 2026-10-30): готові теми мови, найуживаніші спершу; `q` — пошук. */
+export function fetchTimelineLibrary({ language = 'uk', q = '' } = {}) {
+  return apiClient.get('/v1/intents/timelines/', { params: { language, q } }).then(unwrap)
+}
+
+/** Готова шкала з бібліотеки — план дошки (`add_timeline`), той самий, що дає Інтегралик. */
+export function fetchTimelineLibraryItem(id) {
+  return apiClient.get(`/v1/intents/timelines/${encodeURIComponent(id)}/`).then(unwrap)
+}
+
 export function resolveCorridor({ boardId, boardSummary = null, conversationId = null, locale = 'uk' }) {
   return apiClient.post('/v1/intents/corridors/resolve/', {
     board_id: boardId,

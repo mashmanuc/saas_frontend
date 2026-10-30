@@ -397,19 +397,40 @@ export function allInserts(): InsertEntry[] {
  * поки лише для акаунтів у rollout-гейті коридорів (домовленість власника;
  * до 2026-09-24 гейта не було зовсім і їх бачили всі на проді).
  */
+export interface InsertGate {
+  evidence: boolean
+  scenes?: boolean
+  borders?: boolean
+  /** `false` — учитель історії без математики в «Моїх предметах»: математичних застосунків не показуємо. */
+  mathTools?: boolean
+}
+
+/** Застосунки математики — їх не бачить учитель історії (власник 2026-10-30). */
+const MATH_APPS: ReadonlySet<MashApp> = new Set<MashApp>(['2d', '3d', 'geometry', 'stereo', 'scenes'])
+
+/**
+ * Математичні інструменти — ховаємо лише тому, хто обрав історію і не обрав математику (власник 2026-10-30:
+ * «Ми окремо будемо для математиків показувати їхні інструменти. Для істориків окремо»). Без вибору предметів чи
+ * з іншими предметами — як і досі.
+ */
+export function mathToolsFor(subjects: readonly string[]): boolean {
+  return !(subjects.includes('history') && !subjects.includes('math'))
+}
+
 export function visibleInserts(
-  opts: { evidence: boolean; scenes?: boolean; borders?: boolean },
+  opts: InsertGate,
   entries: InsertEntry[] = allInserts(),
 ): InsertEntry[] {
   // «Наочні сцени» — лише пілоту math_scenes (власник 2026-10-20: «поки будемо включати його для ID40»).
   // «Історична карта» — лише пілоту historical_borders (власник 2026-10-30: нове — спершу для 220).
   return entries.filter((e) => (opts.evidence || e.family !== 'evidence') && (opts.scenes || e.family !== 'scenes')
-    && (opts.borders || e.family !== 'historical_maps'))
+    && (opts.borders || e.family !== 'historical_maps') && (opts.mathTools !== false || !MATH_APPS.has(appOf(e))))
 }
 
 /** Те саме для карток-застосунків root-каталогу. */
-export function visibleApps(opts: { evidence: boolean; scenes?: boolean; borders?: boolean }): typeof MASH_APPS {
-  return MASH_APPS.filter((a) => (opts.evidence || opts.borders || a.app !== 'content') && (opts.scenes || a.app !== 'scenes'))
+export function visibleApps(opts: InsertGate): typeof MASH_APPS {
+  return MASH_APPS.filter((a) => (opts.evidence || opts.borders || a.app !== 'content') && (opts.scenes || a.app !== 'scenes')
+    && (opts.mathTools !== false || !MATH_APPS.has(a.app)))
 }
 
 /** Пошук за labelFallback / id / keywords (case-insensitive). Порожній q = всі. */

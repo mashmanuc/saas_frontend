@@ -149,6 +149,25 @@ function _buildMediaProxyUrl(src: string): string | null {
   } catch { return null }
 }
 
+/**
+ * Карта праворуч від шкали, у межах аркуша: ширина — що лишилось (не більше звичайних 960), пропорції картки ті
+ * самі. Місця праворуч менше за 480 — під шкалою, якщо там є місце; інакше — як була (у центрі видимого).
+ */
+export function besideTimeline(map: WBAsset, timeline: WBAsset, pw: number, ph: number): WBAsset {
+  const GAP = 40
+  const ratio = map.h / map.w
+  const fit = (w: number, h: number) => Math.min(map.w, w, h / ratio)
+  const right = fit(pw - GAP - (timeline.x + timeline.w + GAP), ph - GAP - timeline.y)
+  if (right >= 480) {
+    return { ...map, x: timeline.x + timeline.w + GAP, y: timeline.y, w: Math.round(right), h: Math.round(right * ratio) }
+  }
+  const below = fit(pw - GAP - timeline.x, ph - GAP - (timeline.y + timeline.h + GAP))
+  if (below >= 480) {
+    return { ...map, x: timeline.x, y: timeline.y + timeline.h + GAP, w: Math.round(below), h: Math.round(below * ratio) }
+  }
+  return map
+}
+
 /** Тема для історичної карти — перша шкала сторінки з місцями подій (назва, місця, роки подій). */
 function topicOfPage(assets: readonly WBAsset[]): HistoricalMapTopic | null {
   for (const asset of assets) {
@@ -1234,8 +1253,20 @@ export function useContentDrop(options: UseContentDropOptions) {
       const localeValue = (i18n.global.locale as unknown as { value?: string })?.value
       // Власник 30.10 — універсальність: на сторінці є шкала теми з місцями подій — карта під її регіон і роки
       const store = getActivePinia() ? useWBStore() : null
-      onAssetAdd(buildHistoricalMapAsset(pos, localeValue === 'en' ? 'en' : 'uk', undefined,
-        topicOfPage(store?.currentPage?.assets ?? [])))
+      const page = store?.currentPage
+      const assets = page?.assets ?? []
+      // Бібліотека шкал ставить карту поруч зі СВОЄЮ шкалою: `{nextTo: id шкали}`
+      let nextTo: string | null = null
+      try {
+        const parsed = payloadStr ? JSON.parse(payloadStr) : null
+        if (typeof parsed?.nextTo === 'string') nextTo = parsed.nextTo
+      } catch (err) {
+        console.warn('[WB:borders] bad payload', err)
+      }
+      const timeline = nextTo ? assets.find((a) => a.id === nextTo && a.type === 'timeline_card') : undefined
+      const asset = buildHistoricalMapAsset(pos, localeValue === 'en' ? 'en' : 'uk', undefined,
+        topicOfPage(timeline ? [timeline] : assets))
+      onAssetAdd(timeline ? besideTimeline(asset, timeline, page?.width ?? 1920, page?.height ?? 1080) : asset)
       return
     }
 

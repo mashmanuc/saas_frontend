@@ -401,6 +401,11 @@
               <div class="tools-results">
                 <InsertTileWithAdd v-for="e in contentEntries" :key="e.id" :entry="e" />
               </div>
+              <!-- Бібліотека шкал (власник 2026-10-30): теми, які вже зібрав Інтегралик, — лише вчителю історії -->
+              <template v-if="timelineLibraryShown">
+                <div class="tools-subhead" data-testid="tools-timeline-library">{{ t('winterboard.timelineLibrary.title') }}</div>
+                <TimelineLibrary :with-map="bordersEnabled" />
+              </template>
             </template>
 
             <!-- «Наочні сцени» (2026-10-20, пілот math_scenes): одна плитка = одна сцена у вікні на дошці -->
@@ -467,9 +472,10 @@ import TrigCircleTray from './TrigCircleTray.vue'
 // Плитка + «+» (власник 2026-10-21: «для сенсорних дошок») — у всіх списках «Інструментів».
 import InsertTileWithAdd from './InsertTileWithAdd.vue'
 import ZbirnykTab from './ZbirnykTab.vue'
+import TimelineLibrary from './TimelineLibrary.vue'
 import { InsertIcon } from './insertIcons'
 import {
-  searchInserts, allInserts, insertsByApp, MASH_APPS, visibleInserts, visibleApps,
+  searchInserts, allInserts, insertsByApp, MASH_APPS, visibleInserts, visibleApps, mathToolsFor,
   type MashApp, type InsertEntry,
 } from './insertRegistry'
 import { useEvidenceToolsGate } from '../../composables/useEvidenceToolsGate'
@@ -603,7 +609,9 @@ function pickTab(tab: SidebarTab): void {
 // Фаза 1: пошук по каталогу інструментів (SSOT insertRegistry). Порожній q → картки.
 const toolQuery = ref('')
 // «Навчальні обʼєкти» — лише акаунтам у гейті (див. useEvidenceToolsGate).
-const { evidenceEnabled } = useEvidenceToolsGate()
+const { evidenceEnabled, teachingSubjects } = useEvidenceToolsGate()
+// Предмети з «Моїх предметів»: історику — бібліотека шкал і без математичних застосунків (власник 2026-10-30)
+const timelineLibraryShown = computed(() => evidenceEnabled.value && teachingSubjects.value.includes('history'))
 // «Наочні сцени» — лише пілоту math_scenes з /me (власник 2026-10-20: «поки будемо включати його для ID40»).
 const authStore = useAuthStore()
 const scenesEnabled = computed(() =>
@@ -614,7 +622,10 @@ const zbirnykEnabled = computed(() =>
 // «Історична карта» — лише пілоту historical_borders з /me (власник 2026-10-30: нове — спершу для 220).
 const bordersEnabled = computed(() =>
   Boolean((authStore.user as { pilots?: string[] } | null)?.pilots?.includes('historical_borders')))
-const gateOpts = computed(() => ({ evidence: evidenceEnabled.value, scenes: scenesEnabled.value, borders: bordersEnabled.value }))
+const gateOpts = computed(() => ({
+  evidence: evidenceEnabled.value, scenes: scenesEnabled.value, borders: bordersEnabled.value,
+  mathTools: mathToolsFor(teachingSubjects.value),
+}))
 const shownApps = computed(() => visibleApps(gateOpts.value))
 const toolResults = computed(() =>
   visibleInserts(gateOpts.value, searchInserts(toolQuery.value)))

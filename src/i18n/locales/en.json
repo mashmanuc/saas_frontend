@@ -11271,6 +11271,19 @@
       "hintClickAt": "Click on the canvas: {role}",
       "hintBuilding": "Ready — building…"
     },
+    "timelineLibrary": {
+      "title": "Timeline library",
+      "search": "Search topic",
+      "loading": "Loading topics…",
+      "failed": "Could not load the library.",
+      "retry": "Try again",
+      "empty": "Topics Integralyk has already built will appear here. Ask it, for example: “Timeline: the Napoleonic Wars”.",
+      "nothingFound": "No such topic yet. Ask Integralyk and it will appear here.",
+      "events": "{n} event | {n} events",
+      "bc": "{y} BC",
+      "adding": "Adding to the board…",
+      "addFailed": "Could not add — please try again"
+    },
     "insertTiles": {
       "historicalMap": "Historical map",
       "historicalMapSub": "state borders by year",
