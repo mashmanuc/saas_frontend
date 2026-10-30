@@ -29,7 +29,8 @@ import { commitDictationAction } from '../../board/commitDictationAction'
 import type { DictationAction } from '../../board/dictationLine'
 import { topmostForeignOverlayAssetId } from '../../utils/overlayTopHit'
 import { detectCardPreset } from '../../utils/detectCardPreset'
-import { linkedEvidenceUpdate } from '../../board/evidenceLinkage'
+import { linkedEvidenceUpdate, linkedHistoricalMapUpdates, timelineMapPins } from '../../board/evidenceLinkage'
+import { datasetYears } from '../../board/historicalBorders'
 import {
   OVERLAY_RENDERERS,
   isOverlayType,
@@ -191,7 +192,18 @@ const ctx = computed<OverlayCtx>(() => ({
     // не з'являвся, а виділити в розгорнутому стані не можна (оверлей ловить кліки).
     if (willExpand) wbStore.selectItems([id])
   },
-  onUpdate: (asset: WBAsset) => emit('asset-update', asset),
+  onUpdate: (asset: WBAsset) => {
+    emit('asset-update', asset)
+    // Закон §9 v1.79: відкрили подію шкали — рік історичної карти сторінки йде за нею (тим самим шляхом, що
+    // підсвітка парної карти: штатні asset_update)
+    if (asset.type !== 'timeline_card') return
+    const before = props.assets.find((a) => a.id === asset.id)
+    const was = (before?.data as { active_event_id?: unknown } | undefined)?.active_event_id
+    if (was === (asset.data as { active_event_id?: unknown } | undefined)?.active_event_id) return
+    for (const map of linkedHistoricalMapUpdates(props.assets, asset, datasetYears)) emit('asset-update', map)
+  },
+  // v1.79: події шкал сторінки з місцем — номери на історичній карті
+  timelinePins: timelineMapPins(props.assets),
   // Карта на дошці є → шпилька має адресата. Немає → кнопки не малюємо.
   hasMapCard: props.assets.some(a => a.type === 'map_card'),
   // Кімната ще не слухає `open-entity`. Доки не слухає — значення в картці

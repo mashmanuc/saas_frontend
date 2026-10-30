@@ -23,6 +23,7 @@
 import type { Component } from 'vue'
 import type { EntityRef, WBAsset, WBTeachingAction } from '../../types/winterboard'
 import type { DictationAction } from '../../board/dictationLine'
+import type { MapEventPin } from '../../board/evidenceLinkage'
 
 import { assetCapabilities, isFullscreenAsset } from '../../board/objectStandard'
 import { isKonspektCard } from '../../composables/cardZoom'
@@ -141,6 +142,8 @@ export interface OverlayCtx {
   onToMap?: (source: WBAsset, lat: number, lon: number, label: string) => void
   /** Чи є на дошці карта — без неї шпильці нема куди лягти. */
   hasMapCard?: boolean
+  /** Закон §9 v1.79: події шкал сторінки з місцем із джерела — номери на історичній карті. */
+  timelinePins?: MapEventPin[]
   /** Чи вміє кімната будувати суміжну картку. Поки обробника немає — false,
    *  і картка не малює посилань, які нікуди не ведуть. */
   hasEntityTarget?: boolean
@@ -448,6 +451,7 @@ const RENDERER_ENTRIES: Record<string, Omit<OverlayRenderEntry, 'expandable'>> =
       // ⛶ «на всю дошку» (2026-10-30) — той самий локальний board-expand, що в шкали подій.
       ...expProps(asset, ctx),
       navigable: ctx.isTutor && ctx.boardMode === 'edit',
+      events: ctx.timelinePins ?? [],
     }),
     buildEvents: (asset, ctx) => ({
       ...expEvents(asset, ctx),

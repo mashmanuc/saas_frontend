@@ -19,7 +19,9 @@ ZIP, OUT = sys.argv[1:3]
 DATASET = 'cliopatria-east-europe-1648-1687'
 REGION = (14.0, 41.0, 46.0, 58.5)
 Y0, Y1 = 1648, 1687
-TOL = 0.03
+TOL = 0.015
+# Обріз ±10° довкола регіону: при нахилі камери (закон §9 v1.78) видно далі за регіон, обріз ±3° давав прямі краї
+MARGIN = 10.0
 STATES = {   # англійська назва джерела → (стабільний id сутності, укр. назва)
     'Polish-Lithuanian Commonwealth': ('commonwealth', 'Річ Посполита'),
     'Tsardom of Russia': ('muscovy', 'Московське царство'),
@@ -123,13 +125,13 @@ for f in feats:
             continue
         rings = []
         for ring in poly:
-            # обрізати до регіону із запасом 3° — поза ним карта однаково не малює (лінії обрізу теж поза видом)
-            cut = clip([(x, y) for x, y in ring], REGION[0] - 3, REGION[1] - 3, REGION[2] + 3, REGION[3] + 3)
+            # обрізати до регіону із запасом MARGIN — далі камера не заходить (лінії обрізу поза видом)
+            cut = clip([(x, y) for x, y in ring], REGION[0] - MARGIN, REGION[1] - MARGIN, REGION[2] + MARGIN, REGION[3] + MARGIN)
             if len(cut) < 4:
                 continue
             s = dp(cut, TOL)
             if len(s) >= 4:
-                rings.append([[round(x, 2), round(y, 2)] for x, y in s])
+                rings.append([[round(x, 3), round(y, 3)] for x, y in s])
         if not rings:
             continue
         out_polys.append(rings)
@@ -153,7 +155,7 @@ meta = {
                'paper': 'https://doi.org/10.1038/s41597-025-04516-9',
                'license': 'CC BY 4.0', 'license_url': 'https://creativecommons.org/licenses/by/4.0/',
                'sha256': source_sha},
-    'changes_by_m4sh': 'відібрано 11 держав Східної Європи за 1648–1687; межі обрізано до регіону (±3°) і спрощено (0,03°); '
+    'changes_by_m4sh': 'відібрано 11 держав Східної Європи за 1648–1687; межі обрізано до регіону (±10°) і спрощено (0,015°); '
                        'назви перекладено; точки підписів пораховано',
     'years_inclusive': True,
     'verified_by_historian': False,

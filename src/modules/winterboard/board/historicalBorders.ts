@@ -52,6 +52,8 @@ interface DatasetEntry {
   /** Чесна примітка набору: чого в ньому немає (показується під легендою). */
   note: { uk: string; en: string }
   load: () => Promise<unknown>
+  /** Роки набору (включно) — без завантаження файла: зв'язка зі шкалою подій (закон §9 v1.79). */
+  years: readonly [number, number]
 }
 
 export const CLIOPATRIA_EAST_EUROPE = 'cliopatria-east-europe-1648-1687'
@@ -59,7 +61,7 @@ export const CLIOPATRIA_EAST_EUROPE = 'cliopatria-east-europe-1648-1687'
 /** Закріплені набори. Нова версія — новий файл і новий рядок; старий лишається для старих дошок. */
 export const BORDER_DATASETS: Readonly<Record<string, DatasetEntry>> = Object.freeze({
   [CLIOPATRIA_EAST_EUROPE]: {
-    version: 'v1-c78ce622b1',
+    version: 'v1-b38dff2ad6',
     basemap: 'east_europe',
     title: { uk: 'Східна Європа', en: 'Eastern Europe' },
     note: {
@@ -67,8 +69,15 @@ export const BORDER_DATASETS: Readonly<Record<string, DatasetEntry>> = Object.fr
       en: 'The Cossack Hetmanate is not in the dataset — the map does not draw it. Zaporozhian Cossacks appear from 1662.',
     },
     load: () => import('./data/borders_cliopatria_east_europe_1648_1687.json'),
+    years: [1648, 1687],
   },
 })
+
+/** Роки набору рівно цієї версії або null (невідомий набір чи інша версія). */
+export function datasetYears(dataset: string, version: string): readonly [number, number] | null {
+  const entry = BORDER_DATASETS[dataset]
+  return entry && entry.version === version ? entry.years : null
+}
 
 const cache = new Map<string, Promise<BordersDataset | null>>()
 

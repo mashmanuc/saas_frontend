@@ -22,6 +22,8 @@
     :class="{ 'is-selected': isSelected, 'is-readonly': !interactive }"
     :style="textScaleStyle"
     :data-testid="`map-card-${asset.id}`"
+    :data-export-dom="data.borders ? '' : undefined"
+    :data-export-width="data.borders ? 960 : undefined"
   >
     <!-- 2026-10-30: карта з кордонами в часі — окрема картка за макетом дизайнера (той самий об'єкт map_card) -->
     <HistoricalMapCard
@@ -31,6 +33,7 @@
       :interactive="interactive"
       :is-expanded="isExpanded"
       :navigable="navigable"
+      :events="events"
       @update:asset="emit('update:asset', $event)"
     />
     <header v-if="!data.borders" class="map-card__header">
@@ -131,6 +134,7 @@ import { MAP_LABELS } from '../../../board/timelinePresentation'
 import { BASEMAPS, basemapAspect, basemapSpec, landPaths, project } from '../../../board/basemaps'
 import SourceList from './SourceList.vue'
 import HistoricalMapCard from './HistoricalMapCard.vue'
+import type { MapEventPin } from '../../../board/evidenceLinkage'
 
 const { t } = useI18n()
 const VB = 1000
@@ -140,8 +144,10 @@ const props = withDefaults(
     asset: WBAsset; isSelected?: boolean; interactive?: boolean; canFit?: boolean; isExpanded?: boolean
     /** Учитель у режимі редагування (не залежить від інструмента) — «по черзі» з пульта пише й з пером (v1.77). */
     navigable?: boolean
+    /** v1.79: події шкал сторінки з місцем — номери на історичній карті. */
+    events?: MapEventPin[]
   }>(),
-  { isSelected: false, interactive: true, canFit: true, isExpanded: false, navigable: false },
+  { isSelected: false, interactive: true, canFit: true, isExpanded: false, navigable: false, events: () => [] },
 )
 
 const emit = defineEmits<{
@@ -294,7 +300,8 @@ useCardContentFit({
   emitHeight: (neededPx) => emit('request-height', neededPx),
 })
 
-// Знімок для PDF: історична карта — лише коли межі вже домальовані (набір вантажиться окремо)
+// Знімок для PDF: історична карта — лише коли межі вже домальовані (набір вантажиться окремо); уся картка гілкою DOM
+// (`data-export-dom`, закон §9 v1.78): карта, рік і легенда разом, полотно об'ємної карти зберігає кадр для знімка
 useExportCapture(() => props.asset?.id, async (signal) => {
   if (data.value.borders) {
     await historicalEl.value?.ready()

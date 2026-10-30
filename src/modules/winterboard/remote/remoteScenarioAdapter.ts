@@ -33,9 +33,9 @@
 import type { WBAsset } from '../types/winterboard'
 import { canMinimize, canShowTray, minimizedAsset, restoredAsset, type TrayViewer } from '../board/boardTray'
 import { isMinimizableAsset, isMinimizedOnBoard } from '../board/objectStandard'
-import { linkedEvidenceUpdate } from '../board/evidenceLinkage'
+import { linkedEvidenceUpdate, linkedHistoricalMapUpdates } from '../board/evidenceLinkage'
 import { isTimelinePlaying, setTimelinePlaying } from '../board/timelinePlayback'
-import { BORDER_DATASETS, clampYear, loadBorders, mapBordersOf, snapshotYears, stepYear } from '../board/historicalBorders'
+import { BORDER_DATASETS, clampYear, datasetYears, loadBorders, mapBordersOf, snapshotYears, stepYear } from '../board/historicalBorders'
 import {
   changeVideoVolume, pauseVideo, playVideo, videoTime, ytPlayErrors, ytPlayStates, ytTimeMarks, ytVolumes,
 } from '../board/youtubeRemoteControl'
@@ -351,6 +351,10 @@ export function createRemoteScenarioAdapter(deps: RemoteScenarioDeps) {
     if (places.length) {
       const linked = linkedEvidenceUpdate([...(deps.pages()[deps.currentPageIndex()]?.assets ?? [])], next, places)
       if (linked) deps.updateAsset(linked)
+    }
+    // v1.79: рік історичної карти сторінки — за подією (той самий запис, що з кнопок картки)
+    for (const map of linkedHistoricalMapUpdates([...(deps.pages()[deps.currentPageIndex()]?.assets ?? [])], next, datasetYears)) {
+      deps.updateAsset(map)
     }
   }
 

@@ -33,3 +33,63 @@ export function linkedEvidenceUpdate(
 
   return null
 }
+
+// ── Історична карта й шкала теми на одній сторінці (закон §9 v1.79) ────────────────────────────────────────
+
+/** Подія шкали з місцем для історичної карти: номер — порядок на шкалі; лише наші значення, без id джерела. */
+export interface MapEventPin {
+  key: string
+  n: number
+  label: string
+  year: number
+  lat: number
+  lon: number
+  active: boolean
+}
+
+function timelineEventsOf(asset: WBAsset) {
+  const events = (asset.data as TimelineCardData | undefined)?.events
+  return Array.isArray(events) ? events : []
+}
+
+/** Усі події шкал сторінки, що мають місце з джерела (`place`), — для номерів на історичній карті. */
+export function timelineMapPins(assets: readonly WBAsset[]): MapEventPin[] {
+  const out: MapEventPin[] = []
+  for (const asset of assets) {
+    if (asset?.type !== 'timeline_card') continue
+    const active = (asset.data as TimelineCardData | undefined)?.active_event_id ?? null
+    timelineEventsOf(asset).forEach((event, i) => {
+      const p = event?.place
+      const year = event?.date_start?.year
+      if (!p || !Number.isFinite(p.lat) || !Number.isFinite(p.lon) || typeof year !== 'number') return
+      out.push({ key: `${asset.id}:${event.id}`, n: i + 1, label: event.label, year, lat: p.lat, lon: p.lon, active: event.id === active })
+    })
+  }
+  return out
+}
+
+/**
+ * Відкрили подію шкали — рік історичних карт сторінки стає роком події, коли він у роках набору й інший (одна модель
+ * часу — `borders.year`). Повертає штатні `asset_update` карт; нічого не мутує. Подія без року чи поза набором — [].
+ */
+export function linkedHistoricalMapUpdates(
+  assets: readonly WBAsset[],
+  timeline: WBAsset,
+  yearsOf: (dataset: string, version: string) => readonly [number, number] | null,
+): WBAsset[] {
+  if (timeline.type !== 'timeline_card') return []
+  const data = timeline.data as TimelineCardData | undefined
+  const event = timelineEventsOf(timeline).find((e) => e?.id === data?.active_event_id)
+  const year = event?.date_start?.year
+  if (typeof year !== 'number') return []
+  const out: WBAsset[] = []
+  for (const asset of assets) {
+    if (asset?.type !== 'map_card') continue
+    const map = asset.data as MapCardData
+    const b = map?.borders
+    const years = b ? yearsOf(b.dataset, b.version) : null
+    if (!b || !years || year < years[0] || year > years[1] || b.year === year) continue
+    out.push({ ...asset, data: { ...map, borders: { ...b, year } } } as WBAsset)
+  }
+  return out
+}

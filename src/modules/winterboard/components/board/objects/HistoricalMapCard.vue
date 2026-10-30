@@ -18,7 +18,14 @@
     </header>
     <div class="hmap__bd">
       <div ref="mapEl" class="hmap__map" @mouseleave="tip = null">
-        <svg class="hmap__svg" :viewBox="`0 0 ${VB} ${VBH}`" preserveAspectRatio="xMidYMid meet">
+        <!-- v1.78: об'ємна карта на рушії карт; поки вантажиться, без WebGL чи при збої — пласка нижче -->
+        <HistoricalMapGL
+          v-if="dataset && gl !== 'off'"
+          :dataset="dataset" :basemap="data.basemap" :year="year" :changed="flashEntities" :hl="hl" :lang="lang"
+          :interactive="interactive" :expanded="isExpanded" :L="L" :text-scale="textScale" :pins="pins"
+          @ready="gl = 'on'" @fail="gl = 'off'" @hover="onGlHover"
+        />
+        <svg v-show="gl !== 'on'" class="hmap__svg" :viewBox="`0 0 ${VB} ${VBH}`" preserveAspectRatio="xMidYMid meet">
           <defs>
             <!-- «Немає даних»: суша без держави — світла штриховка (макет «Палітра і стилі») -->
             <pattern :id="`${uid}-nd`" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -48,6 +55,12 @@
             class="hmap__lb" :class="{ 'hmap__lb--big': l.big }"
             :x="l.x" :y="l.y" :font-size="l.fs" :stroke-width="l.fs * 0.28" text-anchor="middle"
           >{{ l.text }}</text>
+          <!-- v1.79: події шкали сторінки з місцем із джерела — номери (відкрита — більша, з назвою) -->
+          <g v-for="p in svgPins" :key="p.key" class="hmap__pin" :class="{ 'is-on': p.active }">
+            <circle :cx="p.x" :cy="p.y" :r="p.active ? 15 : 11" />
+            <text :x="p.x" :y="p.y + 4.5" text-anchor="middle">{{ p.n }}</text>
+            <text v-if="p.active" class="hmap__pin-lb" :x="p.x" :y="p.y + 34" text-anchor="middle">{{ p.label }}</text>
+          </g>
         </svg>
         <p class="hmap__attr" data-testid="map-card-borders-note">{{ attribution }}</p>
         <div v-if="tip" class="hmap__tip" :style="{ left: `${tip.x}px`, top: `${tip.y}px` }">
@@ -118,10 +131,14 @@ import {
 import { HISTORICAL_MAP_LABELS } from '../../../board/timelinePresentation'
 import { isTimelinePlaying, setTimelinePlaying } from '../../../board/timelinePlayback'
 import { useHostWindowControls } from '../../../composables/boardWindowControls'
+import { webglSupported } from '../../../board/webglSupport'
+import { presentationScaleOf } from '../../../board/cardPresentation'
+import type { MapEventPin } from '../../../board/evidenceLinkage'
+import HistoricalMapGL from './HistoricalMapGL.vue'
 
 const props = withDefaults(
-  defineProps<{ asset: WBAsset; interactive?: boolean; isExpanded?: boolean; navigable?: boolean }>(),
-  { interactive: true, isExpanded: false, navigable: false },
+  defineProps<{ asset: WBAsset; interactive?: boolean; isExpanded?: boolean; navigable?: boolean; events?: MapEventPin[] }>(),
+  { interactive: true, isExpanded: false, navigable: false, events: () => [] },
 )
 const emit = defineEmits<{ 'update:asset': [asset: WBAsset]; 'borders-ready': [] }>()
 
@@ -312,6 +329,27 @@ watch(year, (y, old) => {
 const hl = ref<string | null>(null)
 const mapEl = ref<HTMLElement | null>(null)
 const tip = ref<{ x: number; y: number; title: string; text: string } | null>(null)
+// v1.78: об'ємна карта — 'pending' (вантажиться, видно пласку), 'on', 'off' (без WebGL чи збій — пласка назавжди)
+const gl = ref<'pending' | 'on' | 'off'>(webglSupported() ? 'pending' : 'off')
+const flashEntities = computed(() => [...diff.value.changed, ...diff.value.added])
+const textScale = computed(() => presentationScaleOf(props.asset))
+/** v1.79: події шкал сторінки, що в роках набору (поза ними карта цих меж не показує). */
+const pins = computed(() => {
+  const ys = dataset.value?.meta.years
+  return ys ? props.events.filter((p) => p.year >= ys[0] && p.year <= ys[1]) : []
+})
+const svgPins = computed(() => pins.value.flatMap((p) => {
+  const at = project(p.lat, p.lon, spec.value)
+  return at ? [{ ...p, x: at.x * VB, y: at.y * VBH.value }] : []
+}))
+/** Підказка над об'ємною картою — той самий текст, що над пласкою (держава й її межі, або «Немає даних»). */
+function onGlHover(at: { x: number; y: number; entity: string | null } | null): void {
+  if (!at || !props.interactive) { tip.value = null; return }
+  const shape = at.entity ? shapes.value.find((s) => s.entity === at.entity) : null
+  tip.value = shape
+    ? { x: at.x, y: at.y, title: shape.name, text: shape.tip }
+    : { x: at.x, y: at.y, title: L.value.noDataTip, text: L.value.noDataTip2 }
+}
 function showTip(e: MouseEvent, title: string, text: string): void {
   const el = mapEl.value
   if (!el || !props.interactive) return
@@ -366,6 +404,10 @@ defineExpose({ ready: () => loadBorders(data.value.borders?.dataset, data.value.
   stroke: rgba(255, 255, 255, 0.92); paint-order: stroke; stroke-linejoin: round; pointer-events: none; letter-spacing: 0.01em;
 }
 .hmap__lb--big { letter-spacing: 0.08em; }
+.hmap__pin circle { fill: #8a2f1d; stroke: #fff; stroke-width: 2.5; }
+.hmap__pin text { fill: #fff; font: 700 14px system-ui, -apple-system, "Segoe UI", sans-serif; pointer-events: none; }
+.hmap__pin.is-on circle { fill: #b23a22; }
+.hmap__pin .hmap__pin-lb { fill: #8a2f1d; font-size: 17px; stroke: rgba(255, 255, 255, 0.92); stroke-width: 5px; paint-order: stroke; }
 .hmap__attr {
   position: absolute; left: calc(8 * var(--u)); bottom: calc(6 * var(--u)); margin: 0; max-width: calc(100% - 16 * var(--u));
   font-size: calc(10 * var(--u) * var(--t)); color: #3d5a52; line-height: 1.35;

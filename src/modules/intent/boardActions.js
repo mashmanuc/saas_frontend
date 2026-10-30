@@ -652,6 +652,8 @@ export function sanitizeEvents(raw) {
         ? { description_full: ev.description_full.trim().slice(0, 3000) } : {}),
       ...(ev.description_lang === 'en' || ev.description_lang === 'uk' ? { description_lang: ev.description_lang } : {}),
       ...(Number.isInteger(ev.era) && ev.era >= 0 && ev.era < MAX_ERAS ? { era: ev.era } : {}),
+      // Закон §9 v1.79: місце з джерела — для історичної карти; поза межами чи зіпсоване — поля немає.
+      ...sanitizePlace(ev.place),
       ...(Array.isArray(ev.participants) && ev.participants.some((p) => typeof p === 'string' && p.trim())
         ? { participants: ev.participants.filter((p) => typeof p === 'string' && p.trim())
           .map((p) => p.trim().slice(0, 60)).slice(0, 4) }
@@ -659,6 +661,16 @@ export function sanitizeEvents(raw) {
     })
   }
   return out
+}
+
+/** Місце події: координата в межах землі, назва місця — до 80 знаків. `{}` — місця немає. */
+export function sanitizePlace(raw) {
+  if (!raw || typeof raw !== 'object') return {}
+  const { lat, lon, label } = raw
+  if (typeof lat !== 'number' || typeof lon !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lon)) return {}
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return {}
+  const name = typeof label === 'string' ? label.trim().slice(0, 80) : ''
+  return { place: { lat, lon, ...(name ? { label: name } : {}) } }
 }
 
 /** Етапи шкали: назва й межі-роки; зіпсований етап — без смужки цілком (межі мусять іти по черзі). */

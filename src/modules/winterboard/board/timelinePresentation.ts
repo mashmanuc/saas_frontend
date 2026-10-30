@@ -84,6 +84,8 @@ export const HISTORICAL_MAP_LABELS: Record<MaterialLanguage, {
   tipChanged: string; tipAdded: string; tipAt: string
   first: string; since: string; changedList: string; addedList: string; goneList: string; none: string
   prev: string; next: string; play: string; pause: string; unavailable: string; attribution: string
+  /** v1.78 — об'ємна карта: камера цього екрана */
+  tilt: string; flat: string; overview: string; zoomIn: string; zoomOut: string
 }> = {
   uk: {
     bordersAt: 'Межі на', bordersAtFull: 'Межі держав на', onMap: 'На карті у {y} році',
@@ -96,7 +98,8 @@ export const HISTORICAL_MAP_LABELS: Record<MaterialLanguage, {
     none: 'межі в даних не змінилися',
     prev: 'Попередня зміна меж', next: 'Наступна зміна меж', play: 'По черзі', pause: 'Пауза',
     unavailable: 'Набір меж цієї версії недоступний — кордонів не показано',
-    attribution: 'Кордони: {source}, {license}; геометрію спрощено. Суша: Natural Earth',
+    attribution: 'Кордони: {source}, {license}; геометрію спрощено. Суша, річки, міста: Natural Earth',
+    tilt: 'Обʼємно', flat: 'Згори', overview: 'Увесь регіон', zoomIn: 'Наблизити', zoomOut: 'Віддалити',
   },
   en: {
     bordersAt: 'Borders in', bordersAtFull: 'State borders in', onMap: 'On the map in {y}',
@@ -109,7 +112,8 @@ export const HISTORICAL_MAP_LABELS: Record<MaterialLanguage, {
     none: 'no border changes in the data',
     prev: 'Previous border change', next: 'Next border change', play: 'Step through', pause: 'Pause',
     unavailable: 'This version of the border dataset is unavailable — borders are not shown',
-    attribution: 'Borders: {source}, {license}; geometry simplified. Land: Natural Earth',
+    attribution: 'Borders: {source}, {license}; geometry simplified. Land, rivers, cities: Natural Earth',
+    tilt: '3D', flat: 'Top', overview: 'Whole region', zoomIn: 'Zoom in', zoomOut: 'Zoom out',
   },
 }
 
