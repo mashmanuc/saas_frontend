@@ -8,6 +8,8 @@
 
 # Treat common binary assets as binary (no EOL normalization)
 *.png binary
+# Гліфи підписів карти (PBF) — двійкові; без цього рядка git «виправляв» у них переноси (закон §9 v1.78)
+*.pbf binary
 *.jpg binary
 *.jpeg binary
 *.gif binary
