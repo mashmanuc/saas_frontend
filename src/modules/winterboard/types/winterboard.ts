@@ -792,6 +792,8 @@ export interface WBTimelinePerson {
   name: string
   event_ids: string[]
   via?: Record<string, string>
+  /** Події, де людина — командувач (поле «Командувачі» картки статті): пряма прив'язка до події. */
+  cmd?: string[]
   image?: { url: string; author: string; license: string; attribution: string; file_page: string }
 }
 

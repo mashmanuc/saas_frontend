@@ -688,6 +688,8 @@ export function sanitizePeople(raw, events) {
         if (eventIds.includes(ev) && shortText(label, 80)) via[ev] = shortText(label, 80)
       }
     }
+    // Командувач події (картка статті) — лише серед подій цієї людини
+    const cmd = Array.isArray(p.cmd) ? p.cmd.map(String).filter((x) => eventIds.includes(x)) : []
     const img = p.image && typeof p.image === 'object' ? p.image : null
     const url = img ? httpsUrl(img.url) : ''
     const author = img ? shortText(img.author, 120) : ''
@@ -695,6 +697,7 @@ export function sanitizePeople(raw, events) {
     out.push({
       ref: { provider, id }, name, event_ids: eventIds,
       ...(Object.keys(via).length ? { via } : {}),
+      ...(cmd.length ? { cmd } : {}),
       ...(url && author && license ? { image: {
         url, author, license, attribution: shortText(img.attribution, 200) || `${author} · ${license}`,
         file_page: httpsUrl(img.file_page),

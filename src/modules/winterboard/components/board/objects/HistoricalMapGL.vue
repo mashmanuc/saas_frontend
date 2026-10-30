@@ -52,7 +52,7 @@ const props = withDefaults(defineProps<{
   textScale?: number
   /** v1.79: події шкал сторінки з місцем — номери; відкрита — більша, з назвою, камера наближається до неї. */
   pins?: MapEventPin[]
-  L: { tilt: string; flat: string; overview: string; zoomIn: string; zoomOut: string; people: string; participant: string; participantEvent: string }
+  L: { tilt: string; flat: string; overview: string; zoomIn: string; zoomOut: string; people: string; participant: string; participantEvent: string; commander: string }
 }>(), { textScale: 1, pins: () => [] })
 const emit = defineEmits<{
   ready: []
@@ -333,7 +333,8 @@ function personElement(person: MapEventPin['people'][number], main: boolean, ext
   el.dataset.exportHide = ''
   el.dataset.testid = 'map-gl-person'
   el.style.setProperty('--k', String(Math.max(0.6, textK)))
-  const relation = person.via ? `${props.L.participant}: ${person.via}` : props.L.participantEvent
+  const relation = person.commander ? props.L.commander
+    : person.via ? `${props.L.participant}: ${person.via}` : props.L.participantEvent
   el.title = [person.name, relation, person.attribution].filter(Boolean).join(' — ')
   if (person.image) {
     const img = document.createElement('img')

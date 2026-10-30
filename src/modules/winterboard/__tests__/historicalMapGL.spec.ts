@@ -294,7 +294,7 @@ const KHM = {
   via: { e1: 'Хмельниччина', e2: 'Хмельниччина' },
   image: { url: 'https://upload.wikimedia.org/k.jpg', author: 'Willem Hondius', license: 'Public domain', attribution: 'Willem Hondius · Public domain', file_page: 'https://commons.wikimedia.org/wiki/File:K.jpg' },
 }
-const BOHUN = { ref: { provider: 'wikidata', id: 'Q730067' }, name: 'Іван Богун', event_ids: ['e2'] }
+const BOHUN = { ref: { provider: 'wikidata', id: 'Q730067' }, name: 'Іван Богун', event_ids: ['e2'], cmd: ['e2', 'e9'] }
 const KRYV = { ref: { provider: 'wikidata', id: 'Q2624048' }, name: 'Максим Кривоніс', event_ids: ['e2'],
   image: { url: 'https://upload.wikimedia.org/m.jpg', author: 'Alex Tora', license: 'Public domain', attribution: 'Alex Tora · Public domain', file_page: '' } }
 function timelineWithPeople(active: string, people: unknown[] = [KHM, BOHUN, KRYV]): WBAsset {
@@ -328,8 +328,10 @@ describe('INV-HGL-8 · люди теми — при вставці переві�
     const [p1, p2] = timelineMapPins([timelineWithPeople('e2')])
     expect(p1.text).toBe('Перша перемога козацького війська.')
     expect(p1.people.map((x) => x.name)).toEqual(['Богдан Хмельницький'])
-    expect(p2.people.map((x) => [x.name, x.via, !!x.image])).toEqual([
-      ['Богдан Хмельницький', 'Хмельниччина', true], ['Іван Богун', '', false], ['Максим Кривоніс', '', true]])
+    expect(p2.people.map((x) => [x.name, x.via, !!x.image, x.commander])).toEqual([
+      ['Богдан Хмельницький', 'Хмельниччина', true, false], ['Іван Богун', '', false, true], ['Максим Кривоніс', '', true, false]])
+    const kept = (sanitizePeople([BOHUN], sanitizeEvents([ev('e2', 1648, 'Корсунь')])) as any).people[0]
+    expect(kept.cmd).toEqual(['e2'])   // e9 — не подія цієї шкали
   })
 })
 
@@ -366,6 +368,7 @@ describe('INV-HGL-10 · персонажі: основний одразу, ін�
     map.zoom = 6
     map.fire('moveend')
     expect(names()).toEqual(['Богдан Хмельницький', 'Іван Богун', 'Максим Кривоніс'])
+    expect(engine.markers[1].el.title).toContain('командувач')
     expect(engine.markers[1].el.querySelector('img')).toBeNull()
     await w.find('[data-testid=map-gl-people]').trigger('click')
     expect(engine.markers).toHaveLength(0)

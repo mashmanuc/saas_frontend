@@ -48,7 +48,7 @@ export interface MapEventPin {
   /** v1.80: пояснення події (вступ статті з джерела) — у віконці на карті. */
   text: string
   /** v1.80: люди цієї події в порядку шкали (перший — основний герой); `via` — війна, через яку зв'язок. */
-  people: Array<{ key: string; name: string; image: string | null; attribution: string; via: string }>
+  people: Array<{ key: string; name: string; image: string | null; attribution: string; via: string; commander: boolean }>
 }
 
 function timelineEventsOf(asset: WBAsset) {
@@ -73,7 +73,7 @@ export function timelineMapPins(assets: readonly WBAsset[]): MapEventPin[] {
         text: event.description || '',
         people: people.filter((x) => x?.event_ids?.includes(event.id)).map((x) => ({
           key: `${x.ref.provider}:${x.ref.id}`, name: x.name, image: x.image?.url ?? null,
-          attribution: x.image?.attribution ?? '', via: x.via?.[event.id] ?? '',
+          attribution: x.image?.attribution ?? '', via: x.via?.[event.id] ?? '', commander: !!x.cmd?.includes(event.id),
         })),
       })
     })

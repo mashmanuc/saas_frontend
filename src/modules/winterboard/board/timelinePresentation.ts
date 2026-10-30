@@ -87,7 +87,7 @@ export const HISTORICAL_MAP_LABELS: Record<MaterialLanguage, {
   /** v1.78 — об'ємна карта: камера цього екрана */
   tilt: string; flat: string; overview: string; zoomIn: string; zoomOut: string
   /** v1.80 — персонажі й пояснення події */
-  people: string; participant: string; participantEvent: string; eventN: string; hideInfo: string; showInfo: string
+  people: string; participant: string; participantEvent: string; commander: string; eventN: string; hideInfo: string; showInfo: string
 }> = {
   uk: {
     bordersAt: 'Межі на', bordersAtFull: 'Межі держав на', onMap: 'На карті у {y} році',
@@ -102,7 +102,7 @@ export const HISTORICAL_MAP_LABELS: Record<MaterialLanguage, {
     unavailable: 'Набір меж цієї версії недоступний — кордонів не показано',
     attribution: 'Кордони: {source}, {license}; геометрію спрощено. Суша, річки, міста: Natural Earth',
     tilt: 'Обʼємно', flat: 'Згори', overview: 'Увесь регіон', zoomIn: 'Наблизити', zoomOut: 'Віддалити',
-    people: 'Персонажі', participant: 'учасник', participantEvent: 'учасник події', eventN: 'подія {n}',
+    people: 'Персонажі', participant: 'учасник', participantEvent: 'учасник події', commander: 'командувач', eventN: 'подія {n}',
     hideInfo: 'Згорнути пояснення', showInfo: 'Розгорнути пояснення',
   },
   en: {
@@ -118,7 +118,7 @@ export const HISTORICAL_MAP_LABELS: Record<MaterialLanguage, {
     unavailable: 'This version of the border dataset is unavailable — borders are not shown',
     attribution: 'Borders: {source}, {license}; geometry simplified. Land, rivers, cities: Natural Earth',
     tilt: '3D', flat: 'Top', overview: 'Whole region', zoomIn: 'Zoom in', zoomOut: 'Zoom out',
-    people: 'People', participant: 'took part in', participantEvent: 'took part in the event', eventN: 'event {n}',
+    people: 'People', participant: 'took part in', participantEvent: 'took part in the event', commander: 'commander', eventN: 'event {n}',
     hideInfo: 'Collapse the explanation', showInfo: 'Expand the explanation',
   },
 }
