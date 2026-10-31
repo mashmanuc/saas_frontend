@@ -182,7 +182,7 @@ describe('INV-HGL-4 · фізична основа — версійний фай
   it('версія, джерело, річки з назвами, міста-орієнтири; координати в межах обрізу', async () => {
     const base = (await loadPhysicalBasemap('east_europe'))!
     expect(base.meta.version).toMatch(/^v1-[0-9a-f]{10}$/)
-    expect(base.meta.source.license).toBe('public domain')
+    expect((base.meta as unknown as { source: { license: string } }).source.license).toBe('public domain')
     expect(base.rivers.some((r) => r.name_uk === 'Дніпро')).toBe(true)
     expect(base.cities.map((c) => c.name_uk)).toEqual(expect.arrayContaining(['Київ', 'Львів', 'Чернігів', 'Полтава']))
     const [w, s, e, n] = base.meta.box
@@ -191,7 +191,7 @@ describe('INV-HGL-4 · фізична основа — версійний фай
   })
 
   it('у стані дошки — лише {dataset, version, year}', () => {
-    const data = historicalMap().data as Record<string, unknown>
+    const data = historicalMap().data as unknown as Record<string, unknown>
     expect(JSON.stringify(data)).not.toMatch(/rivers|cities|land/)
   })
 })
