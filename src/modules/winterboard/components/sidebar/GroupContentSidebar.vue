@@ -94,7 +94,7 @@
     <!-- Tab switcher -->
     <div
       class="content-sidebar__tabs"
-      :class="{ 'content-sidebar__tabs--fab-gap': zbirnykEnabled && !localMode }"
+      :class="{ 'content-sidebar__tabs--fab-gap': zbirnykShown && !localMode }"
       role="tablist"
     >
       <button
@@ -114,7 +114,7 @@
       >{{ t('winterboard.contentSidebar.tabTools') }}</button>
       <!-- «Збірник» (2026-10-28) — лише пілоту zbirnyk з /me: збірник чужий, для всіх не виставляємо -->
       <button
-        v-if="zbirnykEnabled && !localMode"
+        v-if="zbirnykShown && !localMode"
         class="content-sidebar__tab"
         :class="{ 'content-sidebar__tab--active': activeTab === 'zbirnyk' }"
         role="tab"
@@ -301,7 +301,7 @@
     </template><!-- /materials tab -->
 
     <!-- ── ЗБІРНИК tab ── -->
-    <template v-else-if="activeTab === 'zbirnyk' && zbirnykEnabled">
+    <template v-else-if="activeTab === 'zbirnyk' && zbirnykShown">
       <ZbirnykTab />
     </template>
 
@@ -628,6 +628,9 @@ const gateOpts = computed(() => ({
   evidence: evidenceEnabled.value, scenes: scenesEnabled.value, borders: bordersEnabled.value,
   mathTools: bordersEnabled.value ? mathToolsFor(teachingSubjects.value) : true,
 }))
+// «Збірник» — задачі з математики: історику без математики (пілот карти) не показуємо (власник 31.10: «Для історика
+// треба прибрати, щоб не показувалося збірник»)
+const zbirnykShown = computed(() => zbirnykEnabled.value && gateOpts.value.mathTools)
 const shownApps = computed(() => visibleApps(gateOpts.value))
 const toolResults = computed(() =>
   visibleInserts(gateOpts.value, searchInserts(toolQuery.value)))

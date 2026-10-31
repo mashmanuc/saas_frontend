@@ -144,14 +144,14 @@ describe('INV-TL-5: інструменти за предметами вчите�
     expect(visibleApps(gate).map((a) => a.app)).toEqual(['content'])
     expect(visibleInserts(gate).every((e) => !math.includes(appOf(e)))).toBe(true)
     expect(visibleInserts(gate).some((e) => e.id === 'analysis.graphCalc')).toBe(false)
-    expect(visibleInserts(gate).some((e) => e.family === 'evidence')).toBe(true)
+    expect(visibleInserts(gate).some((e) => e.family === 'historical_maps')).toBe(true)
   })
 
   it('без вибору предметів, математик, історик + математик — усе як було', () => {
     for (const subjects of [[], ['general', 'math'], ['general', 'math', 'history'], ['general', 'physics']]) {
       expect(mathToolsFor(subjects), subjects.join(',')).toBe(true)
     }
-    expect(visibleApps({ evidence: true, scenes: true, mathTools: true })).toEqual(MASH_APPS)
+    expect(visibleApps({ evidence: true, scenes: true, borders: true, mathTools: true })).toEqual(MASH_APPS)
     expect(visibleInserts({ evidence: true, scenes: true, borders: true, mathTools: true })).toHaveLength(allInserts().length)
   })
 
@@ -159,6 +159,9 @@ describe('INV-TL-5: інструменти за предметами вчите�
     const sidebar = readFileSync('src/modules/winterboard/components/sidebar/GroupContentSidebar.vue', 'utf8')
     expect(sidebar).toContain(`evidenceEnabled.value && bordersEnabled.value && teachingSubjects.value.includes('history'))`)
     expect(sidebar).toContain('mathTools: bordersEnabled.value ? mathToolsFor(teachingSubjects.value) : true,')
+    // «Збірник» (задачі з математики) — історику без математики теж ні (власник 31.10)
+    expect(sidebar).toContain('const zbirnykShown = computed(() => zbirnykEnabled.value && gateOpts.value.mathTools)')
+    expect(sidebar).not.toMatch(/v-if="zbirnykEnabled/)
     expect(sidebar).toMatch(/catalogFamily === 'content'[\s\S]*?<template v-if="timelineLibraryShown">[\s\S]*?<TimelineLibrary :with-map="bordersEnabled" \/>/)
   })
 })

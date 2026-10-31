@@ -45,11 +45,11 @@ describe('видимість «Навчальних обʼєктів»', () => {
     expect(found).toEqual([])
   })
 
-  it('INV-EV-2: гейт відкритий — плитка й обидві вставки на місці', () => {
-    // «Наочні сцени» мають власний гейт (пілот math_scenes, mathScene.spec.ts) — тут вони закриті.
-    expect(visibleApps({ evidence: true })).toEqual(MASH_APPS.filter(a => a.app !== 'scenes'))
-    const ev = visibleInserts({ evidence: true }, allInserts()).filter(e => e.family === 'evidence')
-    expect(ev.map(e => e.id).sort()).toEqual(['evidence.map', 'evidence.timeline'])
+  it('INV-EV-2 (31.10): порожніх плиток «Шкала часу» й «Карта подій» немає; «Навчальні обʼєкти» — лише пілоту карти', () => {
+    // Власник 31.10: «карта подій… нічого не показує. Видалити… шкала подій… теж прибрати»
+    expect(allInserts().some(e => e.family === 'evidence')).toBe(false)
+    expect(visibleApps({ evidence: true }).some(a => a.app === 'content')).toBe(false)
+    expect(visibleApps({ evidence: true, borders: true }).some(a => a.app === 'content')).toBe(true)
   })
 })
 

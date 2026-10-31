@@ -130,7 +130,6 @@ describe('вставка — лише пілоту historical_borders', () => {
     expect(visibleInserts({ evidence: false }).some((e) => e.id === 'evidence.historical_map')).toBe(false)
     expect(visibleInserts({ evidence: true }).some((e) => e.id === 'evidence.historical_map')).toBe(false)
     expect(visibleInserts({ evidence: false, borders: true }).map((e) => e.id)).toContain('evidence.historical_map')
-    expect(visibleInserts({ evidence: false, borders: true }).map((e) => e.id)).not.toContain('evidence.map')
     expect(visibleApps({ evidence: false }).some((a) => a.app === 'content')).toBe(false)
     expect(visibleApps({ evidence: false, borders: true }).some((a) => a.app === 'content')).toBe(true)
   })

@@ -73,8 +73,10 @@ beforeEach(() => {
 describe('ZB-1 вкладку бачить лише пілот', () => {
   it('кнопка й вміст вкладки — лише за zbirnyk у pilots з /me, не в локальному режимі', () => {
     expect(SIDEBAR).toMatch(/pilots\?\.includes\('zbirnyk'\)/)
-    expect(SIDEBAR).toMatch(/v-if="zbirnykEnabled && !localMode"[\s\S]{0,300}@click="pickTab\('zbirnyk'\)"/)
-    expect(SIDEBAR).toMatch(/v-else-if="activeTab === 'zbirnyk' && zbirnykEnabled"[\s\S]{0,40}<ZbirnykTab \/>/)
+    // 31.10: zbirnykShown = пілот zbirnyk і не історик без математики (власник: «для історика… прибрати збірник»)
+    expect(SIDEBAR).toMatch(/const zbirnykShown = computed\(\(\) => zbirnykEnabled\.value && gateOpts\.value\.mathTools\)/)
+    expect(SIDEBAR).toMatch(/v-if="zbirnykShown && !localMode"[\s\S]{0,300}@click="pickTab\('zbirnyk'\)"/)
+    expect(SIDEBAR).toMatch(/v-else-if="activeTab === 'zbirnyk' && zbirnykShown"[\s\S]{0,40}<ZbirnykTab \/>/)
   })
 })
 

@@ -30,7 +30,7 @@ import { TRIG_CIRCLE_DRAG_MIME } from '../../constants/trigCircleDefaults'
 import { HELIX_DRAG_MIME } from '../../constants/helixDefaults'
 import { TRIG_SOLVER_DRAG_MIME } from '../../constants/trigSolverDefaults'
 import { GRAPHMASH_3D_DRAG_MIME, GEOMASH_DRAG_MIME } from '../../constants/mashInsertDefaults'
-import { HISTORICAL_MAP_DRAG_MIME, MAP_CARD_DRAG_MIME, TIMELINE_CARD_DRAG_MIME } from '../../constants/evidenceCardDefaults'
+import { HISTORICAL_MAP_DRAG_MIME } from '../../constants/evidenceCardDefaults'
 import { NUMBER_LINE_DRAG_MIME } from '../../constants/numberLineDefaults'
 import { MATH_SCENE_DRAG_MIME } from '../../types/mathScene'
 import { RULER_DRAG_MIME } from '../../constants/rulerDefaults'
@@ -284,23 +284,9 @@ const GEOMASH_INSERTS: InsertEntry[] = [
     keywords: kw('geomash', 'гео', 'сцена', 'геометрія', 'geometry') },
 ]
 
+// Власник 31.10 (знімки сайту): плитки «Шкала часу» й «Карта подій» ставили порожні картки («нахуй не потрібна, вона
+// нічого не показує») — прибрано. Шкалу й карту подій кладе Інтегралик; самі картки на дошках, у Replay і PDF — як були.
 const EVIDENCE_INSERTS: InsertEntry[] = [
-  {
-    id: 'evidence.timeline', family: 'evidence', category: 'evidence',
-    dragMime: TIMELINE_CARD_DRAG_MIME, payload: '{}',
-    labelKey: 'winterboard.insertTiles.timelineCard', labelFallback: 'Шкала часу',
-    iconKey: 'timeline', sublabelKey: 'winterboard.insertTiles.timelineCardSub',
-    sublabel: 'події · дати · джерела',
-    keywords: kw('шкала часу', 'timeline', 'події', 'дати', 'history'),
-  },
-  {
-    id: 'evidence.map', family: 'evidence', category: 'evidence',
-    dragMime: MAP_CARD_DRAG_MIME, payload: '{}',
-    labelKey: 'winterboard.insertTiles.mapCard', labelFallback: 'Карта подій',
-    iconKey: 'map', sublabelKey: 'winterboard.insertTiles.mapCardSub',
-    sublabel: 'місця · маршрути · джерела',
-    keywords: kw('карта подій', 'map', 'місця', 'маршрут', 'географія'),
-  },
   {
     id: 'evidence.historical_map', family: 'historical_maps', category: 'evidence',
     dragMime: HISTORICAL_MAP_DRAG_MIME, payload: '{}',
@@ -429,7 +415,8 @@ export function visibleInserts(
 
 /** Те саме для карток-застосунків root-каталогу. */
 export function visibleApps(opts: InsertGate): typeof MASH_APPS {
-  return MASH_APPS.filter((a) => (opts.evidence || opts.borders || a.app !== 'content') && (opts.scenes || a.app !== 'scenes')
+  // «Навчальні обʼєкти» — лише пілоту історичної карти: порожні плитки шкали й карти подій прибрано (31.10)
+  return MASH_APPS.filter((a) => (opts.borders || a.app !== 'content') && (opts.scenes || a.app !== 'scenes')
     && (opts.mathTools !== false || !MATH_APPS.has(a.app)))
 }
 
