@@ -102,9 +102,11 @@ async function add(item: LibraryItem): Promise<void> {
     const plan = await fetchTimelineLibraryItem(item.id)
     const action = plan?.actions?.[0]
     if (action?.kind !== 'add_timeline') throw new Error('library: not a timeline plan')
+    // З картою — шкала одразу смугою згори (v1.82): карта ляже під нею на тому самому аркуші
+    const placed = props.withMap ? { ...action, payload: { ...action.payload, strip: true } } : action
     // Як у Інтегралика: на поточній сторінці не вміщається — нова сторінка одразу після поточної
-    if (!(await planFitsCurrentPage([action]))) await openPageForPlan(item.title)
-    const { assetId } = await runBoardAction(action)
+    if (!(await planFitsCurrentPage([placed]))) await openPageForPlan(item.title)
+    const { assetId } = await runBoardAction(placed)
     // Карта — праворуч від цієї шкали, щоб рік на карті йшов за подією шкали (одна сторінка)
     if (props.withMap) addTool(HISTORICAL_MAP_DRAG_MIME, JSON.stringify({ nextTo: assetId }))
   } catch (err) {

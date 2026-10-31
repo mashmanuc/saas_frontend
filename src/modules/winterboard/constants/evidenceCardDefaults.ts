@@ -7,6 +7,10 @@ export const MAP_CARD_DRAG_MIME = 'application/x-m4sh-map-card'
 /** 2026-10-30: карта з кордонами держав у часі (пілот `historical_borders`). */
 export const HISTORICAL_MAP_DRAG_MIME = 'application/x-m4sh-historical-map'
 
+/** v1.82: шкала поруч з історичною картою — смуга згори на всю ширину аркуша 1920 (висота — у масштабі дошки). */
+export const TIMELINE_STRIP_W = 1840
+export const TIMELINE_STRIP_H = 360
+
 type ContentLanguage = 'uk' | 'en'
 
 export function buildBlankTimelineAsset(

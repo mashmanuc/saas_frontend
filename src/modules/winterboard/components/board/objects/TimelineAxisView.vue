@@ -14,10 +14,11 @@
   ДЕТЕРМІНОВАНИЙ РЕНДЕР: усе з пропсів, мережі немає (Replay, PDF).
 -->
 <template>
-  <div class="tl-axis" :class="{ 'is-quiz': quiz }" :style="accentStyle(activeEra)" data-testid="timeline-axis">
+  <div class="tl-axis" :class="{ 'is-quiz': quiz, 'is-strip': strip }" :style="accentStyle(activeEra)" data-testid="timeline-axis">
     <div v-if="interactive" class="tl-axis__bar">
       <span v-if="quiz" class="tl-axis__score" data-testid="timeline-axis-score">{{ scoreText }}</span>
-      <div class="tl-axis__seg" role="group">
+      <!-- Смуга (v1.82): «Перевір себе» — на весь екран (питання живуть у розгорнутій події) -->
+      <div v-if="!strip" class="tl-axis__seg" role="group">
         <button
           type="button" :class="{ on: !quiz }" data-testid="timeline-axis-learn"
           @click.stop="setQuiz(false)" @mousedown.stop @pointerdown.stop
@@ -68,6 +69,17 @@
     </div>
 
     <div ref="chipsEl" class="tl-axis__chips">
+      <!-- Смуга (v1.82): ← → як у смузі етапів макета битви (DATA/ПОЛА/Batles.zip) — той самий крок, що «Наступна» -->
+      <div v-if="strip && interactive" class="tl-axis__steps">
+        <button
+          type="button" :disabled="activeIndex <= 0" :title="labels.prev" data-testid="timeline-axis-strip-prev"
+          @click.stop="step(-1)" @mousedown.stop @pointerdown.stop
+        >←</button>
+        <button
+          type="button" :disabled="activeIndex >= events.length - 1" :title="labels.next" data-testid="timeline-axis-strip-next"
+          @click.stop="step(1)" @mousedown.stop @pointerdown.stop
+        >→</button>
+      </div>
       <button
         v-for="(ev, i) in events" :key="ev.id" type="button" class="tl-axis__chip"
         :class="{ on: ev.id === activeId, ok: quiz && answers[ev.id] === 'ok', bad: quiz && answers[ev.id] === 'bad' }"
@@ -79,7 +91,7 @@
       </button>
     </div>
 
-    <section v-if="active" class="tl-axis__detail">
+    <section v-if="active && !strip" class="tl-axis__detail">
       <!-- Низ картки за макетом дизайнера («Стрічка часу — низ картки», DATA/ПОЛА/істор.zip): велика дата поруч із
            назвою, етап з крапками, проміжок від попередньої події, лід крупніше й решта під «Читати далі», учасники
            фішками, сусідні події в кнопках, смужка прогресу. Усе — з полів подій, нічого не вигадано. -->
@@ -183,7 +195,9 @@ const props = withDefaults(defineProps<{
   language?: MaterialLanguage
   /** Id картки: «▶ по черзі» — спільний стан екрана з пультом (LAW §9 v1.75). Без нього — лише цей екземпляр. */
   assetId?: string
-}>(), { eras: () => [], interactive: true, language: 'uk', assetId: '' })
+  /** v1.82: смуга поруч з історичною картою — без розгорнутої події й «Перевір себе», вкладки на всю ширину. */
+  strip?: boolean
+}>(), { eras: () => [], interactive: true, language: 'uk', assetId: '', strip: false })
 
 const emit = defineEmits<{ select: [id: string] }>()
 
@@ -503,6 +517,22 @@ watch(() => props.activeId, () => {
 .tl-axis__chip.on { background: var(--tl-cb); border-color: var(--tl-c); }
 .tl-axis__chip.ok b::after { content: ' ✓'; color: #059669; }
 .tl-axis__chip.bad b::after { content: ' ✕'; color: #b91c1c; }
+
+/* Смуга (v1.82) — вкладки як смуга етапів у макеті битви (DATA/ПОЛА/Batles.zip): кольорова риска згори, рік, назва;
+   вибрана — м'яке тло й товща риска; усі вкладки в один ряд на всю ширину, ← → ліворуч. */
+.tl-axis.is-strip .tl-axis__chips { gap: 6px; overflow: hidden; align-items: stretch; padding: 4px 8px 8px; }
+.tl-axis__steps { flex: 0 0 auto; display: flex; gap: 6px; align-items: center; padding-right: 4px; }
+.tl-axis__steps button {
+  width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--tl-line); background: #fff;
+  color: var(--tl-ink2); font-size: calc(17px * var(--wb-card-text-scale, 1)); line-height: 1; display: grid; place-items: center;
+}
+.tl-axis__steps button:disabled { opacity: 0.35; }
+.tl-axis.is-strip .tl-axis__chip {
+  flex: 1 1 0; min-width: 0; max-width: none; border: 0; border-top: 3px solid var(--tl-c); border-radius: 0 0 8px 8px;
+  padding: 7px 8px 6px; background: transparent;
+}
+.tl-axis.is-strip .tl-axis__chip.on { background: var(--tl-cb); border-top-width: 5px; padding-top: 5px; }
+.tl-axis.is-strip .tl-axis__chip span { color: var(--tl-ink); font-weight: 600; }
 
 .tl-axis__detail { border-top: 1px solid var(--tl-line); display: flex; flex-direction: column; flex: 1; }
 /* Колір етапу — смуга згори й м'яке тло під датою й назвою (власник 2026-10-29: «кольорове, щоб запам'ятовувалось») */

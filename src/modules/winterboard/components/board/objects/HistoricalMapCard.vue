@@ -405,7 +405,9 @@ defineExpose({ ready: () => loadBordersFor(data.value.borders) })
   position: absolute; inset: 0; display: flex; flex-direction: column; color: #0d4a3e; background: #fff;
   container-type: size; --t: var(--wb-card-text-scale, 1);
 }
-.hmap__hd, .hmap__bd { --u: calc(100cqw / 960); }
+/* v1.82: широка карта під смугою шкали (1840 × 620) — одиниця ще й за висотою, а колонка праворуч — 360 одиниць, як
+   у макеті 960 × 600; інакше рік і легенда росли з шириною й займали третину карти (стенд 31.10). */
+.hmap__hd, .hmap__bd { --u: min(calc(100cqw / 960), calc(100cqh / 600)); }
 .hmap--full .hmap__hd, .hmap--full .hmap__bd { --u: calc(100cqw / 1920); }
 .hmap__hd {
   height: calc(40 * var(--u)); flex: 0 0 calc(40 * var(--u)); display: flex; align-items: center; gap: calc(8 * var(--u));
@@ -416,7 +418,7 @@ defineExpose({ ready: () => loadBordersFor(data.value.borders) })
 .hmap--full .hmap__hd--host { padding-right: calc(240 * var(--u)); }
 .hmap__title { flex: 1; min-width: 0; font-weight: 600; color: #1e3a5f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hmap__range { color: #5f8379; font-size: 0.93em; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.hmap__bd { flex: 1; min-height: 0; display: grid; grid-template-columns: 62.5% minmax(0, 1fr); }
+.hmap__bd { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) calc(360 * var(--u)); }
 /* Власник 30.10: «на весь екран… справа поле з датою дуже багато місця займає… Краще б карту показувати» */
 .hmap--full .hmap__bd { grid-template-columns: 76% minmax(0, 1fr); }
 .hmap__map { position: relative; overflow: hidden; background: #d3e5ee; border-right: 1px solid rgba(5, 150, 105, 0.16); pointer-events: auto; }

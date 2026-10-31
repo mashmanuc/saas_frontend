@@ -86,6 +86,7 @@ import { renderPoly } from '@/modules/winterboard/utils/polyText'
 import { graphViewportFor } from '@/modules/winterboard/utils/graphAutofit'
 import { tangentLine, withSliders } from './graphTangent'
 import { BASEMAP_VERSION } from '@/modules/winterboard/board/basemaps'
+import { TIMELINE_STRIP_H, TIMELINE_STRIP_W } from '@/modules/winterboard/constants/evidenceCardDefaults'
 import katex from 'katex'
 import { FORMULA_LIBRARY_FIELDS, formulaCardHeight } from '@/modules/winterboard/types/formulaCard'
 import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
@@ -300,6 +301,9 @@ const MUSEUM_CARD = [880, 560]
 // Шкала «вісь» за макетом дизайнера (2026-10-29): у макеті 1080 завширшки — вісь, фішки й картка події з бічною
 // колонкою; на аркуші 1920×1080 лягає з полями. Висоту далі підганяє сама картка (INV-25).
 const AXIS_TIMELINE = [1120, 640]
+// v1.82: шкала з бібліотеки разом з історичною картою — одразу смуга згори; місце резервується під обидві (смуга + карта)
+const STRIP_TIMELINE = [TIMELINE_STRIP_W, TIMELINE_STRIP_H]
+const STRIP_PAIR_FOOTPRINT = [TIMELINE_STRIP_W, 1000]
 
 const FOOTPRINT = {
   add_history_card: [520, 440],
@@ -324,7 +328,8 @@ export async function planFitsCurrentPage(actions) {
   for (const action of actions || []) {
     const size = action?.kind === 'add_formula' ? formulaFootprint(action.payload)
       : action?.kind === 'add_history_card' && sanitizeMuseum(action.payload?.museum) ? MUSEUM_CARD
-        : action?.kind === 'add_timeline' && action.payload?.view === 'axis' ? AXIS_TIMELINE
+        : action?.kind === 'add_timeline' && action.payload?.view === 'axis'
+          ? (action.payload?.strip === true ? STRIP_PAIR_FOOTPRINT : AXIS_TIMELINE)
           : FOOTPRINT[action?.kind]
     if (!size) continue
     const [w, reserveH] = size
@@ -950,11 +955,13 @@ const HANDLERS = {
   // для розв'язків/пояснень (гарна картка замість голого текстового поля).
   // H2: шкала подій. Один запис штатним `addAsset` — власного write-path,
   // окремого REST чи мутації стану повз операцію немає (ТЗ §9.3).
-  async add_timeline({ title, layout, orientation, events, knowledge_set_id, corridor, sources, source_status, view, eras, people }, ctx) {
+  async add_timeline({ title, layout, orientation, events, knowledge_set_id, corridor, sources, source_status, view, eras, people, strip }, ctx) {
     const { store, page } = await _store(ctx)
     // Вигляд «вісь» приходить лише зі шкали теми (сервер, історія, гейт); решта — як і досі, список.
     const axis = view === 'axis'
-    const [w, h] = axis ? AXIS_TIMELINE : [760, 440]
+    // `strip` ставить лише бібліотека шкал разом з картою (v1.82), не сервер: смуга одразу, без автопідгонки висоти
+    const asStrip = axis && strip === true
+    const [w, h] = asStrip ? STRIP_TIMELINE : axis ? AXIS_TIMELINE : [760, 440]
     const { cx, cy } = _center(page, w, h)
     const assetId = _uuid()
     const cleanEvents = sanitizeEvents(events)
@@ -967,6 +974,7 @@ const HANDLERS = {
         layout: layout === 'linear' ? 'linear' : 'ordinal',
         orientation: orientation === 'vertical' ? 'vertical' : 'horizontal',
         ...(axis ? { view: 'axis', eras: sanitizeEras(eras) } : {}),
+        ...(asStrip ? { strip: true } : {}),
         events: cleanEvents,
         // Закон §9 v1.80: люди теми з джерела — портрети біля подій на історичній карті
         ...sanitizePeople(people, cleanEvents),

@@ -23,6 +23,7 @@ import { BOARD_RECIPE_MIME, BoardRecipeError, buildBoardRecipeAsset } from '../b
 import {
   MAP_CARD_DRAG_MIME,
   HISTORICAL_MAP_DRAG_MIME,
+  TIMELINE_STRIP_H,
   buildHistoricalMapAsset,
   type HistoricalMapTopic,
   TIMELINE_CARD_DRAG_MIME,
@@ -149,38 +150,42 @@ function _buildMediaProxyUrl(src: string): string | null {
   } catch { return null }
 }
 
+const PAIR_GAP = 40
+
 /**
- * Карта праворуч від шкали, у межах аркуша: ширина — що лишилось (не більше звичайних 960), пропорції картки ті
- * самі. Місця праворуч менше за 480 — під шкалою, якщо там є місце; інакше — як була (у центрі видимого).
+ * Шкала теми + історична карта на одному аркуші (LAW §9 v1.82; власник 31.10: «усувай недоліки» — шкала й карта не
+ * вміщались на одну сторінку). Шкала — смуга згори на всю ширину, без розгорнутої події (її текст показує панель
+ * карти), карта — під нею, решта висоти. Лише геометрія; запис — у виклику.
  */
-export function besideTimeline(map: WBAsset, timeline: WBAsset, pw: number, ph: number): WBAsset {
-  const GAP = 40
-  const ratio = map.h / map.w
-  const fit = (w: number, h: number) => Math.min(map.w, w, h / ratio)
-  const right = fit(pw - GAP - (timeline.x + timeline.w + GAP), ph - GAP - timeline.y)
-  if (right >= 480) {
-    return { ...map, x: timeline.x + timeline.w + GAP, y: timeline.y, w: Math.round(right), h: Math.round(right * ratio) }
+export function pairWithTimeline(map: WBAsset, timeline: WBAsset, pw: number, ph: number): { map: WBAsset; timeline: WBAsset } {
+  const w = pw - 2 * PAIR_GAP
+  const mapY = PAIR_GAP + TIMELINE_STRIP_H + PAIR_GAP
+  return {
+    timeline: {
+      ...timeline, x: PAIR_GAP, y: PAIR_GAP, w, h: TIMELINE_STRIP_H,
+      data: { ...(timeline.data as TimelineCardData), strip: true } as unknown as WBAsset['data'],
+    },
+    map: { ...map, x: PAIR_GAP, y: mapY, w, h: Math.max(300, ph - PAIR_GAP - mapY) },
   }
-  const below = fit(pw - GAP - timeline.x, ph - GAP - (timeline.y + timeline.h + GAP))
-  if (below >= 480) {
-    return { ...map, x: timeline.x, y: timeline.y + timeline.h + GAP, w: Math.round(below), h: Math.round(below * ratio) }
-  }
-  return map
 }
 
-/** Тема для історичної карти — перша шкала сторінки з місцями подій (назва, місця, роки подій). */
-function topicOfPage(assets: readonly WBAsset[]): HistoricalMapTopic | null {
-  for (const asset of assets) {
-    if (asset?.type !== 'timeline_card') continue
-    const data = asset.data as TimelineCardData | undefined
-    const events = Array.isArray(data?.events) ? data.events : []
-    const places = events.flatMap((e) => (e?.place && Number.isFinite(e.place.lat) && Number.isFinite(e.place.lon) ? [e.place] : []))
-    const years = events.map((e) => e?.date_start?.year).filter((y): y is number => Number.isInteger(y))
-    if (places.length && years.length) {
-      return { title: data?.title || '', places, years: [Math.min(...years), Math.max(...years)] }
-    }
-  }
-  return null
+const placesOf = (data: TimelineCardData | undefined) => (Array.isArray(data?.events) ? data.events : [])
+  .flatMap((e) => (e?.place && Number.isFinite(e.place.lat) && Number.isFinite(e.place.lon) ? [e.place] : []))
+const yearsOf = (data: TimelineCardData | undefined) => (Array.isArray(data?.events) ? data.events : [])
+  .map((e) => e?.date_start?.year).filter((y): y is number => Number.isInteger(y))
+
+/** Шкала теми для історичної карти — перша шкала сторінки з місцями подій і роками. */
+function topicTimelineOf(assets: readonly WBAsset[]): WBAsset | undefined {
+  return assets.find((a) => a?.type === 'timeline_card'
+    && placesOf(a.data as TimelineCardData).length > 0 && yearsOf(a.data as TimelineCardData).length > 0)
+}
+
+/** Тема карти зі шкали: назва, місця, роки подій. */
+function topicOf(timeline: WBAsset | undefined): HistoricalMapTopic | null {
+  if (!timeline) return null
+  const data = timeline.data as TimelineCardData
+  const years = yearsOf(data)
+  return { title: data?.title || '', places: placesOf(data), years: [Math.min(...years), Math.max(...years)] }
 }
 
 export function useContentDrop(options: UseContentDropOptions) {
@@ -1263,10 +1268,16 @@ export function useContentDrop(options: UseContentDropOptions) {
       } catch (err) {
         console.warn('[WB:borders] bad payload', err)
       }
-      const timeline = nextTo ? assets.find((a) => a.id === nextTo && a.type === 'timeline_card') : undefined
-      const asset = buildHistoricalMapAsset(pos, localeValue === 'en' ? 'en' : 'uk', undefined,
-        topicOfPage(timeline ? [timeline] : assets))
-      onAssetAdd(timeline ? besideTimeline(asset, timeline, page?.width ?? 1920, page?.height ?? 1080) : asset)
+      const timeline = topicTimelineOf(nextTo ? assets.filter((a) => a.id === nextTo) : assets)
+      const asset = buildHistoricalMapAsset(pos, localeValue === 'en' ? 'en' : 'uk', undefined, topicOf(timeline))
+      // Шкала теми у вигляді «вісь» — пара на аркуші (v1.82): смуга згори, карта під нею; рік карти йде за подією
+      if (timeline && store && (timeline.data as TimelineCardData)?.view === 'axis') {
+        const pair = pairWithTimeline(asset, timeline, page?.width ?? 1920, page?.height ?? 1080)
+        store.updateAsset(pair.timeline)
+        onAssetAdd(pair.map)
+        return
+      }
+      onAssetAdd(asset)
       return
     }
 

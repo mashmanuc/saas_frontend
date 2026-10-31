@@ -326,3 +326,31 @@ describe('текст події: лід і «Читати далі», мова �
     expect(first.find('[data-testid="timeline-axis-lang"]').exists()).toBe(false)
   })
 })
+
+// v1.82 (власник 31.10: «усувай недоліки»): шкала поруч з історичною картою — смуга
+describe('смуга поруч з картою (v1.82)', () => {
+  it('strip — вісь і вкладки без розгорнутої події й «Перевір себе»; ← → крокують тим самим записом', async () => {
+    const w = mountCard(axisAsset({ strip: true }))
+    expect(w.find('.timeline-card').classes()).toContain('is-strip')
+    expect(w.find('.tl-axis__detail').exists()).toBe(false)
+    expect(w.find('[data-testid="timeline-axis-quiz"]').exists()).toBe(false)
+    expect(w.findAll('.tl-axis__chip')).toHaveLength(5)
+    expect(w.find('[data-testid="timeline-axis-strip-prev"]').attributes('disabled')).toBeDefined()
+    await w.get('[data-testid="timeline-axis-strip-next"]').trigger('click')
+    const [[next]] = w.emitted('update:asset') as [[WBAsset]]
+    expect((next.data as { active_event_id: string }).active_event_id).toBe('event-2')
+  })
+
+  it('на весь екран і без поля — звичайний вигляд з подією', () => {
+    const full = mount(TimelineCardRenderer, {
+      props: { asset: axisAsset({ strip: true }), isSelected: false, interactive: true, isExpanded: true },
+      global: { plugins: [i18n()] },
+    })
+    expect(full.find('.tl-axis__detail').exists()).toBe(true)
+    expect(mountCard(axisAsset()).find('.tl-axis__detail').exists()).toBe(true)
+  })
+
+  it('учень (лише перегляд) — без кнопок кроку', () => {
+    expect(mountCard(axisAsset({ strip: true }), false).find('.tl-axis__steps').exists()).toBe(false)
+  })
+})

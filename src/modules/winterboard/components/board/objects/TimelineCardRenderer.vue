@@ -21,11 +21,11 @@
   <div
     ref="rootEl"
     class="timeline-card"
-    :class="{ 'is-selected': isSelected, 'is-readonly': !interactive, 'is-expanded': isExpanded }"
+    :class="{ 'is-selected': isSelected, 'is-readonly': !interactive, 'is-expanded': isExpanded, 'is-strip': isStrip }"
     :style="textScaleStyle"
     :data-testid="`timeline-card-${asset.id}`"
   >
-    <header class="timeline-card__header">
+    <header class="timeline-card__header" :style="stripStyle">
       <span class="timeline-card__icon">🕘</span>
       <span class="timeline-card__title">{{ data.title || labels.untitled }}</span>
       <span v-if="isAxis && yearsLabel" class="timeline-card__years">{{ yearsLabel }}</span>
@@ -40,7 +40,7 @@
       >×</button>
     </header>
 
-    <div ref="bodyEl" class="timeline-card__body">
+    <div ref="bodyEl" class="timeline-card__body" :style="stripStyle">
       <div ref="flowEl" class="timeline-card__flow">
         <p v-if="!events.length" class="timeline-card__empty">{{ labels.empty }}</p>
 
@@ -53,6 +53,7 @@
             :interactive="interactive"
             :language="materialLanguage"
             :asset-id="asset.id"
+            :strip="isStrip"
             @select="selectExact"
           />
           <SourceList :sources="data.sources" :language="materialLanguage" />
@@ -239,12 +240,33 @@ const textScaleStyle = computed(() => ({
   [CARD_TEXT_SCALE_VAR]: String(presentationScaleOf(props.asset) * (props.isExpanded ? expandScale.value : 1)),
 }))
 
+// Смуга поруч з історичною картою (LAW §9 v1.82, власник 31.10 «усувай недоліки»): вміст у масштабі дошки, як у
+// карти, — смуга займає ту саму частку аркуша на ноутбуці, на екрані класу й у записі (інакше текст шкали лишався
+// незмінним, і на ноутбуці вона розтягувалась на всю сторінку). Масштаб — ширина на екрані до ширини на дошці.
+const isStrip = computed(() => isAxis.value && data.value.strip === true && !props.isExpanded)
+const stripZoom = ref(1)
+let stripResize: ResizeObserver | null = null
+watch(() => [isStrip.value, rootEl.value, props.asset.w] as const, ([on, el, w]) => {
+  stripResize?.disconnect()
+  stripResize = null
+  stripZoom.value = 1
+  if (!on || !el || !(w > 0) || typeof ResizeObserver === 'undefined') return
+  stripResize = new ResizeObserver(([entry]) => {
+    const k = entry.contentRect.width / w
+    if (k > 0) stripZoom.value = k
+  })
+  stripResize.observe(el)
+}, { immediate: true, flush: 'post' })
+onBeforeUnmount(() => stripResize?.disconnect())
+const stripStyle = computed(() => (isStrip.value ? { zoom: String(stripZoom.value) } : undefined))
+
 useCardContentFit({
   root: rootEl,
   body: bodyEl,
   flow: flowEl,
   // Розгорнута картка висоту не міряє: інакше автопідгонка записала б висоту від вигляду одного екрана (Б-109).
-  canMeasure: () => !props.isExpanded && props.canFit && !isMinimizedOnBoard(props.asset),
+  // Смуга теж: її висоту ставить розкладка «шкала + карта» (v1.82), а вміст у масштабі дошки.
+  canMeasure: () => !props.isExpanded && !isStrip.value && props.canFit && !isMinimizedOnBoard(props.asset),
   sources: [
     () => data.value.title,
     () => JSON.stringify(events.value),

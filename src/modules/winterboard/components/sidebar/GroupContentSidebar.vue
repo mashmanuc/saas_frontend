@@ -610,8 +610,6 @@ function pickTab(tab: SidebarTab): void {
 const toolQuery = ref('')
 // «Навчальні обʼєкти» — лише акаунтам у гейті (див. useEvidenceToolsGate).
 const { evidenceEnabled, teachingSubjects } = useEvidenceToolsGate()
-// Предмети з «Моїх предметів»: історику — бібліотека шкал і без математичних застосунків (власник 2026-10-30)
-const timelineLibraryShown = computed(() => evidenceEnabled.value && teachingSubjects.value.includes('history'))
 // «Наочні сцени» — лише пілоту math_scenes з /me (власник 2026-10-20: «поки будемо включати його для ID40»).
 const authStore = useAuthStore()
 const scenesEnabled = computed(() =>
@@ -622,9 +620,13 @@ const zbirnykEnabled = computed(() =>
 // «Історична карта» — лише пілоту historical_borders з /me (власник 2026-10-30: нове — спершу для 220).
 const bordersEnabled = computed(() =>
   Boolean((authStore.user as { pilots?: string[] } | null)?.pilots?.includes('historical_borders')))
+// Предмети з «Моїх предметів»: історику — бібліотека шкал і без математичних застосунків (власник 2026-10-30).
+// Поки лише пілоту історичної карти (31.10: «на юзера 220»); решта — як було.
+const timelineLibraryShown = computed(() =>
+  evidenceEnabled.value && bordersEnabled.value && teachingSubjects.value.includes('history'))
 const gateOpts = computed(() => ({
   evidence: evidenceEnabled.value, scenes: scenesEnabled.value, borders: bordersEnabled.value,
-  mathTools: mathToolsFor(teachingSubjects.value),
+  mathTools: bordersEnabled.value ? mathToolsFor(teachingSubjects.value) : true,
 }))
 const shownApps = computed(() => visibleApps(gateOpts.value))
 const toolResults = computed(() =>

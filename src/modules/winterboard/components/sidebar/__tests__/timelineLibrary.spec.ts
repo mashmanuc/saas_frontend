@@ -18,7 +18,8 @@ import uk from '@/i18n/locales/uk.json'
 import { ADD_TOOL_TO_BOARD_KEY } from '../../../composables/useAddToolToBoard'
 import { HISTORICAL_MAP_DRAG_MIME } from '../../../constants/evidenceCardDefaults'
 import { MASH_APPS, allInserts, appOf, mathToolsFor, visibleApps, visibleInserts } from '../insertRegistry'
-import { besideTimeline } from '../../../composables/useContentDrop'
+import { pairWithTimeline } from '../../../composables/useContentDrop'
+import { TIMELINE_STRIP_H } from '../../../constants/evidenceCardDefaults'
 
 const api = vi.hoisted(() => ({ fetchTimelineLibrary: vi.fn(), fetchTimelineLibraryItem: vi.fn() }))
 vi.mock('@/modules/intent/corridors/corridorApi', () => api)
@@ -77,6 +78,9 @@ describe('бібліотека шкал на панелі', () => {
     await w.get('[data-testid="timeline-library-item-7"]').trigger('click')
     await flushPromises()
     expect(add).toHaveBeenCalledWith(HISTORICAL_MAP_DRAG_MIME, JSON.stringify({ nextTo: 'tl-1' }))
+    const placed = { ...PLAN.actions[0], payload: { ...PLAN.actions[0].payload, strip: true } }
+    expect(board.planFitsCurrentPage).toHaveBeenCalledWith([placed])
+    expect(board.runBoardAction).toHaveBeenCalledWith(placed)
   })
 
   it('INV-TL-2: не вміщається — нова сторінка з назвою теми, потім шкала', async () => {
@@ -134,23 +138,22 @@ describe('INV-TL-5: інструменти за предметами вчите�
     expect(visibleInserts({ evidence: true, scenes: true, borders: true, mathTools: true })).toHaveLength(allInserts().length)
   })
 
-  it('бібліотека — у «Навчальних обʼєктах», лише за предметом «історія» і гейтом', () => {
+  it('бібліотека — у «Навчальних обʼєктах», лише за предметом «історія», гейтом і пілотом карти; поділ — лише пілоту', () => {
     const sidebar = readFileSync('src/modules/winterboard/components/sidebar/GroupContentSidebar.vue', 'utf8')
-    expect(sidebar).toContain(`const timelineLibraryShown = computed(() => evidenceEnabled.value && teachingSubjects.value.includes('history'))`)
+    expect(sidebar).toContain(`evidenceEnabled.value && bordersEnabled.value && teachingSubjects.value.includes('history'))`)
+    expect(sidebar).toContain('mathTools: bordersEnabled.value ? mathToolsFor(teachingSubjects.value) : true,')
     expect(sidebar).toMatch(/catalogFamily === 'content'[\s\S]*?<template v-if="timelineLibraryShown">[\s\S]*?<TimelineLibrary :with-map="bordersEnabled" \/>/)
   })
 })
 
-describe('INV-TL-6: карта поруч зі шкалою — у межах аркуша', () => {
-  const map = { id: 'm', type: 'map_card', x: 0, y: 0, w: 960, h: 600 } as never
-  const at = (x: number, y: number, w = 1120, h = 640) => ({ id: 't', type: 'timeline_card', x, y, w, h }) as never
+describe('INV-TL-6: шкала й карта — на одному аркуші (v1.82)', () => {
+  const map = { id: 'm', type: 'map_card', x: 0, y: 0, w: 960, h: 600, data: {} } as never
+  const timeline = { id: 't', type: 'timeline_card', x: 40, y: 40, w: 1120, h: 1040, data: { view: 'axis', title: 'Т', events: [] } } as never
 
-  it('шкала зліва вгорі (так її ставить Інтегралик на порожній сторінці) — карта праворуч, решта ширини', () => {
-    expect(besideTimeline(map, at(40, 40), 1920, 1080)).toMatchObject({ x: 1200, y: 40, w: 680, h: 425 })
-  })
-
-  it('праворуч тісно — під шкалою, якщо там є місце; ніде — як була', () => {
-    expect(besideTimeline(map, at(500, 40, 1120, 300), 1920, 1080)).toMatchObject({ x: 500, y: 380, w: 960, h: 600 })
-    expect(besideTimeline(map, at(500, 300), 1920, 1080)).toBe(map)
+  it('шкала — смуга згори на всю ширину, карта — під нею до низу аркуша', () => {
+    const pair = pairWithTimeline(map, timeline, 1920, 1080)
+    expect(pair.timeline).toMatchObject({ x: 40, y: 40, w: 1840, h: TIMELINE_STRIP_H, data: { strip: true, view: 'axis', title: 'Т' } })
+    expect(pair.map).toMatchObject({ x: 40, y: 40 + TIMELINE_STRIP_H + 40, w: 1840 })
+    expect(pair.map.y + pair.map.h).toBe(1040)
   })
 })
