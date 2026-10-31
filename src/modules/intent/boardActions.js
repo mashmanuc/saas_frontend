@@ -86,7 +86,7 @@ import { renderPoly } from '@/modules/winterboard/utils/polyText'
 import { graphViewportFor } from '@/modules/winterboard/utils/graphAutofit'
 import { tangentLine, withSliders } from './graphTangent'
 import { BASEMAP_VERSION } from '@/modules/winterboard/board/basemaps'
-import { TIMELINE_STRIP_H, TIMELINE_STRIP_W } from '@/modules/winterboard/constants/evidenceCardDefaults'
+import { TIMELINE_STRIP_H, TIMELINE_STRIP_W, buildHistoricalMapAsset } from '@/modules/winterboard/constants/evidenceCardDefaults'
 import katex from 'katex'
 import { FORMULA_LIBRARY_FIELDS, formulaCardHeight } from '@/modules/winterboard/types/formulaCard'
 import { winterboardApi } from '@/modules/winterboard/api/winterboardApi'
@@ -301,9 +301,32 @@ const MUSEUM_CARD = [880, 560]
 // Шкала «вісь» за макетом дизайнера (2026-10-29): у макеті 1080 завширшки — вісь, фішки й картка події з бічною
 // колонкою; на аркуші 1920×1080 лягає з полями. Висоту далі підганяє сама картка (INV-25).
 const AXIS_TIMELINE = [1120, 640]
-// v1.82: шкала з бібліотеки разом з історичною картою — одразу смуга згори; місце резервується під обидві (смуга + карта)
+// v1.82: шкала теми разом з історичною картою — одразу смуга згори; місце резервується під обидві (смуга + карта)
 const STRIP_TIMELINE = [TIMELINE_STRIP_W, TIMELINE_STRIP_H]
 const STRIP_PAIR_FOOTPRINT = [TIMELINE_STRIP_W, 1000]
+const PAIR_MAP_MIN_H = 300
+
+/** Пілот історичної карти (/me) — лише йому шкала теми йде парою з картою (власник 31.10: «на юзера 220»). */
+function _bordersPilot() {
+  try {
+    return Boolean(useAuthStore().user?.pilots?.includes('historical_borders'))
+  } catch {
+    return false
+  }
+}
+
+/** Шкала теми з місцями подій — тема для історичної карти (назва, місця, роки), інакше null. */
+function _mapTopic(title, events) {
+  const places = events.flatMap((e) => (e.place && Number.isFinite(e.place.lat) && Number.isFinite(e.place.lon) ? [e.place] : []))
+  const years = events.map((e) => e.date_start?.year).filter((y) => Number.isInteger(y))
+  return places.length && years.length ? { title: title || '', places, years: [Math.min(...years), Math.max(...years)] } : null
+}
+
+/** Чи піде шкала парою з картою: вигляд «вісь», є місця подій і (бібліотека попросила `strip` або це пілот карти). */
+export function timelineGoesWithMap(payload) {
+  return payload?.view === 'axis' && !!_mapTopic(payload?.title, sanitizeEvents(payload?.events))
+    && (payload?.strip === true || _bordersPilot())
+}
 
 const FOOTPRINT = {
   add_history_card: [520, 440],
@@ -329,7 +352,7 @@ export async function planFitsCurrentPage(actions) {
     const size = action?.kind === 'add_formula' ? formulaFootprint(action.payload)
       : action?.kind === 'add_history_card' && sanitizeMuseum(action.payload?.museum) ? MUSEUM_CARD
         : action?.kind === 'add_timeline' && action.payload?.view === 'axis'
-          ? (action.payload?.strip === true ? STRIP_PAIR_FOOTPRINT : AXIS_TIMELINE)
+          ? (timelineGoesWithMap(action.payload) ? STRIP_PAIR_FOOTPRINT : AXIS_TIMELINE)
           : FOOTPRINT[action?.kind]
     if (!size) continue
     const [w, reserveH] = size
@@ -955,26 +978,43 @@ const HANDLERS = {
   // для розв'язків/пояснень (гарна картка замість голого текстового поля).
   // H2: шкала подій. Один запис штатним `addAsset` — власного write-path,
   // окремого REST чи мутації стану повз операцію немає (ТЗ §9.3).
-  async add_timeline({ title, layout, orientation, events, knowledge_set_id, corridor, sources, source_status, view, eras, people, strip }, ctx) {
-    const { store, page } = await _store(ctx)
+  async add_timeline(payload, ctx) {
+    const { title, layout, orientation, events, knowledge_set_id, corridor, sources, source_status, view, eras, people } = payload
+    let { store, page } = await _store(ctx)
     // Вигляд «вісь» приходить лише зі шкали теми (сервер, історія, гейт); решта — як і досі, список.
     const axis = view === 'axis'
-    // `strip` ставить лише бібліотека шкал разом з картою (v1.82), не сервер: смуга одразу, без автопідгонки висоти
-    const asStrip = axis && strip === true
-    const [w, h] = asStrip ? STRIP_TIMELINE : axis ? AXIS_TIMELINE : [760, 440]
-    const { cx, cy } = _center(page, w, h)
-    const assetId = _uuid()
     const cleanEvents = sanitizeEvents(events)
+    // v1.82 (власник 31.10: «карта не додається… ти не додав»): шкала теми з місцями подій пілоту карти (або з
+    // бібліотеки з картою) — пара: смуга згори + історична карта під нею, одразу, без автопідгонки висоти смуги
+    const topic = axis && timelineGoesWithMap(payload) ? _mapTopic(title, cleanEvents) : null
+    let x, y
+    const [w, h] = topic ? STRIP_TIMELINE : axis ? AXIS_TIMELINE : [760, 440]
+    if (topic) {
+      const { pw, ph } = _pageSize(page)
+      let spot = findFreeSpot(_occupied(page), STRIP_PAIR_FOOTPRINT[0], STRIP_PAIR_FOOTPRINT[1], pw, ph)
+      // Пара не вміщається — нова сторінка одразу після поточної (як для набору Інтегралика); на підготовчій
+      // сторінці пульта (ctx) сторінок не відкриваємо
+      if (!spot && !ctx?.pageId) {
+        await openPageForPlan(title)
+        ;({ store, page } = await _store(ctx))
+        spot = findFreeSpot(_occupied(page), STRIP_PAIR_FOOTPRINT[0], STRIP_PAIR_FOOTPRINT[1], pw, ph)
+      }
+      ;({ x, y } = spot ?? { x: PLACE_MARGIN, y: PLACE_MARGIN })
+    } else {
+      const { cx, cy } = _center(page, w, h)
+      ;[x, y] = [cx - w / 2, cy - h / 2]
+    }
+    const assetId = _uuid()
     store.addAsset({
       id: assetId, type: 'timeline_card', src: '',
-      x: cx - w / 2, y: cy - h / 2, w, h, rotation: 0, locked: false,
+      x, y, w, h, rotation: 0, locked: false,
       data: {
         version: 1,
         title: title || '',
         layout: layout === 'linear' ? 'linear' : 'ordinal',
         orientation: orientation === 'vertical' ? 'vertical' : 'horizontal',
         ...(axis ? { view: 'axis', eras: sanitizeEras(eras) } : {}),
-        ...(asStrip ? { strip: true } : {}),
+        ...(topic ? { strip: true } : {}),
         events: cleanEvents,
         // Закон §9 v1.80: люди теми з джерела — портрети біля подій на історичній карті
         ...sanitizePeople(people, cleanEvents),
@@ -986,6 +1026,16 @@ const HANDLERS = {
         sources: sanitizeSourceList(sources),
       },
     }, page.id ?? '')
+    if (topic) {
+      // Карта під смугою: регіон і роки — з цієї шкали (v1.81), рік іде за подією шкали (v1.79)
+      const { ph } = _pageSize(page)
+      const mapY = y + TIMELINE_STRIP_H + PLACE_GAP
+      const lang = corridorData(corridor).content_language === 'en' ? 'en' : 'uk'
+      const map = buildHistoricalMapAsset({ x: 0, y: 0 }, lang, undefined, topic)
+      store.addAsset({
+        ...map, id: _uuid(), x, y: mapY, w: TIMELINE_STRIP_W, h: Math.max(PAIR_MAP_MIN_H, ph - PLACE_MARGIN - mapY),
+      }, page.id ?? '')
+    }
     return { ok: true, assetId }
   },
 

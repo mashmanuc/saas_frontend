@@ -1,8 +1,9 @@
 <!--
   Бібліотека шкал тем (власник 2026-10-30: «зберігати це як бібліотеку. Якщо хтось колись робить запит, ми його
   беремо вже готового»). Теми, які вже зібрав Інтегралик, — найуживаніші спершу; натиск ставить шкалу на дошку тим
-  самим планом, що дає Інтегралик (`runBoardAction`), без моделі. Пілоту історичної карти — і карту праворуч від
-  шкали (та сама плитка «Історична карта», регіон і роки — з цієї шкали).
+  самим планом, що дає Інтегралик (`runBoardAction`), без моделі. Пілоту історичної карти дія сама ставить пару:
+  смуга згори + карта теми під нею (закон §9 v1.82). Список оновлюється, щойно на дошці з'являється нова шкала —
+  тема, яку щойно зібрав Інтегралик, уже в бібліотеці.
 -->
 <template>
   <div class="tl-lib" data-testid="timeline-library">
@@ -42,10 +43,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useAddToolToBoard } from '../../composables/useAddToolToBoard'
-import { HISTORICAL_MAP_DRAG_MIME } from '../../constants/evidenceCardDefaults'
+import { useWBStore } from '../../board/state/boardStore'
 import { fetchTimelineLibrary, fetchTimelineLibraryItem } from '@/modules/intent/corridors/corridorApi'
 import { openPageForPlan, planFitsCurrentPage, runBoardAction } from '@/modules/intent/boardActions'
 
@@ -59,7 +59,7 @@ interface LibraryItem {
 const props = defineProps<{ withMap?: boolean }>()
 
 const { t, locale } = useI18n()
-const addTool = useAddToolToBoard()
+const board = useWBStore()
 
 const query = ref('')
 const items = ref<LibraryItem[]>([])
@@ -86,6 +86,10 @@ async function load(): Promise<void> {
 // Пошук — і серед назв, якими тему просили (на сервері); застарілу відповідь відкидає `asked`
 watch(query, load)
 onMounted(load)
+// Власник 31.10 (сайт): дві шкали щойно зібрано, а панель показувала порожню бібліотеку — список був старий
+const timelinesOnBoard = computed(() => (board.pages ?? [])
+  .reduce((n, p) => n + (p.assets ?? []).filter((a) => a.type === 'timeline_card').length, 0))
+watch(timelinesOnBoard, (now, before) => { if (now > before) void load() })
 
 function years(item: LibraryItem): string {
   const fmt = (y: number) => (y < 0 ? t('winterboard.timelineLibrary.bc', { y: -y }) : String(y))
@@ -106,9 +110,8 @@ async function add(item: LibraryItem): Promise<void> {
     const placed = props.withMap ? { ...action, payload: { ...action.payload, strip: true } } : action
     // Як у Інтегралика: на поточній сторінці не вміщається — нова сторінка одразу після поточної
     if (!(await planFitsCurrentPage([placed]))) await openPageForPlan(item.title)
-    const { assetId } = await runBoardAction(placed)
-    // Карта — праворуч від цієї шкали, щоб рік на карті йшов за подією шкали (одна сторінка)
-    if (props.withMap) addTool(HISTORICAL_MAP_DRAG_MIME, JSON.stringify({ nextTo: assetId }))
+    // Пілоту карти дія сама ставить пару: смуга згори + карта під нею (v1.82)
+    await runBoardAction(placed)
   } catch (err) {
     console.warn('[WB:timeline-library] insert failed', err)
     failedId.value = item.id

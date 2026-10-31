@@ -25,6 +25,12 @@ const api = vi.hoisted(() => ({ fetchTimelineLibrary: vi.fn(), fetchTimelineLibr
 vi.mock('@/modules/intent/corridors/corridorApi', () => api)
 const board = vi.hoisted(() => ({ runBoardAction: vi.fn(), planFitsCurrentPage: vi.fn(), openPageForPlan: vi.fn() }))
 vi.mock('@/modules/intent/boardActions', () => board)
+const wb = vi.hoisted(() => ({ s: null as null | { pages: Array<{ assets: Array<{ type: string }> }> } }))
+vi.mock('../../../board/state/boardStore', async () => {
+  const { reactive } = await import('vue')
+  wb.s = reactive({ pages: [] as Array<{ assets: Array<{ type: string }> }> })
+  return { useWBStore: () => wb.s }
+})
 
 import TimelineLibrary from '../TimelineLibrary.vue'
 
@@ -72,15 +78,26 @@ describe('бібліотека шкал на панелі', () => {
     expect(add).not.toHaveBeenCalled()
   })
 
-  it('INV-TL-3: пілоту — карта поруч із щойно поставленою шкалою', async () => {
+  it('INV-TL-3: пілоту — та сама дія зі смугою: пару (смуга + карта) ставить сама дія, не панель', async () => {
     const { w, add } = mountLibrary(true)
     await flushPromises()
     await w.get('[data-testid="timeline-library-item-7"]').trigger('click')
     await flushPromises()
-    expect(add).toHaveBeenCalledWith(HISTORICAL_MAP_DRAG_MIME, JSON.stringify({ nextTo: 'tl-1' }))
     const placed = { ...PLAN.actions[0], payload: { ...PLAN.actions[0].payload, strip: true } }
     expect(board.planFitsCurrentPage).toHaveBeenCalledWith([placed])
     expect(board.runBoardAction).toHaveBeenCalledWith(placed)
+    expect(add).not.toHaveBeenCalled()
+  })
+
+  it('нова шкала на дошці (Інтегралик щойно зібрав тему) — список бібліотеки оновлюється', async () => {
+    wb.s!.pages = [{ assets: [] }]
+    mountLibrary(true)
+    await flushPromises()
+    expect(api.fetchTimelineLibrary).toHaveBeenCalled()
+    api.fetchTimelineLibrary.mockClear()
+    wb.s!.pages = [{ assets: [{ type: 'timeline_card' }] }]
+    await flushPromises()
+    expect(api.fetchTimelineLibrary).toHaveBeenCalled()
   })
 
   it('INV-TL-2: не вміщається — нова сторінка з назвою теми, потім шкала', async () => {
